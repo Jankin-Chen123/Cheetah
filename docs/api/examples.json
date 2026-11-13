@@ -1,0 +1,1271 @@
+{
+  "fixture_only": true,
+  "description": "全部为虚构响应样例，不可发送到真实电话、真实模型或交付路径。各样例独立，不代表已执行的一条连续真实流程。",
+  "cases": {
+    "health_success": {
+      "schema": "Health",
+      "value": {
+        "status": "ok",
+        "service": "cheeta-api",
+        "stage": "initialization"
+      }
+    },
+    "readiness_unavailable": {
+      "schema": "Readiness",
+      "value": {
+        "status": "not_ready",
+        "checks": {
+          "database": "unavailable"
+        },
+        "stage": "initialization"
+      }
+    },
+    "job_created": {
+      "schema": "Job",
+      "value": {
+        "id": "fixture-job-001",
+        "organization_id": "fixture-org-001",
+        "owner_id": "fixture-user-001",
+        "revision": 1,
+        "title": "产品经理（虚构）",
+        "company": "测试企业（虚构）",
+        "location": null,
+        "salary": null,
+        "status": "active",
+        "material_text": "【虚构岗位】负责企业协作产品。薪资未提及。",
+        "material_version": 1,
+        "unknown_fields": [
+          "salary",
+          "location"
+        ],
+        "rule_status": "draft",
+        "published_rule_pack_ref": null,
+        "draft_revision": 1,
+        "active_task_ids": [],
+        "counts": {
+          "applications": 0,
+          "pending_reports": 0
+        },
+        "provenance": {
+          "source_mode": "mock",
+          "inherited_source_modes": [
+            "mock"
+          ],
+          "source_modes": {
+            "candidate_material": "mock",
+            "model": null,
+            "research": null,
+            "phone": null
+          },
+          "fixture_only": true
+        },
+        "created_at": "2026-11-13T02:20:00Z",
+        "updated_at": "2026-11-13T02:20:00Z"
+      }
+    },
+    "task_accepted": {
+      "schema": "TaskAccepted",
+      "value": {
+        "task_id": "fixture-task-001",
+        "resource_type": "job",
+        "resource_id": "fixture-job-001",
+        "poll_after_ms": 3000
+      }
+    },
+    "task_processing": {
+      "schema": "Task",
+      "value": {
+        "id": "fixture-task-001",
+        "kind": "job_analysis",
+        "status": "running",
+        "revision": 2,
+        "resource_type": "job",
+        "resource_id": "fixture-job-001",
+        "input_refs": [
+          {
+            "kind": "material",
+            "id": "fixture-material-001",
+            "version": 1
+          }
+        ],
+        "result_refs": [],
+        "reason": null,
+        "error": null,
+        "attempt_count": 1,
+        "retryable": false,
+        "allowed_actions": [],
+        "poll_after_ms": 3000,
+        "usage": {
+          "tokens": null,
+          "search_count": null,
+          "call_seconds": null,
+          "estimated_cost": null,
+          "actual_cost": null,
+          "currency": "CNY"
+        },
+        "budget": {
+          "limit": null,
+          "reserved": null,
+          "settled": null,
+          "estimated": null,
+          "remaining": null,
+          "currency": "CNY",
+          "reconciliation_status": "not_required"
+        },
+        "created_at": "2026-11-13T02:20:00Z",
+        "started_at": "2026-11-13T02:20:00Z",
+        "finished_at": null
+      }
+    },
+    "task_failed": {
+      "schema": "Task",
+      "value": {
+        "id": "fixture-task-001",
+        "kind": "job_analysis",
+        "status": "failed",
+        "revision": 3,
+        "resource_type": "job",
+        "resource_id": "fixture-job-001",
+        "input_refs": [
+          {
+            "kind": "material",
+            "id": "fixture-material-001",
+            "version": 1
+          }
+        ],
+        "result_refs": [],
+        "reason": null,
+        "error": {
+          "code": "UPSTREAM_UNAVAILABLE",
+          "message": "仅用于联调的虚构错误",
+          "request_id": "fixture-request-001",
+          "details": null
+        },
+        "attempt_count": 1,
+        "retryable": true,
+        "allowed_actions": [
+          "retry_internal"
+        ],
+        "poll_after_ms": null,
+        "usage": {
+          "tokens": null,
+          "search_count": null,
+          "call_seconds": null,
+          "estimated_cost": null,
+          "actual_cost": null,
+          "currency": "CNY"
+        },
+        "budget": {
+          "limit": null,
+          "reserved": null,
+          "settled": null,
+          "estimated": null,
+          "remaining": null,
+          "currency": "CNY",
+          "reconciliation_status": "not_required"
+        },
+        "created_at": "2026-11-13T02:20:00Z",
+        "started_at": "2026-11-13T02:20:00Z",
+        "finished_at": "2026-11-13T02:20:00Z"
+      }
+    },
+    "application_insufficient": {
+      "schema": "Application",
+      "value": {
+        "id": "fixture-application-001",
+        "candidate_id": "fixture-candidate-001",
+        "job_id": "fixture-job-001",
+        "workflow_id": "fixture-workflow-001",
+        "revision": 1,
+        "candidate": {
+          "display_name": "虚构候选人甲",
+          "current_role": null,
+          "experience_text": null,
+          "education_text": null
+        },
+        "stage": "screening",
+        "screening_result": "unknown",
+        "evaluation_result": "pending",
+        "summary": "材料未说明个人职责范围，不能当作不满足。",
+        "gaps": [
+          "个人贡献待核实"
+        ],
+        "waiting_reason": {
+          "code": "EVIDENCE_MISSING",
+          "message": "关键经历缺少材料证据",
+          "missing_fields": []
+        },
+        "rule_pack_ref": {
+          "rule_pack_id": "fixture-rule-pack-001",
+          "version": 1,
+          "publication_status": "published",
+          "is_test_rule": true
+        },
+        "call_summary": null,
+        "report_summary": null,
+        "active_task_ids": [],
+        "allowed_actions": [
+          "screening_review"
+        ],
+        "provenance": {
+          "source_mode": "mock",
+          "inherited_source_modes": [
+            "mock"
+          ],
+          "source_modes": {
+            "candidate_material": "mock",
+            "model": "mock",
+            "research": "mock",
+            "phone": null
+          },
+          "fixture_only": true
+        },
+        "created_at": "2026-11-13T02:20:00Z",
+        "updated_at": "2026-11-13T02:20:00Z",
+        "artifact_slots": [
+          {
+            "type": "D03",
+            "state": "available",
+            "reason": null,
+            "artifact_ref": {
+              "artifact_id": "fixture-D03-001",
+              "version": 1
+            }
+          },
+          {
+            "type": "D04",
+            "state": "available",
+            "reason": null,
+            "artifact_ref": {
+              "artifact_id": "fixture-D04-001",
+              "version": 1
+            }
+          },
+          {
+            "type": "D05",
+            "state": "available",
+            "reason": null,
+            "artifact_ref": {
+              "artifact_id": "fixture-D05-001",
+              "version": 1
+            }
+          },
+          {
+            "type": "D06",
+            "state": "available",
+            "reason": null,
+            "artifact_ref": {
+              "artifact_id": "fixture-D06-001",
+              "version": 1
+            }
+          },
+          {
+            "type": "D07",
+            "state": "not_executed",
+            "reason": {
+              "code": "UPSTREAM_NOT_READY",
+              "message": "等待有效上游输入",
+              "missing_fields": []
+            },
+            "artifact_ref": null
+          },
+          {
+            "type": "D08",
+            "state": "not_executed",
+            "reason": {
+              "code": "UPSTREAM_NOT_READY",
+              "message": "等待有效上游输入",
+              "missing_fields": []
+            },
+            "artifact_ref": null
+          },
+          {
+            "type": "D09",
+            "state": "not_executed",
+            "reason": {
+              "code": "UPSTREAM_NOT_READY",
+              "message": "等待有效上游输入",
+              "missing_fields": []
+            },
+            "artifact_ref": null
+          },
+          {
+            "type": "D10",
+            "state": "not_executed",
+            "reason": {
+              "code": "UPSTREAM_NOT_READY",
+              "message": "等待有效上游输入",
+              "missing_fields": []
+            },
+            "artifact_ref": null
+          }
+        ]
+      }
+    },
+    "screening_unknown_artifact": {
+      "schema": "Artifact",
+      "value": {
+        "artifact_id": "fixture-D06-001",
+        "type": "D06",
+        "version": 1,
+        "status": "valid",
+        "job_id": "fixture-job-001",
+        "application_id": "fixture-application-001",
+        "workflow_id": "fixture-workflow-001",
+        "step": "screening",
+        "input_refs": [
+          {
+            "kind": "artifact",
+            "id": "fixture-D05-001",
+            "version": 1
+          }
+        ],
+        "rule_pack_ref": {
+          "rule_pack_id": "fixture-rule-pack-001",
+          "version": 1,
+          "publication_status": "published",
+          "is_test_rule": true
+        },
+        "evidence_refs": [
+          {
+            "evidence_id": "fixture-evidence-001",
+            "version": 1
+          }
+        ],
+        "provenance": {
+          "source_mode": "mock",
+          "inherited_source_modes": [
+            "mock"
+          ],
+          "source_modes": {
+            "candidate_material": "mock",
+            "model": "mock",
+            "research": "mock",
+            "phone": null
+          },
+          "fixture_only": true
+        },
+        "generated_at": "2026-11-13T02:20:00Z",
+        "generator": {
+          "kind": "model",
+          "model": null,
+          "method_version": "fixture-method-v1"
+        },
+        "unknowns": [
+          "个人职责未知"
+        ],
+        "validation": {
+          "passed": true,
+          "issues": []
+        },
+        "correction_of_ref": null,
+        "superseded_by_ref": null,
+        "content_markdown": "【模拟初筛】信息不足，保留未知，不生成电话任务。",
+        "structured_content": {
+          "conditions": [
+            {
+              "condition_id": "fixture-condition-001",
+              "result": "unknown",
+              "reason": "虚构材料未说明职责",
+              "evidence_refs": [
+                {
+                  "evidence_id": "fixture-evidence-001",
+                  "version": 1
+                }
+              ]
+            }
+          ],
+          "conclusion": "unknown",
+          "override_of_ref": null
+        }
+      }
+    },
+    "unknown_evidence": {
+      "schema": "Evidence",
+      "value": {
+        "evidence_id": "fixture-evidence-001",
+        "version": 1,
+        "subject_type": "application",
+        "subject_id": "fixture-application-001",
+        "category": "U",
+        "source_type": "missing_information",
+        "title": "虚构材料缺失项",
+        "quote": null,
+        "original_material_ref": null,
+        "location": {
+          "page": null,
+          "section": "职责段未提及",
+          "start_ms": null,
+          "end_ms": null
+        },
+        "public_url": null,
+        "source_date": null,
+        "retrieved_at": "2026-11-13T02:20:00Z",
+        "status": "valid",
+        "corrects_ref": null,
+        "provenance": {
+          "source_mode": "mock",
+          "inherited_source_modes": [
+            "mock"
+          ],
+          "source_modes": {
+            "candidate_material": "mock",
+            "model": "mock",
+            "research": "mock",
+            "phone": null
+          },
+          "fixture_only": true
+        }
+      }
+    },
+    "call_stopping": {
+      "schema": "Call",
+      "value": {
+        "id": "fixture-call-001",
+        "application_id": "fixture-application-001",
+        "candidate_id": "fixture-candidate-001",
+        "job_id": "fixture-job-001",
+        "workflow_id": "fixture-workflow-001",
+        "revision": 4,
+        "status": "in_progress",
+        "stop_status": "requested",
+        "reason": {
+          "code": "STOP_CONFIRMATION_PENDING",
+          "message": "已请求停止，等待平台确认",
+          "missing_fields": []
+        },
+        "rule_pack_ref": {
+          "rule_pack_id": "fixture-rule-pack-001",
+          "version": 1,
+          "publication_status": "published",
+          "is_test_rule": true
+        },
+        "authorization_ref": null,
+        "scheduled_at": null,
+        "attempt_count": 1,
+        "latest_attempt_id": "fixture-attempt-001",
+        "prerequisites": [
+          {
+            "name": "contact_authorized",
+            "status": "unknown",
+            "reason": {
+              "code": "FIXTURE_ONLY",
+              "message": "虚构记录，不可用于真实外呼",
+              "missing_fields": []
+            }
+          }
+        ],
+        "allowed_actions": [],
+        "provenance": {
+          "source_mode": "mock",
+          "inherited_source_modes": [
+            "mock"
+          ],
+          "source_modes": {
+            "candidate_material": "mock",
+            "model": "mock",
+            "research": "mock",
+            "phone": "mock"
+          },
+          "fixture_only": true
+        },
+        "created_at": "2026-11-13T02:20:00Z",
+        "updated_at": "2026-11-13T02:20:00Z"
+      }
+    },
+    "report_pending_review": {
+      "schema": "Report",
+      "value": {
+        "id": "fixture-report-001",
+        "application_id": "fixture-application-001",
+        "job_id": "fixture-job-001",
+        "type": "D10",
+        "version": 1,
+        "revision": 1,
+        "status": "pending_review",
+        "artifact_ref": {
+          "artifact_id": "fixture-D10-001",
+          "version": 1
+        },
+        "evaluation_ref": {
+          "artifact_id": "fixture-D09-001",
+          "version": 1
+        },
+        "rule_pack_ref": {
+          "rule_pack_id": "fixture-rule-pack-001",
+          "version": 1,
+          "publication_status": "published",
+          "is_test_rule": true
+        },
+        "content_markdown": "【模拟推荐草案】个人职责来自虚构候选人自述；不把公司成果归为个人贡献。",
+        "unknowns": [
+          "个人贡献未独立核实"
+        ],
+        "review": null,
+        "provenance": {
+          "source_mode": "mock",
+          "inherited_source_modes": [
+            "mock"
+          ],
+          "source_modes": {
+            "candidate_material": "mock",
+            "model": "mock",
+            "research": "mock",
+            "phone": "mock"
+          },
+          "fixture_only": true
+        },
+        "is_current": true,
+        "allowed_actions": [
+          "approve",
+          "reject",
+          "revise"
+        ],
+        "created_at": "2026-11-13T02:20:00Z",
+        "updated_at": "2026-11-13T02:20:00Z"
+      }
+    },
+    "permission_rejected": {
+      "schema": "Error",
+      "value": {
+        "code": "PERMISSION_DENIED",
+        "message": "没有执行此操作的权限",
+        "request_id": "fixture-request-001",
+        "details": null
+      }
+    },
+    "version_conflict": {
+      "schema": "Error",
+      "value": {
+        "code": "VERSION_CONFLICT",
+        "message": "内容已更新，请重新读取当前版本",
+        "request_id": "fixture-request-001",
+        "details": {
+          "current_revision": 4,
+          "current_version": 2,
+          "fields": []
+        }
+      }
+    },
+    "unapproved_export": {
+      "schema": "Error",
+      "value": {
+        "code": "REPORT_NOT_APPROVED",
+        "message": "当前版本尚未批准",
+        "request_id": "fixture-request-001",
+        "details": null
+      }
+    },
+    "screening_rejected": {
+      "schema": "Application",
+      "value": {
+        "id": "fixture-application-rejected",
+        "candidate_id": "fixture-candidate-001",
+        "job_id": "fixture-job-001",
+        "workflow_id": "fixture-workflow-001",
+        "revision": 1,
+        "candidate": {
+          "display_name": "虚构候选人甲",
+          "current_role": null,
+          "experience_text": null,
+          "education_text": null
+        },
+        "stage": "screening",
+        "screening_result": "rejected",
+        "evaluation_result": "pending",
+        "summary": "【模拟】虚构材料明确不满足已确认条件，保留依据。",
+        "gaps": [],
+        "waiting_reason": null,
+        "rule_pack_ref": {
+          "rule_pack_id": "fixture-rule-pack-001",
+          "version": 1,
+          "publication_status": "published",
+          "is_test_rule": true
+        },
+        "call_summary": null,
+        "report_summary": null,
+        "active_task_ids": [],
+        "allowed_actions": [
+          "screening_review"
+        ],
+        "provenance": {
+          "source_mode": "mock",
+          "inherited_source_modes": [
+            "mock"
+          ],
+          "source_modes": {
+            "candidate_material": "mock",
+            "model": "mock",
+            "research": "mock",
+            "phone": null
+          },
+          "fixture_only": true
+        },
+        "created_at": "2026-11-13T02:20:00Z",
+        "updated_at": "2026-11-13T02:20:00Z",
+        "artifact_slots": [
+          {
+            "type": "D03",
+            "state": "available",
+            "reason": null,
+            "artifact_ref": {
+              "artifact_id": "fixture-D03-001",
+              "version": 1
+            }
+          },
+          {
+            "type": "D04",
+            "state": "available",
+            "reason": null,
+            "artifact_ref": {
+              "artifact_id": "fixture-D04-001",
+              "version": 1
+            }
+          },
+          {
+            "type": "D05",
+            "state": "available",
+            "reason": null,
+            "artifact_ref": {
+              "artifact_id": "fixture-D05-001",
+              "version": 1
+            }
+          },
+          {
+            "type": "D06",
+            "state": "available",
+            "reason": null,
+            "artifact_ref": {
+              "artifact_id": "fixture-D06-001",
+              "version": 1
+            }
+          },
+          {
+            "type": "D07",
+            "state": "not_executed",
+            "reason": {
+              "code": "UPSTREAM_NOT_READY",
+              "message": "等待有效上游输入",
+              "missing_fields": []
+            },
+            "artifact_ref": null
+          },
+          {
+            "type": "D08",
+            "state": "not_executed",
+            "reason": {
+              "code": "UPSTREAM_NOT_READY",
+              "message": "等待有效上游输入",
+              "missing_fields": []
+            },
+            "artifact_ref": null
+          },
+          {
+            "type": "D09",
+            "state": "not_executed",
+            "reason": {
+              "code": "UPSTREAM_NOT_READY",
+              "message": "等待有效上游输入",
+              "missing_fields": []
+            },
+            "artifact_ref": null
+          },
+          {
+            "type": "D10",
+            "state": "not_executed",
+            "reason": {
+              "code": "UPSTREAM_NOT_READY",
+              "message": "等待有效上游输入",
+              "missing_fields": []
+            },
+            "artifact_ref": null
+          }
+        ]
+      }
+    },
+    "call_external_unknown": {
+      "schema": "Call",
+      "value": {
+        "id": "fixture-call-001",
+        "application_id": "fixture-application-001",
+        "candidate_id": "fixture-candidate-001",
+        "job_id": "fixture-job-001",
+        "workflow_id": "fixture-workflow-001",
+        "revision": 4,
+        "status": "reconciling",
+        "stop_status": "unknown",
+        "reason": {
+          "code": "EXTERNAL_RESULT_UNKNOWN",
+          "message": "先按已有请求 ID 查询，禁止重拨",
+          "missing_fields": []
+        },
+        "rule_pack_ref": {
+          "rule_pack_id": "fixture-rule-pack-001",
+          "version": 1,
+          "publication_status": "published",
+          "is_test_rule": true
+        },
+        "authorization_ref": null,
+        "scheduled_at": null,
+        "attempt_count": 1,
+        "latest_attempt_id": "fixture-attempt-001",
+        "prerequisites": [
+          {
+            "name": "contact_authorized",
+            "status": "unknown",
+            "reason": {
+              "code": "FIXTURE_ONLY",
+              "message": "虚构记录，不可用于真实外呼",
+              "missing_fields": []
+            }
+          }
+        ],
+        "allowed_actions": [
+          "reconcile"
+        ],
+        "provenance": {
+          "source_mode": "mock",
+          "inherited_source_modes": [
+            "mock"
+          ],
+          "source_modes": {
+            "candidate_material": "mock",
+            "model": "mock",
+            "research": "mock",
+            "phone": "mock"
+          },
+          "fixture_only": true
+        },
+        "created_at": "2026-11-13T02:20:00Z",
+        "updated_at": "2026-11-13T02:20:00Z"
+      }
+    },
+    "phone_declined": {
+      "schema": "CallAttempt",
+      "value": {
+        "id": "fixture-attempt-declined",
+        "call_id": "fixture-call-001",
+        "sequence": 1,
+        "external_request_id": "fixture-external-001",
+        "external_session_id": null,
+        "status": "declined",
+        "stop_status": "none",
+        "requested_at": "2026-11-13T02:20:00Z",
+        "connected_at": null,
+        "ended_at": "2026-11-13T02:20:00Z",
+        "result_reason": {
+          "code": "CANDIDATE_DECLINED",
+          "message": "【模拟】候选人拒绝沟通，不形成能力结论",
+          "missing_fields": []
+        },
+        "usage": {
+          "tokens": null,
+          "search_count": null,
+          "call_seconds": null,
+          "estimated_cost": null,
+          "actual_cost": null,
+          "currency": "CNY"
+        },
+        "billing_status": "unknown"
+      }
+    },
+    "report_approved": {
+      "schema": "Report",
+      "value": {
+        "id": "fixture-report-001",
+        "application_id": "fixture-application-001",
+        "job_id": "fixture-job-001",
+        "type": "D10",
+        "version": 1,
+        "revision": 2,
+        "status": "approved",
+        "artifact_ref": {
+          "artifact_id": "fixture-D10-001",
+          "version": 1
+        },
+        "evaluation_ref": {
+          "artifact_id": "fixture-D09-001",
+          "version": 1
+        },
+        "rule_pack_ref": {
+          "rule_pack_id": "fixture-rule-pack-001",
+          "version": 1,
+          "publication_status": "published",
+          "is_test_rule": true
+        },
+        "content_markdown": "【模拟推荐草案】个人职责来自虚构候选人自述；不把公司成果归为个人贡献。",
+        "unknowns": [
+          "个人贡献未独立核实"
+        ],
+        "review": {
+          "action": "approve",
+          "reason": "仅验证模拟审核，不证明真实候选人质量",
+          "reviewer_id": "fixture-user-001",
+          "reviewed_at": "2026-11-13T02:20:00Z",
+          "version": 1
+        },
+        "provenance": {
+          "source_mode": "mock",
+          "inherited_source_modes": [
+            "mock"
+          ],
+          "source_modes": {
+            "candidate_material": "mock",
+            "model": "mock",
+            "research": "mock",
+            "phone": "mock"
+          },
+          "fixture_only": true
+        },
+        "is_current": true,
+        "allowed_actions": [
+          "export",
+          "revise"
+        ],
+        "created_at": "2026-11-13T02:20:00Z",
+        "updated_at": "2026-11-13T02:20:00Z"
+      }
+    },
+    "report_revised_needs_review": {
+      "schema": "Report",
+      "value": {
+        "id": "fixture-report-001",
+        "application_id": "fixture-application-001",
+        "job_id": "fixture-job-001",
+        "type": "D10",
+        "version": 2,
+        "revision": 1,
+        "status": "pending_review",
+        "artifact_ref": {
+          "artifact_id": "fixture-D10-001",
+          "version": 2
+        },
+        "evaluation_ref": {
+          "artifact_id": "fixture-D09-001",
+          "version": 1
+        },
+        "rule_pack_ref": {
+          "rule_pack_id": "fixture-rule-pack-001",
+          "version": 1,
+          "publication_status": "published",
+          "is_test_rule": true
+        },
+        "content_markdown": "【人工修订，含上游模拟】个人职责尚未独立核实。",
+        "unknowns": [
+          "个人贡献未独立核实"
+        ],
+        "review": null,
+        "provenance": {
+          "source_mode": "manual",
+          "inherited_source_modes": [
+            "mock"
+          ],
+          "source_modes": {
+            "candidate_material": "mock",
+            "model": "mock",
+            "research": "mock",
+            "phone": "mock"
+          },
+          "fixture_only": true
+        },
+        "is_current": true,
+        "allowed_actions": [
+          "approve",
+          "reject",
+          "revise"
+        ],
+        "created_at": "2026-11-13T02:20:00Z",
+        "updated_at": "2026-11-13T02:20:00Z"
+      }
+    },
+    "callback_duplicate": {
+      "schema": "CallbackReceipt",
+      "value": {
+        "accepted": true,
+        "disposition": "duplicate",
+        "call_id": "fixture-call-001"
+      }
+    },
+    "batch_mixed": {
+      "schema": "BatchAccepted",
+      "value": {
+        "batch_id": "fixture-batch-001",
+        "task_id": "fixture-batch-task-001",
+        "items": [
+          {
+            "item_id": "fixture-item-1",
+            "client_item_id": "fixture-upload-1",
+            "disposition": "accepted",
+            "application_id": null,
+            "error": null
+          },
+          {
+            "item_id": "fixture-item-2",
+            "client_item_id": "fixture-upload-2",
+            "disposition": "duplicate",
+            "application_id": "fixture-application-001",
+            "error": null
+          },
+          {
+            "item_id": "fixture-item-3",
+            "client_item_id": "fixture-upload-3",
+            "disposition": "invalid",
+            "application_id": null,
+            "error": {
+              "code": "UNSUPPORTED_FILE_TYPE",
+              "message": "仅用于联调的虚构错误",
+              "request_id": "fixture-request-001",
+              "details": null
+            }
+          }
+        ],
+        "poll_after_ms": 3000
+      }
+    },
+    "rule_pack_test_published": {
+      "schema": "RulePack",
+      "value": {
+        "rule_pack_id": "fixture-rule-pack-001",
+        "version": 1,
+        "publication_status": "published",
+        "is_test_rule": true,
+        "job_id": "fixture-job-001",
+        "content": {
+          "screening_text": "【测试标准】具备企业软件交付经历；缺证据不判不符。",
+          "interview_text": "【测试标准】核实问题定义与个人职责，未覆盖维度标记未评估。",
+          "recommendation_text": "【测试标准】关键维度证据充分且人工复核后形成推荐草案。",
+          "screening_conditions": [
+            {
+              "id": "fixture-condition-001",
+              "label": "完整交付经历",
+              "required_evidence": [
+                "原始简历经历与职责"
+              ],
+              "unknown_action": "needs_information",
+              "mismatch_action": "manual_review"
+            }
+          ],
+          "interview_dimensions": [
+            {
+              "id": "fixture-dimension-001",
+              "label": "个人职责",
+              "rubric": "测试口径：区分本人决策与团队实现，依据明确的自述与证据。",
+              "weight": null,
+              "required_evidence": [
+                "职责解释与具体例子"
+              ],
+              "missing_action": "not_evaluated"
+            }
+          ],
+          "recommendation_policy": {
+            "required_dimension_ids": [
+              "fixture-dimension-001"
+            ],
+            "decision_method": "rubric",
+            "threshold": null,
+            "manual_review_conditions": [
+              "个人贡献未独立核实"
+            ]
+          },
+          "research_config_ref": {
+            "config_id": "fixture-research-config",
+            "version": 1
+          },
+          "phone_config_ref": {
+            "config_id": "fixture-phone-config",
+            "version": 1
+          },
+          "method_config_ref": {
+            "config_id": "fixture-method-config",
+            "version": 1
+          }
+        },
+        "d01_ref": {
+          "artifact_id": "fixture-D01-001",
+          "version": 1
+        },
+        "d02_ref": {
+          "artifact_id": "fixture-D02-001",
+          "version": 1
+        },
+        "published_by": "fixture-user-001",
+        "published_at": "2026-11-13T02:20:00Z"
+      }
+    },
+    "rule_draft_request": {
+      "schema": "SaveRuleDraftInput",
+      "value": {
+        "expected_draft_revision": 1,
+        "content": {
+          "screening_text": "【测试标准】具备企业软件交付经历；缺证据不判不符。",
+          "interview_text": "【测试标准】核实问题定义与个人职责，未覆盖维度标记未评估。",
+          "recommendation_text": "【测试标准】关键维度证据充分且人工复核后形成推荐草案。",
+          "screening_conditions": [
+            {
+              "id": "fixture-condition-001",
+              "label": "完整交付经历",
+              "required_evidence": [
+                "原始简历经历与职责"
+              ],
+              "unknown_action": "needs_information",
+              "mismatch_action": "manual_review"
+            }
+          ],
+          "interview_dimensions": [
+            {
+              "id": "fixture-dimension-001",
+              "label": "个人职责",
+              "rubric": "测试口径：区分本人决策与团队实现，依据明确的自述与证据。",
+              "weight": null,
+              "required_evidence": [
+                "职责解释与具体例子"
+              ],
+              "missing_action": "not_evaluated"
+            }
+          ],
+          "recommendation_policy": {
+            "required_dimension_ids": [
+              "fixture-dimension-001"
+            ],
+            "decision_method": "rubric",
+            "threshold": null,
+            "manual_review_conditions": [
+              "个人贡献未独立核实"
+            ]
+          },
+          "research_config_ref": {
+            "config_id": "fixture-research-config",
+            "version": 1
+          },
+          "phone_config_ref": {
+            "config_id": "fixture-phone-config",
+            "version": 1
+          },
+          "method_config_ref": {
+            "config_id": "fixture-method-config",
+            "version": 1
+          }
+        }
+      }
+    },
+    "publish_rules_request": {
+      "schema": "PublishRulesInput",
+      "value": {
+        "expected_draft_revision": 2,
+        "d01_ref": {
+          "artifact_id": "fixture-D01-001",
+          "version": 1
+        },
+        "d02_ref": {
+          "artifact_id": "fixture-D02-001",
+          "version": 1
+        },
+        "is_test_rule": true,
+        "confirmation_note": "只确认隔离测试规则，不用于真实招聘或外呼。"
+      }
+    },
+    "create_job_request": {
+      "schema": "CreateJobInput",
+      "value": {
+        "title": "产品经理（虚构）",
+        "company": "测试企业（虚构）",
+        "location": null,
+        "salary": null,
+        "material_text": "【虚构岗位】负责企业协作产品。薪资未提及。"
+      }
+    },
+    "review_report_request": {
+      "schema": "ReviewReportInput",
+      "value": {
+        "expected_version": 1,
+        "expected_revision": 1,
+        "action": "approve",
+        "reason": "仅验证模拟审核：已查看未知与来源。"
+      }
+    },
+    "text_batch_request": {
+      "schema": "TextBatchInput",
+      "value": {
+        "items": [
+          {
+            "client_item_id": "fixture-text-001",
+            "name": "虚构材料",
+            "text": "【虚构简历】仅用于联调，无真实联系方式。"
+          }
+        ]
+      }
+    },
+    "authorization_request": {
+      "schema": "ContactAuthorizationInput",
+      "value": {
+        "expected_authorization_version": null,
+        "contact_point_id": "fixture-contact-point-001",
+        "decision": "granted",
+        "scope": [
+          "telephone"
+        ],
+        "evidence_refs": [
+          {
+            "evidence_id": "fixture-authorization-proof",
+            "version": 1
+          }
+        ],
+        "notice_version": "fixture-notice-v1",
+        "valid_from": "2026-11-13T02:20:00Z",
+        "valid_until": null,
+        "reason": "只验证授权记录形状，虚构引用不能驱动真实拨号。"
+      }
+    },
+    "correction_request": {
+      "schema": "CorrectionInput",
+      "value": {
+        "target_artifact_ref": {
+          "artifact_id": "fixture-D08-001",
+          "version": 1
+        },
+        "changes": [
+          {
+            "path": "/structured_content/qa/0/answer",
+            "value": "【模拟更正】本人只负责访谈与需求排序，工程实现由团队负责。",
+            "reason": "更正个人职责表述"
+          }
+        ],
+        "evidence_refs": [],
+        "reason": "仅验证结构化事实更正形状，影响范围由服务端核验。"
+      }
+    },
+    "session_success": {
+      "schema": "Session",
+      "value": {
+        "user": {
+          "id": "fixture-user-001",
+          "display_name": "虚构联调用户"
+        },
+        "organization": {
+          "id": "fixture-org-001",
+          "name": "虚构测试机构"
+        },
+        "permissions": [
+          "jobs:write",
+          "applications:read",
+          "reports:review"
+        ],
+        "csrf_token": "<server-generated-csrf-placeholder>",
+        "expires_at": "2026-11-13T10:20:00Z",
+        "capabilities": {
+          "modules": [
+            "intake_mock",
+            "outreach_mock"
+          ],
+          "mock_execution_allowed": true,
+          "import_limits": {
+            "max_items": 10,
+            "max_file_bytes": 5242880,
+            "max_text_chars": 30000
+          }
+        }
+      }
+    },
+    "readiness_success": {
+      "schema": "Readiness",
+      "value": {
+        "status": "ready",
+        "checks": {
+          "database": "ok"
+        },
+        "stage": "initialization"
+      }
+    },
+    "call_cancelled": {
+      "schema": "Call",
+      "value": {
+        "id": "fixture-call-001",
+        "application_id": "fixture-application-001",
+        "candidate_id": "fixture-candidate-001",
+        "job_id": "fixture-job-001",
+        "workflow_id": "fixture-workflow-001",
+        "revision": 5,
+        "status": "cancelled",
+        "stop_status": "none",
+        "reason": {
+          "code": "QUEUE_CANCELLED",
+          "message": "【模拟】已取消排队，没有拨号。",
+          "missing_fields": []
+        },
+        "rule_pack_ref": {
+          "rule_pack_id": "fixture-rule-pack-001",
+          "version": 1,
+          "publication_status": "published",
+          "is_test_rule": true
+        },
+        "authorization_ref": null,
+        "scheduled_at": null,
+        "attempt_count": 0,
+        "latest_attempt_id": null,
+        "prerequisites": [
+          {
+            "name": "contact_authorized",
+            "status": "unknown",
+            "reason": {
+              "code": "FIXTURE_ONLY",
+              "message": "虚构记录，不可用于真实外呼",
+              "missing_fields": []
+            }
+          }
+        ],
+        "allowed_actions": [],
+        "provenance": {
+          "source_mode": "mock",
+          "inherited_source_modes": [
+            "mock"
+          ],
+          "source_modes": {
+            "candidate_material": "mock",
+            "model": "mock",
+            "research": "mock",
+            "phone": null
+          },
+          "fixture_only": true
+        },
+        "created_at": "2026-11-13T02:20:00Z",
+        "updated_at": "2026-11-13T02:20:00Z"
+      }
+    },
+    "retryInternalTask_accepted": {
+      "schema": "TaskAccepted",
+      "value": {
+        "task_id": "fixture-task-retryInternalTask",
+        "resource_type": "task",
+        "resource_id": "fixture-task-001",
+        "poll_after_ms": 3000
+      }
+    },
+    "reconcileCall_accepted": {
+      "schema": "TaskAccepted",
+      "value": {
+        "task_id": "fixture-task-reconcileCall",
+        "resource_type": "call",
+        "resource_id": "fixture-call-001",
+        "poll_after_ms": 3000
+      }
+    },
+    "regenerateReport_accepted": {
+      "schema": "TaskAccepted",
+      "value": {
+        "task_id": "fixture-task-regenerateReport",
+        "resource_type": "report",
+        "resource_id": "fixture-report-001",
+        "poll_after_ms": 3000
+      }
+    },
+    "recomputeApplication_accepted": {
+      "schema": "TaskAccepted",
+      "value": {
+        "task_id": "fixture-task-recomputeApplication",
+        "resource_type": "application",
+        "resource_id": "fixture-application-001",
+        "poll_after_ms": 3000
+      }
+    }
+  }
+}

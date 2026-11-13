@@ -1,8 +1,12 @@
-# Cheeta
+# Cheetah 猎报
+
+**招对人，快人一步。**
+
+Cheetah 意为“猎豹”；中文名“猎报”，“猎”取自猎头，“报”取自报告与报名。以猎豹的敏捷与专注为意象，让专业判断更快变成有据可循的推荐。
 
 面向猎头的网页端 Agent 自动化工作流：梳理 HR 招聘需求，批量分析与初筛简历，安排 AI 电话沟通，生成内部评估和候选人推荐报告。
 
-**当前为工程初始化版本。** 已建立前后端骨架、健康检查、公共交接合同、数据库迁移入口和自动检查配置。登录、业务任务执行、模型检索、真实电话、报告审核与导出尚未实现。
+**当前为前端交互演示与后端初始化版本。** 前端已实现工作台、岗位与规则草案、简历暂存校验、候选人产物与证据查看、模拟电话状态、模拟报告版本审核与 Markdown 下载。所有样例均为虚构，修改仅存于当前页面内存，刷新重置。后端仅有健康检查和公共交接合同；真实登录、持久化业务任务、模型检索、电话与服务端报告审核导出尚未实现。
 
 ## 架构与分工
 
@@ -81,6 +85,7 @@ uv run python scripts/export_contract_schema.py --check
 cd frontend
 npm ci
 npm run check
+npm test
 ```
 
 后端新增或修改交接模型后，运行 `uv run python scripts/export_contract_schema.py` 更新 JSON Schema，并检查样例和消费方。CI 对后端检查、前端构建和合同一致性分别执行验证。
@@ -96,11 +101,14 @@ npm run check
 
 ## 项目文档
 
+- [品牌故事与文案](docs/Cheetah_品牌故事与文案_V1.md)
 - [协作规则](AGENTS.md)
-- [产品需求文档 V0.5](docs/Cheeta_产品需求文档_V0.5.md)
-- [一天极限开发计划](docs/Cheeta_一天极限开发计划_V0.1.md)
+- [产品需求文档 V0.5](docs/Cheetah_产品需求文档_V0.5.md)
+- [一天极限开发计划](docs/Cheetah_一天极限开发计划_V0.1.md)
 - [交接合同](docs/contracts/README.md)
+- [前后端接口对接文档与 OpenAPI 草案](docs/api/README.md)
 - [后端开发约定](backend/AGENTS.md)
 - [前端开发约定](frontend/AGENTS.md)
+- [前端演示范围与接入说明](docs/frontend-delivery.md)
 
 下一步先确认 API 合同与外部语音平台能力，再按开发计划并行推进。真实／模拟来源必须明确，实际外呼前须具备有效联系前提和停止能力；未审核的推荐版本不能对外交付。

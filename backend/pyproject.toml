@@ -1,7 +1,7 @@
 [project]
-name = "cheeta-backend"
+name = "cheetah-backend"
 version = "0.1.0"
-description = "Cheeta headhunter workflow backend scaffold"
+description = "Cheetah headhunter workflow backend scaffold"
 requires-python = ">=3.12,<3.14"
 dependencies = [
   "alembic>=1.15,<2",

@@ -1,1 +1,1 @@
-"""Cheeta API package."""
+"""Cheetah API package."""

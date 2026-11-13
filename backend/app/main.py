@@ -15,7 +15,7 @@ from app.modules.outreach.router import router as outreach_router
 def create_app(settings: Settings | None = None) -> FastAPI:
     runtime_settings = settings if settings is not None else get_settings()
     application = FastAPI(
-        title="Cheeta API",
+        title="Cheetah API",
         version="0.1.0",
         description="Scaffold only. Business endpoints are not implemented.",
     )
