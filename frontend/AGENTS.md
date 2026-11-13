@@ -12,3 +12,4 @@
 - 优先复用组件库和公共产物查看器，不在首日引入另一套状态管理或设计系统。
 - 检查：`npm run check`。界面变更可根据风险补充实际浏览器验证；不要把仅构建通过说成视觉或业务联调已通过。
 - `package.json` 的 minimatch override 用于规避 GHSA-g3hv-75wg-m249；上游工具升级后再评估移除，调整时运行 lint、构建与依赖检查。
+- 锁文件变更需验证清洁 `npm ci` 和 Linux CI；保留 Vite/Rolldown 非当前系统的可选依赖记录，必要时在无 node_modules 的临时目录重新生成锁文件。
