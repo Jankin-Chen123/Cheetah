@@ -2,6 +2,16 @@
 
 本文件补充根目录 `AGENTS.md`。
 
+## 接入后端前先读
+
+- [前端交付范围](../docs/frontend-delivery.md)：哪些是本地演示，哪些需要替换为真实服务端状态。
+- [接口总文档](../docs/api/README.md)、[OpenAPI 草案](../docs/api/openapi.v1.json)：统一路径、请求响应、Cookie／CSRF、错误、分页、幂等和版本校验。
+- [数据模型与映射](../docs/api/models.md)：建立 API 类型与视图转换层，核对 `real/live`、岗位关联 ID、规则版本、停止状态及报告审批状态，不能直接把演示模型当作 HTTP 请求体。
+- [接入与验收指引](../docs/api/integration-guide.md)、[虚构样例](../docs/api/examples.json)：依次替换页面调用、处理轮询／离页／会话失效和下载错误。接口仍为草案，接入前与当前后端实现对齐，失败时不能自动用样例冒充成功。
+- 品牌文案或图形调整时参考 [品牌故事与文案](../docs/Cheetah_品牌故事与文案_V1.md)，不把品牌愿景写成已实现能力。
+
+## 实现与检查约定
+
 - 使用 React、TypeScript、Vite、Ant Design；Node.js 24。依赖变更提交 `package-lock.json`，安装使用 `npm ci`。
 - 所有后端请求通过 `src/api/`，默认 `/api/v1`。开发代理在 Vite，容器入口代理在 Nginx，组件内不硬编码后端地址。
 - 浏览器变量只保存公开配置，不能放模型密钥、语音密钥或数据库连接串。
