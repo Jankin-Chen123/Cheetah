@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.config import Settings
 from app.integrations.bailian import generate_json
 from app.modules.outreach.artifacts import invalidate_downstream, save_artifact
+from app.modules.outreach.career_confirmation import validate_career_conflict_link
 from app.modules.outreach.handoff import preparation_metadata, require_extraction_session
 from app.modules.outreach.models import OutreachCase
 from app.modules.outreach.postprocessing_prompts import MINUTES_INSTRUCTION, PROMPT_VERSION
@@ -65,11 +66,35 @@ def extraction_indicators(case):
     ]
 
 
+class CareerConflict(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    field_path: str = Field(max_length=128)
+    resume_value: str = Field(min_length=1, max_length=500)
+    spoken_value: str = Field(min_length=1, max_length=500)
+    answer_id: str = Field(max_length=128)
+    answer_quote: str = Field(min_length=1, max_length=4000)
+
+
+def extraction_context(case, answers, indicators):
+    resume = case.session_data.get("upstream_content", {}).get("D03", {})
+    return {
+        "schema": Minutes.model_json_schema(),
+        "answers": answers,
+        "indicators": indicators,
+        "career_source": {
+            section: resume.get(section, {}) for section in ("profile", "job_preferences")
+        }
+        if isinstance(resume, dict)
+        else {},
+    }
+
+
 class Minutes(BaseModel):
     model_config = ConfigDict(extra="forbid")
     facts: list[MinuteFact] = Field(max_length=50)
     gaps: list[str] = Field(default_factory=list, max_length=30)
     conflicts: list[str] = Field(default_factory=list, max_length=30)
+    career_conflicts: list[CareerConflict] = Field(default_factory=list, max_length=20)
     indicator_evidence: list[IndicatorEvidence] = Field(default_factory=list, max_length=100)
 
 
@@ -99,6 +124,10 @@ def validate_indicator_evidence(minutes, indicators, answers, *, require_fact_li
     allowed = {answer["id"] for answer in answers if answer["text"].strip()}
     facts = {fact.evidence_id: fact for fact in minutes.facts if fact.evidence_id}
     for row in minutes.indicator_evidence:
+        if "answer_ids" not in row.model_fields_set and all(
+            key in facts for key in row.evidence_ids
+        ):
+            row.answer_ids = list(dict.fromkeys(facts[key].answer_id for key in row.evidence_ids))
         if (
             not set(row.answer_ids).issubset(allowed)
             or (row.evidence_sufficiency != "INSUFFICIENT" and not row.answer_ids)
@@ -224,6 +253,19 @@ def evidence_matrix(minutes, indicators, answers, execution_session):
     return {"evidence_items": evidence_items, "dimension_coverage": coverage}
 
 
+def require_evaluation_ready(case, minutes):
+    status = minutes.content.get("extraction_status")
+    if status == "READY_FOR_A08":
+        return
+    if (
+        case.snapshot.get("fixture_only")
+        and not case.session_data.get("a06_session")
+        and status in {None, "DEMO_PREVIEW"}
+    ):
+        return
+    raise ValueError("MINUTES_REVIEW_REQUIRED")
+
+
 def generate_minutes(
     session: Session, case: OutreachCase, settings: Settings, *, model_result=None
 ):
@@ -237,11 +279,7 @@ def generate_minutes(
         else generate_json(
             settings.model_copy(update={"model_max_tokens": settings.extraction_max_tokens}),
             MINUTES_INSTRUCTION,
-            {
-                "schema": Minutes.model_json_schema(),
-                "answers": answers,
-                "indicators": extraction_indicators(case),
-            },
+            extraction_context(case, answers, extraction_indicators(case)),
         )
     )
     minutes = validate_minutes(Minutes.model_validate(result["content"]), answers)
@@ -250,6 +288,17 @@ def generate_minutes(
         minutes, indicators, answers, require_fact_links=bool(execution_session)
     )
     matrix = evidence_matrix(minutes, indicators, answers, execution_session)
+    conflicts = list(minutes.conflicts)
+    career_links = []
+    for item in minutes.career_conflicts:
+        link = item.model_dump()
+        if not validate_career_conflict_link(case, link, answers):
+            raise ValueError("CAREER_CONFLICT_EVIDENCE_INVALID")
+        career_links.append({**link, "conflict_index": len(conflicts)})
+        conflicts.append(
+            f"{item.field_path}：履历为「{item.resume_value}」，"
+            f"回答 {item.answer_id} 为「{item.spoken_value}」。"
+        )
     covered = {fact.kind for fact in minutes.facts}
     coverage = "full" if {"responsibility", "results"}.issubset(covered) else "partial"
     invalidate_downstream(session, case, "D08")
@@ -258,7 +307,9 @@ def generate_minutes(
         case,
         "D08",
         {
-            **minutes.model_dump(),
+            **minutes.model_dump(exclude={"career_conflicts"}),
+            "conflicts": conflicts,
+            "career_conflict_evidence": career_links,
             "qa": answers,
             "coverage": coverage,
             "call_ref": case.id,
@@ -267,6 +318,8 @@ def generate_minutes(
             "execution_session": execution_session,
             "extraction_status": "READY_FOR_A08"
             if execution_session and execution_session["status"] == "COMPLETED"
+            else "DEMO_PREVIEW"
+            if execution_session is None and case.snapshot.get("fixture_only")
             else "PARTIAL_REVIEW",
             **matrix,
         },

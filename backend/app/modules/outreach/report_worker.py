@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.integrations.bailian import ModelUnavailable, generate_json
 from app.modules.outreach.budget import reserve_model_request
+from app.modules.outreach.minutes import require_evaluation_ready
 from app.modules.outreach.models import ModelStep, OutreachArtifact, OutreachCase
 from app.modules.outreach.postprocessing_prompts import (
     EVALUATION_INSTRUCTION,
@@ -16,6 +17,7 @@ from app.modules.outreach.recommendation import (
     RecommendationOutput,
     generate_evaluation,
     generate_recommendation,
+    require_evaluation_execution_binding,
 )
 from app.modules.outreach.report_review import review_report_claims
 from app.modules.outreach.steps import claim_step, finish_step, result_still_current
@@ -37,6 +39,9 @@ def validation_diagnostics(error):
         "UNASSESSED_ANCHOR_NOT_ALLOWED",
         "ASSESSMENT_REASON_REQUIRED",
         "UNKNOWN_REPORT_EVIDENCE",
+        "REPORT_REVIEW_INCOMPLETE",
+        "REPORT_CLAIM_UNSUPPORTED",
+        "REPORT_MATCH_SECTION_INCOMPLETE",
         "Score outside configured scale",
         "Unknown or empty answer evidence",
         "Exactly one assessment per configured dimension is required",
@@ -66,10 +71,22 @@ def execute_report_step(engine, settings, task_id):
             finish_step(task, error_code="CURRENT_ELIGIBLE_INPUT_REQUIRED")
             return
         try:
+            if step == "D09":
+                require_evaluation_ready(case, upstream)
+        except ValueError as error:
+            finish_step(task, error_code=str(error))
+            return
+        try:
             bound = bind_templates(case, settings, step)
         except (OSError, ValueError):
             finish_step(task, error_code="TEMPLATE_CONFIGURATION_INVALID")
             return
+        if step == "D09":
+            try:
+                require_evaluation_execution_binding(case, upstream, bound["content"])
+            except ValueError as error:
+                finish_step(task, error_code=str(error))
+                return
         if step == "D10" and bound["content"]["version"] != upstream.provenance.get(
             "template", {}
         ).get("report_template_version", 1):

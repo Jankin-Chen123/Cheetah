@@ -77,6 +77,7 @@ def validate_evaluation(
     *,
     fixture_only: bool,
     evidence_items: list[dict] | None = None,
+    require_anchor_basis: bool = False,
 ):
     if template.status == "demo" and not fixture_only:
         raise ValueError("Demo rules cannot evaluate real candidates")
@@ -103,7 +104,9 @@ def validate_evaluation(
         score = item.score if item.evidence_ids else None
         if item.matched_anchor_band is not None and score is None:
             raise ValueError("UNASSESSED_ANCHOR_NOT_ALLOWED")
-        if score is not None and (not fixture_only or item.matched_anchor_band is not None):
+        if score is not None and (
+            not fixture_only or require_anchor_basis or item.matched_anchor_band is not None
+        ):
             expected_band = (
                 f"{int(score) if int(score) % 2 else int(score) - 1}-"
                 f"{int(score) + 1 if int(score) % 2 else int(score)}"
@@ -153,7 +156,11 @@ def validate_evaluation(
             }
         )
     complete = all(item["score"] is not None for item in dimensions)
-    total = sum(by_id[d.id].score * d.weight for d in template.dimensions) if complete else None
+    total = (
+        sum(Decimal(str(by_id[d.id].score)) * Decimal(str(d.weight)) for d in template.dimensions)
+        if complete
+        else None
+    )
     return {
         "assessment_status": "COMPLETE" if complete else "PARTIAL",
         "summary": {
@@ -166,7 +173,7 @@ def validate_evaluation(
             "total_score_status": "CALCULABLE" if complete else "NOT_CALCULABLE",
         },
         "dimensions": dimensions,
-        "score": total,
+        "score": float(total) if total is not None else None,
         "score_scale": template.score_scale,
         "total_scale": 100,
         "total_score": (
@@ -185,7 +192,7 @@ def validate_evaluation(
             "insufficient"
             if total is None
             else "recommended"
-            if total >= template.threshold
+            if total >= Decimal(str(template.threshold))
             else "rejected"
         ),
         "template_ref": {"id": template.id, "version": template.version},

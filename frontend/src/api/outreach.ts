@@ -12,6 +12,40 @@ export interface CallCase {
   active_tasks?: { id: string; status: string; step: string }[]
   failed_tasks?: { id: string; step: string; input_revision: number; status: string; error_code: string | null; retry_count: number }[]
 }
+export interface CareerConfirmationInput {
+  expected_revision: number
+  minutes_id: string
+  minutes_version: number
+  field_path: string
+  value: string
+  answer_id: string
+  quote: string
+  reason: string
+  conflict_index: number | null
+}
+export interface CareerConfirmation extends Pick<CareerConfirmationInput, 'field_path' | 'value' | 'answer_id' | 'quote' | 'reason' | 'conflict_index'> {
+  id: string
+  answer_version: number
+  minutes_ref: { id: string; version: number }
+  resume_ref?: { artifact_id?: string; version: number }
+  conflict_text?: string | null
+}
+export interface CareerRevocation { confirmation_id: string; reason: string }
+export class OutreachError extends Error {
+  readonly status: number
+  readonly code: string
+  constructor(status: number, code: string) {
+    super(`请求失败 ${status} · ${code}；请检查当前状态与配置`)
+    this.status = status
+    this.code = code
+  }
+}
+export const confirmCareerField = (id: string, input: CareerConfirmationInput) =>
+  api<{ revision: number; confirmation: CareerConfirmation }>(`/calls/${id}/career-confirmations`, input)
+export const revokeCareerField = (id: string, confirmationId: string, input: { expected_revision: number; reason: string }) =>
+  api<{ revision: number }>(`/calls/${id}/career-confirmations/${confirmationId}/revoke`, input)
+export const regenerateRecommendation = (id: string, revision: number) =>
+  api(`/calls/${id}/recommendation`, { expected_revision: revision })
 let csrf = ''
 let authGeneration = 0
 export async function api<T>(path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
@@ -23,13 +57,12 @@ export async function api<T>(path: string, body?: unknown, signal?: AbortSignal)
   })
   if (!response.ok) {
     const failure: unknown = await response.json().catch(() => null)
-    const code = failure && typeof failure === 'object' && 'code' in failure &&
-      typeof failure.code === 'string' && /^[A-Z][A-Z0-9_]{0,99}$/.test(failure.code)
-      ? failure.code : `HTTP_${response.status}`
+    const rawCode = failure && typeof failure === 'object' ? Reflect.get(failure, 'code') ?? Reflect.get(failure, 'detail') : null
+    const code = typeof rawCode === 'string' && /^[A-Z][A-Z0-9_]{0,99}$/.test(rawCode) ? rawCode : `HTTP_${response.status}`
     if (response.status === 401 && requestGeneration === authGeneration) {
       csrf = ''; authGeneration += 1
     }
-    throw new Error(`请求失败 ${response.status} · ${code}；请检查当前状态与配置`)
+    throw new OutreachError(response.status, code)
   }
   if (response.status === 204) {
     if (path === '/auth/logout') { csrf = ''; authGeneration += 1 }
@@ -41,8 +74,10 @@ export async function api<T>(path: string, body?: unknown, signal?: AbortSignal)
   }
   return value as T
 }
-export async function download(artifact: Artifact, format: 'markdown' | 'docx' = 'markdown') {
+export async function download(artifact: Artifact, format?: 'markdown' | 'docx') {
   const internal = ['D07', 'D08', 'D09'].includes(artifact.type)
+  format ??= internal ? 'docx' : 'markdown'
+  if (internal && format !== 'docx') throw new Error('内部产物仅支持 Word 下载')
   const category = artifact.type === 'D07' ? 'outlines' : artifact.type === 'D08' ? 'minutes' : artifact.type === 'D09' ? 'evaluations' : 'reports'
   const response = await fetch(`/api/v1/${category}/${artifact.id}/export?version=${artifact.version}&format=${format}`, {
     credentials: 'same-origin',
@@ -50,7 +85,7 @@ export async function download(artifact: Artifact, format: 'markdown' | 'docx' =
   })
   const expectedType = format === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'text/markdown'
   if (!response.ok || !response.headers.get('Content-Type')?.includes(expectedType)) {
-    throw new Error('下载未完成，请检查报告版本批准、有效性及候选人客户分享许可')
+    throw new Error(internal ? '内部 Word 下载未完成，请检查登录状态及当前产物版本是否有效' : '下载未完成，请检查报告版本批准、有效性及候选人客户分享许可')
   }
   const url = URL.createObjectURL(await response.blob())
   const anchor = document.createElement('a')

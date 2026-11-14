@@ -2,7 +2,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.modules.outreach.career_confirmation import confirm_field, confirmed_upstream
+from app.modules.outreach.career_confirmation import (
+    confirm_field,
+    confirmed_upstream,
+    revoke_confirmation,
+    unresolved_career_conflicts,
+)
+from app.modules.outreach.report_profile import professional_profile
 
 
 def test_confirmation_and_revocation_persist_and_expire_report(tmp_path):
@@ -10,7 +16,6 @@ def test_confirmation_and_revocation_persist_and_expire_report(tmp_path):
     from sqlalchemy.orm import Session
 
     from app.core.database import Base
-    from app.modules.outreach.career_confirmation import revoke_confirmation
     from app.modules.outreach.models import OutreachArtifact, OutreachCase
 
     engine = create_engine(f"sqlite:///{tmp_path / 'career.db'}")
@@ -112,7 +117,20 @@ def test_confirmation_is_version_bound_and_preserves_original(monkeypatch):
         type="D08",
         valid=True,
         version=1,
-        content={"conflicts": ["履历与口述城市不同"]},
+        content={
+            "conflicts": ["履历与口述城市不同", "业绩冲突"],
+            "qa": case.session_data["answers"].copy(),
+            "career_conflict_evidence": [
+                {
+                    "conflict_index": 0,
+                    "field_path": "profile.current_city",
+                    "resume_value": "虚构城市甲",
+                    "spoken_value": "虚构城市乙",
+                    "answer_id": "a1",
+                    "answer_quote": "现在常住虚构城市乙",
+                }
+            ],
+        },
     )
     session = SimpleNamespace(get=lambda *args: minutes)
     fields = dict(
@@ -129,16 +147,85 @@ def test_confirmation_is_version_bound_and_preserves_original(monkeypatch):
     )
     with pytest.raises(ValueError, match="CAREER_SOURCE_QUOTE_INVALID"):
         confirm_field(session, case, **{**fields, "value": "不存在的值"})
+    with pytest.raises(ValueError, match="CAREER_CONFLICT_EVIDENCE_MISMATCH"):
+        confirm_field(session, case, **{**fields, "field_path": "profile.current_role"})
     confirm_field(session, case, **fields)
     assert invalidated == ["D09"] and case.revision == 2
     upstream, receipts = confirmed_upstream(case, minutes)
     assert upstream["D03"]["profile"]["current_city"] == "虚构城市乙"
     assert case.session_data["upstream_content"]["D03"]["profile"]["current_city"] == "虚构城市甲"
     assert receipts[0]["conflict_text"] == "履历与口述城市不同"
+    assert unresolved_career_conflicts(case, minutes, receipts) == ["业绩冲突"]
     with pytest.raises(ValueError, match="VERSION_CONFLICT"):
         confirm_field(session, case, **fields)
     case.session_data["answers"][0]["version"] = 2
     assert confirmed_upstream(case, minutes)[1] == []
     case.session_data["answers"][0]["version"] = 1
+    revoke_confirmation(session, case, receipts[0]["id"], case.revision, "撤销", "reviewer")
+    assert unresolved_career_conflicts(case, minutes, confirmed_upstream(case, minutes)[1]) == [
+        "履历与口述城市不同",
+        "业绩冲突",
+    ]
     minutes.version = 2
     assert confirmed_upstream(case, minutes)[1] == []
+
+
+def test_dynamic_slots_survive_revocation_without_reindexing(monkeypatch):
+    monkeypatch.setattr(
+        "app.modules.outreach.career_confirmation.invalidate_downstream", lambda *args: None
+    )
+    case = SimpleNamespace(
+        id="case",
+        revision=1,
+        snapshot={"artifact_refs": {"D03": {"version": 1}}},
+        session_data={
+            "answers": [
+                {"id": "a", "text": "甲公司"},
+                {"id": "b", "text": "乙公司 新乙公司 负责交接 负责验收"},
+            ],
+            "upstream_content": {"D03": {"employment": []}},
+        },
+    )
+    minutes = SimpleNamespace(
+        id="m", case_id="case", valid=True, type="D08", version=1, content={"conflicts": []}
+    )
+    session = SimpleNamespace(get=lambda *args: minutes)
+
+    def confirm(path, value, answer_id="b"):
+        return confirm_field(
+            session,
+            case,
+            expected_revision=case.revision,
+            minutes_id="m",
+            minutes_version=1,
+            field_path=path,
+            value=value,
+            answer_id=answer_id,
+            quote=value,
+            reason="核对候选人原话",
+            actor_id="owner",
+        )
+
+    first = confirm("employment.0.company", "甲公司", "a")
+    with pytest.raises(ValueError, match="CAREER_FIELD_INVALID"):
+        confirm("employment.2.company", "乙公司")
+    confirm("employment.1.company", "乙公司")
+    replacement = confirm("employment.1.company", "新乙公司")
+    first_duty = confirm("employment.1.responsibilities.0", "负责交接")
+    second_duty = confirm("employment.1.responsibilities.1", "负责验收")
+    for receipt in (first, first_duty):
+        revoke_confirmation(session, case, receipt["id"], case.revision, "撤销", "owner")
+
+    upstream, active = confirmed_upstream(case, minutes)
+    assert upstream["D03"]["employment"] == [
+        {},
+        {"company": "新乙公司", "responsibilities": ["", "负责验收"]},
+    ]
+    assert [receipt["id"] for receipt in active] == [replacement["id"], second_duty["id"]]
+    profile, _ = professional_profile(upstream)
+    assert [row["company"] for row in profile["work_history"]] == ["新乙公司"]
+    assert profile["work_history"][0]["responsibilities"] == ["负责验收"]
+    revoke_confirmation(session, case, replacement["id"], case.revision, "撤销", "owner")
+    assert "company" not in confirmed_upstream(case, minutes)[0]["D03"]["employment"][1]
+    case.session_data["answers"][1]["version"] = 2
+    assert confirmed_upstream(case, minutes) == ({"D03": {"employment": []}}, [])

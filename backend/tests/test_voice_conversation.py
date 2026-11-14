@@ -54,7 +54,7 @@ def test_voice_preflight_stream_answer_replay_and_stop(monkeypatch, decline):
             revision=1,
             status="in_progress",
             stop_status="none",
-            snapshot={},
+            snapshot={"fixture_only": True},
             session_data={
                 "preflight_required": True,
                 "current_question": {"id": "q1", "question": "请介绍个人职责。"},

@@ -1,6 +1,11 @@
 import pytest
 
-from app.modules.outreach.answers import correct_answer, record_answer, request_stop
+from app.modules.outreach.answers import (
+    correct_answer,
+    record_answer,
+    record_candidate_stop,
+    request_stop,
+)
 from app.modules.outreach.models import OutreachCase
 
 
@@ -72,7 +77,28 @@ def test_stop_preempts_pending_followup_without_model():
     record_answer(item, "请结束面试", item.revision)
     assert item.status == "ended"
     assert item.stop_status == "confirmed"
-    assert len(item.session_data["answers"]) == 2
+    assert [answer["text"] for answer in item.session_data["answers"]] == [
+        "项目停止后我重新安排工作"
+    ]
+    assert item.session_data["candidate_stop_statement"] == "请结束面试"
+
+
+def test_candidate_stop_event_preserves_prior_answer_and_needs_no_current_question():
+    item = case()
+    answer = record_answer(item, "我负责访谈", 1)
+    item.session_data = {
+        **item.session_data,
+        "current_question": None,
+        "outline_requires_regeneration": True,
+    }
+    with pytest.raises(ValueError, match="VERSION_CONFLICT"):
+        record_candidate_stop(item, "请停止", 1)
+    record_candidate_stop(item, "请停止", item.revision)
+    assert item.status == "ended"
+    assert item.stop_status == "confirmed"
+    assert item.session_data["decision_status"] == "stopped"
+    assert item.session_data["candidate_stop_statement"] == "请停止"
+    assert item.session_data["answers"] == [answer]
 
 
 def test_correction_preserves_history_and_does_not_restart_call():

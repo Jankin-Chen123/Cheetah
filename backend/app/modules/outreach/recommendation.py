@@ -12,6 +12,7 @@ from app.modules.outreach.evaluation import (
     EvidenceAssessment,
     validate_evaluation,
 )
+from app.modules.outreach.minutes import require_evaluation_ready
 from app.modules.outreach.models import OutreachArtifact, OutreachCase
 from app.modules.outreach.postprocessing_prompts import (
     EVALUATION_INSTRUCTION,
@@ -55,6 +56,15 @@ def validate_indicator_scoring(assessments, indicator_evidence):
         raise ValueError("INSUFFICIENT_INDICATOR_REQUIRES_REVIEW")
 
 
+def require_evaluation_execution_binding(case, minutes, template):
+    if template["status"] != "approved":
+        return
+    execution = minutes.content.get("execution_session") or {}
+    bound = case.session_data.get("job_interview_standard")
+    if not bound or execution.get("executed_standard") != bound:
+        raise ValueError("EVALUATION_EXECUTED_STANDARD_MISMATCH")
+
+
 def generate_evaluation(
     session: Session, case: OutreachCase, settings: Settings, *, model_result=None
 ):
@@ -67,7 +77,9 @@ def generate_evaluation(
     )
     if minutes is None:
         raise ValueError("CURRENT_MINUTES_REQUIRED")
+    require_evaluation_ready(case, minutes)
     bound = bind_templates(case, settings, "D09")
+    require_evaluation_execution_binding(case, minutes, bound["content"])
     template = EvaluationTemplate.model_validate(bound["content"])
     answers = {a["id"]: a["text"] for a in minutes.content["qa"]}
     result = (
@@ -91,6 +103,7 @@ def generate_evaluation(
         answers,
         fixture_only=case.snapshot["fixture_only"],
         evidence_items=minutes.content.get("evidence_items", []),
+        require_anchor_basis=template.status == "approved",
     )
     content["gaps"] = list(minutes.content.get("gaps", []))
     content["conflicts"] = list(minutes.content.get("conflicts", []))
@@ -98,6 +111,13 @@ def generate_evaluation(
     content["indicator_evidence"] = list(minutes.content.get("indicator_evidence", []))
     content["evidence_items"] = list(minutes.content.get("evidence_items", []))
     content["dimension_coverage"] = list(minutes.content.get("dimension_coverage", []))
+    content["extraction_status"] = minutes.content.get("extraction_status")
+    content["preparation_refs"] = minutes.content.get("preparation_refs", {})
+    content["interview_session_id"] = (minutes.content.get("execution_session") or {}).get(
+        "session_id"
+    )
+    if template.status == "approved" and content["extraction_status"] != "READY_FOR_A08":
+        content["conclusion"] = "insufficient"
     provenance = {
         "source_mode": "live",
         "prompt_version": PROMPT_VERSION,
@@ -162,21 +182,34 @@ def generate_recommendation(
             raise ValueError("UNKNOWN_REPORT_EVIDENCE")
         if claim.dimension_id is not None and claim.dimension_id not in dimensions:
             raise ValueError("UNKNOWN_REPORT_DIMENSION")
-    if model_result is None and not evaluation.content.get("demo_rules", False):
+    if not evaluation.content.get("demo_rules", False):
+        if output.summary is None or any(
+            claim.dimension_id is None or not claim.job_relevance.strip()
+            for claim in output.match_highlights
+        ):
+            raise ValueError("REPORT_MATCH_SECTION_INCOMPLETE")
         from app.modules.outreach.budget import reserve_model_request
-        from app.modules.outreach.report_review import review_report_claims
+        from app.modules.outreach.report_review import ReportReview, review_report_claims
 
-        reserve_model_request(case, settings, "D10_evidence_review")
-        result["quality_review"] = review_report_claims(
-            settings, [claim.model_dump() for claim in output.evidence_claims()], answers
-        )
-    # A model cannot silently omit unresolved upstream qualifications.
+        if model_result is None:
+            reserve_model_request(case, settings, "D10_evidence_review")
+            result["quality_review"] = review_report_claims(
+                settings, [claim.model_dump() for claim in output.evidence_claims()], answers
+            )
+        review_data = result.get("quality_review") or {}
+        checks = ReportReview.model_validate({"checks": review_data.get("checks", [])}).checks
+        count = len(output.evidence_claims())
+        if len(checks) != count or {check.claim_index for check in checks} != set(range(count)):
+            raise ValueError("REPORT_REVIEW_INCOMPLETE")
+        if not all(check.supported for check in checks):
+            raise ValueError("REPORT_CLAIM_UNSUPPORTED")
+    # Keep internal extraction notes out of the customer document.
     output.unknowns = list(
         dict.fromkeys(
             [
                 *output.unknowns,
-                *evaluation.content.get("gaps", []),
-                *evaluation.content.get("conflicts", []),
+                *(["部分岗位相关信息仍待核实。"] if evaluation.content.get("gaps") else []),
+                *(["存在尚未核实的信息差异。"] if evaluation.content.get("conflicts") else []),
             ]
         )
     )
@@ -215,26 +248,21 @@ def generate_recommendation(
             OutreachArtifact.valid.is_(True),
         )
     )
-    from app.modules.outreach.career_confirmation import confirmed_upstream
+    from app.modules.outreach.career_confirmation import (
+        confirmed_upstream,
+        unresolved_career_conflicts,
+    )
 
     career_upstream, confirmations = confirmed_upstream(case, minutes)
-    career_minutes = dict(minutes.content) if minutes else None
-    if career_minutes:
-        resolved = {
-            receipt["conflict_index"]: receipt["conflict_text"]
-            for receipt in confirmations
-            if receipt.get("conflict_index") is not None
-        }
-        career_minutes["conflicts"] = [
-            conflict
-            for index, conflict in enumerate(career_minutes.get("conflicts", []))
-            if resolved.get(index) != conflict
-        ]
+    career_minutes = (
+        {**minutes.content, "conflicts": unresolved_career_conflicts(case, minutes, confirmations)}
+        if minutes
+        else {"conflicts": evaluation.content.get("conflicts", [])}
+    )
     client_profile, career_section = professional_profile(
         career_upstream,
         career_minutes,
     )
-    client_profile["field_confirmations"] = confirmations
     preferences = client_profile["job_preferences"]
     markdown = markdown.replace(
         "## 第一部分｜猎头机构评估",
@@ -281,7 +309,14 @@ def generate_recommendation(
             "report_template": template.model_dump(),
             "template_sha256": bound["sha256"],
         },
-        [{"kind": "artifact", "id": evaluation.id, "version": evaluation.version}],
+        [
+            {"kind": "artifact", "id": evaluation.id, "version": evaluation.version},
+            *(
+                [{"kind": "artifact", "id": minutes.id, "version": minutes.version}]
+                if minutes
+                else []
+            ),
+        ],
     )
     case.revision += 1
     return report

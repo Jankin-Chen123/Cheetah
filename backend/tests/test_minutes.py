@@ -109,6 +109,8 @@ def test_indicator_links_to_exact_facts_and_preserves_both_directions(fault):
         row["evidence_ids"].append("EV1")
     elif fault == "missing":
         row["evidence_ids"] = []
+    if fault is None:
+        row.pop("answer_ids")
     minutes = validate_minutes(Minutes(facts=facts, indicator_evidence=[row]), answers)
     if fault:
         with pytest.raises(ValueError, match="INDICATOR_FACT_"):
@@ -118,6 +120,7 @@ def test_indicator_links_to_exact_facts_and_preserves_both_directions(fault):
     matrix = evidence_matrix(minutes, definitions, answers, None)
     dimension = matrix["dimension_coverage"][0]
     indicator = dimension["indicator_evidence"][0]
+    assert indicator["answer_ids"] == ["a1"]
     assert indicator["supporting_evidence_ids"] == ["EV1"]
     assert indicator["limiting_evidence_ids"] == ["EV2"]
     assert indicator["situational_evidence_ids"] == ["EV3"]

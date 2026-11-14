@@ -10,12 +10,30 @@ from app.modules.outreach.budget import reserve_model_request
 from app.modules.outreach.handoff import question_execution_ref
 from app.modules.outreach.interview import Outline, validate_outline, validate_question_cards
 from app.modules.outreach.knowledge import retrieve
-from app.modules.outreach.models import ModelStep, OutreachCase
-from app.modules.outreach.outline_inputs import outline_dimensions, outline_handoff, outline_inputs
+from app.modules.outreach.models import ModelStep, OutreachArtifact, OutreachCase
+from app.modules.outreach.outline_inputs import (
+    outline_dimensions,
+    outline_handoff,
+    outline_inputs,
+    require_execution_outline,
+)
 from app.modules.outreach.outline_prompts import OUTLINE_INSTRUCTION, PROMPT_VERSION
 from app.modules.outreach.outline_review import review_and_revise_outline
 from app.modules.outreach.provenance import inherited_provenance
 from app.modules.outreach.steps import claim_step, finish_step, result_still_current
+
+
+def reusable_outline(case, outline, methods, *, preview):
+    try:
+        require_execution_outline(case, outline)
+    except ValueError:
+        return False
+    return bool(
+        outline is not None
+        and outline.provenance.get("prompt_version") == PROMPT_VERSION
+        and outline.content.get("knowledge_preview") == preview
+        and outline.content.get("retrieved_methods") == methods
+    )
 
 
 def execute_outline(engine, settings: Settings, task_id: str):
@@ -27,24 +45,37 @@ def execute_outline(engine, settings: Settings, task_id: str):
         if snapshot is None:
             return
         case = session.get(OutreachCase, task.case_id)
+        preview = task.detail.get("knowledge_preview", False)
         try:
             upstream_content = outline_inputs(case)
             dimensions = outline_dimensions(case)
             dimension_ids = {dimension["id"] for dimension in dimensions}
             require_full_coverage = bool(case.session_data.get("job_interview_standard"))
             standard_binding = case.session_data.get("job_interview_standard")
-            reserve_model_request(case, settings, "D07")
-            if require_full_coverage:
-                reserve_model_request(case, settings, "D07_quality_review")
         except ModelUnavailable as error:
             finish_step(task, error_code=str(error))
             return
         methods = retrieve(
             session,
             {"responsibility", "results", "detail"},
-            preview=task.detail.get("knowledge_preview", False),
+            preview=preview,
             structured_only=True,
         )
+        outline_id = case.session_data.get("outline_id")
+        existing = session.get(OutreachArtifact, outline_id) if outline_id else None
+        if reusable_outline(case, existing, methods, preview=preview):
+            finish_step(task, result_ref={"id": existing.id, "version": existing.version})
+            return
+        if case.session_data.get("answers"):
+            finish_step(task, error_code="INTERVIEW_EXECUTION_ALREADY_STARTED")
+            return
+        try:
+            reserve_model_request(case, settings, "D07")
+            if require_full_coverage:
+                reserve_model_request(case, settings, "D07_quality_review")
+        except ModelUnavailable as error:
+            finish_step(task, error_code=str(error))
+            return
         context = {
             "schema": Outline.model_json_schema(),
             "upstream": case.snapshot,
@@ -100,12 +131,28 @@ def execute_outline(engine, settings: Settings, task_id: str):
             task.status = "cancelled"
             task.detail = {**task.detail, "error_code": "INPUT_CHANGED_OR_STOPPED"}
             return
+        if (
+            case.snapshot != context["upstream"]
+            or case.session_data.get("upstream_content") != context["upstream_content"]
+            or case.session_data.get("job_interview_standard") != standard_binding
+        ):
+            finish_step(task, error_code="OUTLINE_INPUT_CHANGED_DURING_INFERENCE")
+            return
         if failure:
             if validation_fields:
                 task.detail = {**task.detail, "validation_fields": validation_fields}
             if output_validation_code:
                 task.detail = {**task.detail, "output_validation_code": output_validation_code}
             finish_step(task, error_code=failure)
+            return
+        current_methods = retrieve(
+            session,
+            {"responsibility", "results", "detail"},
+            preview=preview,
+            structured_only=True,
+        )
+        if current_methods != methods:
+            finish_step(task, error_code="KNOWLEDGE_CHANGED_DURING_INFERENCE")
             return
         artifact = save_artifact(
             session,

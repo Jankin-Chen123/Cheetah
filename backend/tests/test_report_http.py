@@ -12,6 +12,41 @@ from app.core.config import Settings
 from app.core.database import Base
 from app.main import create_app
 from app.modules.outreach.models import OutreachArtifact, OutreachCase, ReportAudit
+from app.modules.outreach.router import report_has_source_conflicts
+
+
+def test_report_conflict_gate_requires_current_matching_minutes(monkeypatch):
+    from types import SimpleNamespace
+
+    case = SimpleNamespace(id="case")
+    minutes = SimpleNamespace(
+        id="minutes",
+        case_id="case",
+        type="D08",
+        valid=True,
+        version=3,
+        content={"conflicts": ["虚构城市冲突"]},
+    )
+    evaluation = SimpleNamespace(
+        content={"conflicts": ["虚构城市冲突"]},
+        input_refs=[{"id": "minutes", "version": 3}],
+    )
+    session = SimpleNamespace(get=lambda model, key: minutes if key == "minutes" else None)
+    receipts = [{"id": "current-confirmation"}]
+    monkeypatch.setattr(
+        "app.modules.outreach.career_confirmation.confirmed_upstream",
+        lambda case, minutes: ({}, receipts),
+    )
+    monkeypatch.setattr(
+        "app.modules.outreach.career_confirmation.unresolved_career_conflicts",
+        lambda case, minutes, confirmations: [] if confirmations else minutes.content["conflicts"],
+    )
+    assert not report_has_source_conflicts(session, case, evaluation)
+    receipts.clear()
+    assert report_has_source_conflicts(session, case, evaluation)
+    receipts.append({"id": "current-confirmation"})
+    minutes.version += 1
+    assert report_has_source_conflicts(session, case, evaluation)
 
 
 @pytest.mark.parametrize("export_format", ["markdown", "docx"])
@@ -111,6 +146,16 @@ def test_review_export_audit_and_invalidation(monkeypatch, export_format):
                 with ZipFile(BytesIO(response.content)) as document:
                     assert "虚构推荐" in document.read("word/document.xml").decode()
                     assert "scoring_anchors" not in document.read("word/document.xml").decode()
+        with Session(engine) as session, session.begin():
+            assert session.scalar(select(func.count()).select_from(ReportAudit)) == 2
+            # A historical report may omit a conflict still present in its source evaluation.
+            session.get(OutreachArtifact, "evaluation").content = {
+                "conclusion": "recommended",
+                "conflicts": ["虚构来源冲突"],
+            }
+        blocked = client.get(url, headers=download_headers)
+        assert blocked.status_code == 409
+        assert blocked.json()["code"] == "REPORT_FACT_CONFLICT_REQUIRES_CORRECTION"
         with Session(engine) as session, session.begin():
             assert session.scalar(select(func.count()).select_from(ReportAudit)) == 2
             session.get(OutreachArtifact, "report").valid = False

@@ -148,6 +148,25 @@ def termination_reason(
     return None
 
 
+def closing_acknowledged(question: str, answer: str) -> bool:
+    """Recognize a narrow answer to an explicit invitation for final additions."""
+    if not any(
+        marker in question for marker in ("想补充", "需要补充", "还有什么问题", "还有其他问题")
+    ):
+        return False
+    return no_final_additions(answer)
+
+
+def no_final_additions(answer: str) -> bool:
+    normalized = re.sub(r"[\s，。！？,!?.；;]+", "", answer)
+    return bool(
+        re.fullmatch(
+            r"(?:没有(?:了|补充|问题)?|没(?:了|有了|什么补充)|不用(?:了)?)(?:谢谢(?:你|您)?)?",
+            normalized,
+        )
+    )
+
+
 def validate_decision(
     decision: InterviewDecision,
     methods: list[dict],

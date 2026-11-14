@@ -106,6 +106,8 @@ def confirm_preflight(case: OutreachCase, statement: str, material_sha256: str):
 
 
 def require_preflight(case: OutreachCase):
+    if case.session_data.get("preflight", {}).get("interested") is False:
+        raise ValueError("JOB_INTEREST_REQUIRED")
     if case.session_data.get("preflight_required"):
         state = case.session_data.get("preflight", {})
         if state.get("interested") is not True or state.get("confirmed") is not True:

@@ -117,6 +117,12 @@ def test_candidate_answer_transaction_queue_and_stop(monkeypatch):
             )
         )
     headers = {"Origin": "http://localhost:5173", "Authorization": "Bearer " + invitation["token"]}
+    from app.modules.outreach.router import require_current_execution_outline
+
+    # The initial assertions isolate permission and answer handling from D07 eligibility.
+    monkeypatch.setattr(
+        "app.modules.outreach.router.require_current_execution_outline", lambda session, case: None
+    )
     with TestClient(create_app(Settings())) as client:
         path = "/api/v1/candidate/calls/candidate-case"
         with client.websocket_connect(
@@ -218,17 +224,45 @@ def test_candidate_answer_transaction_queue_and_stop(monkeypatch):
             assert trace["source_mode"] == "mock"
             assert db.get(OutreachArtifact, "report").valid is False
             assert db.get(OutreachArtifact, "report").review_status == "expired"
+        with Session(engine) as db, db.begin():
+            case = db.get(OutreachCase, "candidate-case")
+            case.session_data = {
+                **case.session_data,
+                "current_question": None,
+                "outline_requires_regeneration": True,
+            }
+        # The earlier assertions isolate transcription. Restore the gate for the stop path.
+        monkeypatch.setattr(
+            "app.modules.outreach.router.require_current_execution_outline",
+            require_current_execution_outline,
+        )
+        blocked_view = client.get(path, headers=headers).json()
+        assert blocked_view["formal_outline_error"] == "OUTLINE_REGENERATION_REQUIRED"
+        assert blocked_view["question"] is None and blocked_view["spoken_prompt"] is None
+        for endpoint in ("speech", "speech-stream"):
+            blocked = client.post(
+                f"{path}/{endpoint}",
+                headers=headers,
+                json={"expected_revision": blocked_view["revision"]},
+            )
+            assert blocked.status_code == 409
+            assert blocked.json()["code"] == "OUTLINE_REGENERATION_REQUIRED"
         stopped = client.post(
             path,
             headers=headers,
             json={
                 "expected_revision": result.json()["revision"],
-                "action": "stop",
+                "action": "answer",
                 "statement": "结束面试",
             },
         )
         assert stopped.status_code == 200
         assert stopped.json()["stop_status"] == "confirmed"
+        assert stopped.json()["termination_reason"] == "candidate_requested_stop"
+        with Session(engine) as db:
+            state = db.get(OutreachCase, "candidate-case").session_data
+            assert len(state["answers"]) == 1
+            assert state["candidate_stop_statement"] == "结束面试"
         assert (
             client.post(
                 path + "/speech",

@@ -4,9 +4,65 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings
 from app.core.database import Base
+from app.modules.outreach.artifacts import review_report
+from app.modules.outreach.career_confirmation import confirm_field
 from app.modules.outreach.models import ModelStep, OutreachArtifact, OutreachCase
+from app.modules.outreach.postprocessing import schedule_postprocessing
 from app.modules.outreach.report_worker import execute_report_step
 from app.modules.outreach.steps import register_step
+
+
+def test_partial_minutes_blocks_scheduler_and_preexisting_task(tmp_path, monkeypatch):
+    engine = create_engine(f"sqlite:///{tmp_path / 'partial.db'}")
+    Base.metadata.create_all(engine)
+    monkeypatch.setattr(
+        "app.modules.outreach.report_worker.generate_json",
+        lambda *args: pytest.fail("Partial extraction must never reach scoring inference"),
+    )
+    with Session(engine) as session, session.begin():
+        session.add(
+            OutreachCase(
+                id="partial",
+                organization_id="org",
+                owner_id="owner",
+                application_id="app",
+                candidate_id="candidate",
+                job_id="job",
+                status="ended",
+                snapshot={"fixture_only": True},
+                session_data={"answers": [{"id": "a1", "text": "已授权原话"}]},
+            )
+        )
+        session.add(
+            OutreachArtifact(
+                id="minutes",
+                case_id="partial",
+                type="D08",
+                version=1,
+                provenance={},
+                input_refs=[],
+                content={
+                    "extraction_status": "PARTIAL_REVIEW",
+                    "execution_session": {"status": "INTERRUPTED"},
+                },
+            )
+        )
+        session.flush()
+        assert schedule_postprocessing(session, case_id="partial") == 0
+        assert session.scalar(select(ModelStep)) is None
+        task, _ = register_step(session, "partial", "D09", 1)
+        task_id = task.id
+    execute_report_step(engine, Settings(), task_id)
+    with Session(engine) as session:
+        task = session.get(ModelStep, task_id)
+        assert task.status == "failed"
+        assert task.detail["error_code"] == "MINUTES_REVIEW_REQUIRED"
+        assert session.get(OutreachArtifact, "minutes").valid
+        assert not list(
+            session.scalars(
+                select(OutreachArtifact).where(OutreachArtifact.type.in_(["D09", "D10"]))
+            )
+        )
 
 
 @pytest.mark.parametrize(
@@ -78,6 +134,20 @@ def test_report_worker_three_decisions(tmp_path, monkeypatch, score, conclusion)
         assert evaluation.content["gaps"] == ["个人贡献尚未独立核实"]
         assert evaluation.content["conflicts"] == ["业绩统计口径存在冲突"]
         case = session.get(OutreachCase, "case")
+        confirm_field(
+            session,
+            case,
+            expected_revision=case.revision,
+            minutes_id="minutes",
+            minutes_version=1,
+            field_path="profile.current_city",
+            value="虚构",
+            answer_id="a1",
+            quote="虚构职责及结果回答",
+            reason="无关字段不解除业绩冲突",
+            actor_id="owner",
+            conflict_index=0,
+        )
         task, _ = register_step(session, "case", "D10", case.revision)
         report_task = task.id
     execute_report_step(engine, Settings(), report_task)
@@ -89,8 +159,13 @@ def test_report_worker_three_decisions(tmp_path, monkeypatch, score, conclusion)
             assert "mock" in report.provenance["inherited_source_modes"]
             assert report.provenance["knowledge_preview"] is True
             assert report.provenance["demo_rules"] is True
-            assert "个人贡献尚未独立核实" in report.content["unknowns"]
-            assert "业绩统计口径存在冲突" in report.content["content_markdown"]
+            assert "部分岗位相关信息仍待核实。" in report.content["unknowns"]
+            assert "业绩统计口径存在冲突" not in report.content["content_markdown"]
+            assert report.content["client_profile"]["unresolved_conflicts"] == [
+                "业绩统计口径存在冲突"
+            ]
+            with pytest.raises(ValueError, match="REPORT_FACT_CONFLICT_REQUIRES_CORRECTION"):
+                review_report(report, report.version, report.revision, "approve", "owner", "复核")
             assert "未审核方法知识" in report.content["content_markdown"]
         else:
             assert report is None

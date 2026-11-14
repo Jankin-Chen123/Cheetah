@@ -1,3 +1,4 @@
+import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
@@ -8,7 +9,10 @@ from app.modules.outreach.models import ModelStep, OutreachArtifact, OutreachCas
 from app.modules.outreach.steps import register_step
 
 
-def test_followup_late_result_is_discarded_after_stop(tmp_path, monkeypatch):
+@pytest.mark.parametrize(
+    "change", ["stop", "formal_interview", "transcription", "extraction", "evaluation", "outline"]
+)
+def test_followup_late_result_is_discarded(tmp_path, monkeypatch, change):
     engine = create_engine(f"sqlite:///{tmp_path / 'followup.db'}")
     Base.metadata.create_all(engine)
     with Session(engine) as session, session.begin():
@@ -20,7 +24,7 @@ def test_followup_late_result_is_discarded_after_stop(tmp_path, monkeypatch):
                 application_id="app",
                 candidate_id="candidate",
                 job_id="job",
-                snapshot={},
+                snapshot={"fixture_only": True},
                 session_data={
                     "decision_status": "pending",
                     "answers": [
@@ -39,8 +43,16 @@ def test_followup_late_result_is_discarded_after_stop(tmp_path, monkeypatch):
     def model(*args):
         with Session(engine) as session, session.begin():
             case = session.get(OutreachCase, "case")
-            case.stop_status = "requested"
-            case.revision += 1
+            if change == "stop":
+                case.stop_status = "requested"
+                case.revision += 1
+            elif change != "outline":
+                case.session_data = {
+                    **case.session_data,
+                    "processing_permissions": {change: {"status": "WITHDRAWN"}},
+                }
+            else:
+                case.session_data = {**case.session_data, "outline_requires_regeneration": True}
         return {
             "model": "isolated-test-double",
             "usage": None,
@@ -57,7 +69,12 @@ def test_followup_late_result_is_discarded_after_stop(tmp_path, monkeypatch):
     monkeypatch.setattr("app.modules.outreach.followup_worker.generate_json", model)
     execute_followup(engine, Settings(), task_id)
     with Session(engine) as session:
-        assert session.get(ModelStep, task_id).status == "cancelled"
+        task = session.get(ModelStep, task_id)
+        assert task.status == "cancelled"
+        assert task.detail["error_code"] == {
+            "stop": "INPUT_CHANGED_OR_STOPPED",
+            "outline": "OUTLINE_REGENERATION_REQUIRED",
+        }.get(change, "PROCESSING_PERMISSION_REQUIRED")
         assert not session.get(OutreachCase, "case").session_data.get("decisions")
 
 
@@ -73,7 +90,7 @@ def test_topic_limit_still_uses_language_understanding(tmp_path, monkeypatch):
                 application_id="app",
                 candidate_id="candidate",
                 job_id="job",
-                snapshot={},
+                snapshot={"fixture_only": True},
                 session_data={
                     "outline_id": "outline",
                     "decision_status": "pending",
@@ -96,7 +113,12 @@ def test_topic_limit_still_uses_language_understanding(tmp_path, monkeypatch):
                 version=1,
                 content={
                     "questions": [
-                        {"question": "结果？", "dimension_id": "results", "method_entry_ids": ["m"]}
+                        {
+                            "id": "Q2",
+                            "question": "结果？",
+                            "dimension_id": "results",
+                            "method_entry_ids": ["m"],
+                        }
                     ],
                     "retrieved_methods": [{"entry_id": "m"}],
                 },
@@ -140,7 +162,7 @@ def test_model_continues_without_knowledge(tmp_path, monkeypatch):
                 application_id="app",
                 candidate_id="candidate",
                 job_id="job",
-                snapshot={},
+                snapshot={"fixture_only": True},
                 session_data={
                     "decision_status": "pending",
                     "answers": [
@@ -193,7 +215,7 @@ def test_model_failure_keeps_interview_listening(tmp_path, monkeypatch):
                 application_id="app",
                 candidate_id="candidate",
                 job_id="job",
-                snapshot={},
+                snapshot={"fixture_only": True},
                 session_data={
                     "decision_status": "pending",
                     "answers": [
@@ -241,7 +263,7 @@ def test_repeated_model_question_transitions_without_failure(tmp_path, monkeypat
                 application_id="app",
                 candidate_id="candidate",
                 job_id="job",
-                snapshot={},
+                snapshot={"fixture_only": True},
                 session_data={
                     "decision_status": "pending",
                     "answers": [
@@ -287,3 +309,83 @@ def test_repeated_model_question_transitions_without_failure(tmp_path, monkeypat
             ]
             is True
         )
+
+
+@pytest.mark.parametrize("remaining_required", [False, True])
+def test_final_additions_acknowledgement_respects_required_questions(
+    monkeypatch, remaining_required
+):
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session, session.begin():
+        session.add(
+            OutreachCase(
+                id="closing",
+                organization_id="org",
+                owner_id="owner",
+                application_id="app",
+                candidate_id="candidate",
+                job_id="job",
+                snapshot={"fixture_only": True},
+                session_data={
+                    "decision_status": "pending",
+                    "outline_id": "outline",
+                    "answers": [
+                        {
+                            "id": "a1",
+                            "text": "没有补充，谢谢",
+                            "question": {"question": "您还有什么想补充的吗？"},
+                        }
+                    ],
+                },
+            )
+        )
+        session.add(
+            OutreachArtifact(
+                id="outline",
+                case_id="closing",
+                type="D07",
+                version=1,
+                content={
+                    "questions": [
+                        {
+                            "id": "required",
+                            "priority": "MUST",
+                            "question": "你承担哪项职责？",
+                            "dimension_id": "responsibility",
+                        }
+                    ]
+                    if remaining_required
+                    else [],
+                },
+                provenance={},
+                input_refs=[],
+            )
+        )
+        session.flush()
+        task, _ = register_step(session, "closing", "followup", 1)
+        task_id = task.id
+
+    def model(*args, **kwargs):
+        assert remaining_required, "Normal closing must not call inference"
+        return {
+            "content": {
+                "action": "end",
+                "reason": "模型提前结束",
+            },
+            "model": "fixture",
+            "usage": None,
+        }
+
+    monkeypatch.setattr("app.modules.outreach.followup_worker.generate_json", model)
+    execute_followup(engine, Settings(), task_id)
+    with Session(engine) as session:
+        case = session.get(OutreachCase, "closing")
+        assert session.get(ModelStep, task_id).status == "completed"
+        if remaining_required:
+            assert case.status != "ended"
+            assert case.session_data["current_question"]["id"] == "required"
+            return
+        assert case.status == "ended"
+        assert case.stop_status == "none"
+        assert case.session_data["termination_reason"] == "interview_completed"

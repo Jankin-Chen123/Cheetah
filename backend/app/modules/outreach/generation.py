@@ -18,20 +18,29 @@ from app.modules.outreach.interview import (
     validate_question_cards,
 )
 from app.modules.outreach.knowledge import retrieve
-from app.modules.outreach.models import OutreachCase
+from app.modules.outreach.models import OutreachArtifact, OutreachCase
 from app.modules.outreach.outline_inputs import outline_dimensions, outline_handoff, outline_inputs
 from app.modules.outreach.outline_prompts import OUTLINE_INSTRUCTION, PROMPT_VERSION
 from app.modules.outreach.outline_review import review_and_revise_outline
 from app.modules.outreach.provenance import inherited_provenance
+from app.modules.outreach.worker import reusable_outline
 
 
 def generate_outline(session: Session, case: OutreachCase, settings: Settings, *, preview: bool):
+    if case.stop_status != "none" or case.status in {"ended", "cancelled"}:
+        raise ValueError("INTERVIEW_STOPPED")
     upstream = outline_inputs(case)
     dimensions = outline_dimensions(case)
     dimension_ids = {dimension["id"] for dimension in dimensions}
     methods = retrieve(
         session, {"responsibility", "results", "detail"}, preview=preview, structured_only=True
     )
+    outline_id = case.session_data.get("outline_id")
+    existing = session.get(OutreachArtifact, outline_id) if outline_id else None
+    if reusable_outline(case, existing, methods, preview=preview):
+        return existing
+    if case.session_data.get("answers"):
+        raise ValueError("INTERVIEW_EXECUTION_ALREADY_STARTED")
     result = generate_json(
         settings,
         OUTLINE_INSTRUCTION,

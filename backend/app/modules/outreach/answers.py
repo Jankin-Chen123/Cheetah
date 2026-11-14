@@ -8,25 +8,48 @@ from app.modules.outreach.interview import termination_reason
 from app.modules.outreach.models import OutreachCase
 
 
+def record_candidate_stop(case: OutreachCase, statement: str, expected_revision: int):
+    """Stop before question or processing gates and retain a separate event."""
+    if case.revision != expected_revision:
+        raise ValueError("VERSION_CONFLICT")
+    if case.status in {"ended", "cancelled"} or case.stop_status != "none":
+        raise ValueError("INTERVIEW_STOPPED")
+    case.session_data = {
+        **case.session_data,
+        "decision_status": "stopped",
+        "termination_reason": "candidate_requested_stop",
+        "candidate_stop_statement": statement,
+        "candidate_stop_recorded_at": time.time(),
+    }
+    if case.session_data.get("attempts"):
+        from app.modules.outreach.voice import confirm_mock_stop
+
+        case.stop_status = "requested"
+        confirm_mock_stop(case)
+    else:
+        case.stop_status = "confirmed"
+        case.status = "ended"
+        case.revision += 1
+
+
 def record_answer(case: OutreachCase, answer: str, expected_revision: int):
+    if termination_reason(answer, 0, 0) == "candidate_requested_stop":
+        record_candidate_stop(case, answer, expected_revision)
+        return None
     if case.revision != expected_revision:
         raise ValueError("VERSION_CONFLICT")
     if case.status in {"ended", "cancelled"} or case.stop_status != "none":
         raise ValueError("INTERVIEW_STOPPED")
     from app.modules.outreach.preflight import require_preflight
 
-    if termination_reason(answer, 0, 0) != "candidate_requested_stop":
-        require_preflight(case)
-        if case.session_data.get("outline_requires_regeneration"):
-            raise ValueError("OUTLINE_REGENERATION_REQUIRED")
+    require_preflight(case)
+    if case.session_data.get("outline_requires_regeneration"):
+        raise ValueError("OUTLINE_REGENERATION_REQUIRED")
     data = case.session_data
     question = data.get("current_question")
     if not question or not answer.strip():
         raise ValueError("QUESTION_AND_ANSWER_REQUIRED")
-    if (
-        data.get("decision_status") == "pending"
-        and termination_reason(answer, 0, 0) != "candidate_requested_stop"
-    ):
+    if data.get("decision_status") == "pending":
         raise ValueError("DECISION_PENDING")
     now = time.time()
     answers = [
@@ -69,7 +92,7 @@ def record_answer(case: OutreachCase, answer: str, expected_revision: int):
 def request_stop(case: OutreachCase, expected_revision: int):
     if case.revision != expected_revision:
         raise ValueError("VERSION_CONFLICT")
-    if case.stop_status == "confirmed":
+    if case.status in {"ended", "cancelled"} or case.stop_status == "confirmed":
         return
     case.stop_status = "requested"
     case.session_data = {**case.session_data, "termination_reason": "reviewer_requested_stop"}

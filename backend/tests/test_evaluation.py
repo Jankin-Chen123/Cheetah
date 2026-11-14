@@ -1,4 +1,5 @@
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from pydantic import ValidationError
@@ -8,6 +9,7 @@ from app.modules.outreach.evaluation import (
     EvidenceAssessment,
     validate_evaluation,
 )
+from app.modules.outreach.recommendation import require_evaluation_execution_binding
 
 
 def template():
@@ -53,6 +55,22 @@ def test_unknown_evidence_rejected():
     ]
     with pytest.raises(ValueError, match="Unknown"):
         validate_evaluation(template(), assessments, {}, fixture_only=True)
+
+
+def test_approved_evaluation_requires_executed_standard_not_just_current_configuration():
+    standard = {"standard": {"job_id": "fixture-job", "version": 2}}
+    case = SimpleNamespace(session_data={"job_interview_standard": standard})
+    minutes = SimpleNamespace(content={})
+    approved = {"status": "approved"}
+    with pytest.raises(ValueError, match="EVALUATION_EXECUTED_STANDARD_MISMATCH"):
+        require_evaluation_execution_binding(case, minutes, approved)
+    minutes.content["execution_session"] = {
+        "executed_standard": {"standard": {"job_id": "fixture-job", "version": 1}}
+    }
+    with pytest.raises(ValueError, match="EVALUATION_EXECUTED_STANDARD_MISMATCH"):
+        require_evaluation_execution_binding(case, minutes, approved)
+    minutes.content["execution_session"]["executed_standard"] = standard
+    require_evaluation_execution_binding(case, minutes, approved)
 
 
 @pytest.mark.parametrize("fault", [None, "band", "reason", "missing_ev", "unknown_ev", "dimension"])

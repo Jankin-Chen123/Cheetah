@@ -22,7 +22,7 @@ def case_task(tmp_path):
                 application_id="app",
                 candidate_id="candidate",
                 job_id="job",
-                snapshot={},
+                snapshot={"fixture_only": True},
                 session_data={
                     "decision_status": "pending",
                     "answers": [
@@ -169,6 +169,42 @@ def test_no_matching_knowledge_reuses_understanding_reply(tmp_path, monkeypatch,
             assert case.session_data["termination_reason"] == "candidate_requested_stop"
         else:
             assert case.session_data["current_question"]["question"] == "您当时具体协调了哪些事项？"
+
+
+def test_no_additions_is_not_a_model_detected_stop(tmp_path, monkeypatch):
+    engine, task_id = case_task(tmp_path)
+    with Session(engine) as db, db.begin():
+        case = db.get(OutreachCase, "case")
+        latest = case.session_data["answers"][-1]
+        case.session_data = {
+            **case.session_data,
+            "answers": [{**latest, "text": "没有补充，谢谢"}],
+        }
+    monkeypatch.setattr("app.modules.outreach.followup_worker.retrieve", lambda *a, **k: [])
+    monkeypatch.setattr(
+        "app.modules.outreach.understanding.understand_turn",
+        lambda *a: (
+            TurnUnderstanding(intent="stop", response="再见。"),
+            {"model": "fixture", "usage": None},
+        ),
+    )
+
+    def model(settings, instruction, context):
+        assert context["understanding"]["intent"] == "answer"
+        assert context["understanding"]["response"] is None
+        return {
+            "content": {"action": "end", "reason": "正常收尾"},
+            "model": "fixture",
+            "usage": None,
+        }
+
+    monkeypatch.setattr("app.modules.outreach.followup_worker.generate_json", model)
+    execute_followup(engine, Settings(dialogue_understanding_enabled=True), task_id)
+    with Session(engine) as db:
+        case = db.get(OutreachCase, "case")
+        assert case.status == "ended"
+        assert case.stop_status == "none"
+        assert case.session_data["termination_reason"] == "interview_completed"
 
 
 def test_memory_correction_replaces_old_value_and_rejects_unknown_source(monkeypatch):

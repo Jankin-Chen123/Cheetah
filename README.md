@@ -101,6 +101,8 @@ npm test
 
 错误响应包含请求标识。数据库错误不会在响应中返回原始连接串或密码。
 
+本地 `/goal` 工作台另接入了 AI 面试准备、候选人许可与会话、D08/D09 后处理、D10 版本审核及下载。内部 D07—D09 Word 与客户 D10 Markdown/Word 分开。具体请求以 [运行时 OpenAPI 快照](docs/api/openapi.goal-local.json) 和 [本地接口补充](docs/api/goal-local.md) 为准。当前验收范围及尚待验证的完整链路见 [AI 面试验收](docs/Goal_验收说明.md)。本地验收 worker 必须用 `--case-id` 限定到隔离案例。
+
 ## 项目文档
 
 - [品牌故事与文案](docs/Cheetah_品牌故事与文案_V1.md)

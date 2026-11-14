@@ -1349,6 +1349,56 @@
         }
       }
     },
+    "/api/v1/calls/{case_id}/outline-limitations-review": {
+      "post": {
+        "tags": [
+          "outreach"
+        ],
+        "summary": "Review Outline Limitations",
+        "operationId": "review_outline_limitations_api_v1_calls__case_id__outline_limitations_review_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutlineLimitationsReviewInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/candidate/calls/{case_id}": {
       "get": {
         "tags": [
@@ -3449,6 +3499,34 @@
           "expected_revision"
         ],
         "title": "OutlineInput"
+      },
+      "OutlineLimitationsReviewInput": {
+        "properties": {
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Revision"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Version"
+          },
+          "rationale": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Rationale"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_revision",
+          "expected_version",
+          "rationale"
+        ],
+        "title": "OutlineLimitationsReviewInput"
       },
       "PracticeInput": {
         "properties": {

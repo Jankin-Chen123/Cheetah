@@ -36,7 +36,7 @@ def professional_profile(upstream, minutes=None):
             ]
         )
         for record in education:
-            if isinstance(record, dict):
+            if isinstance(record, dict) and record:
                 lines.append(
                     "| "
                     + " | ".join(
@@ -56,7 +56,7 @@ def professional_profile(upstream, minutes=None):
     lines.append("### 工作经历")
     if isinstance(employment, list):
         for record in employment:
-            if not isinstance(record, dict):
+            if not isinstance(record, dict) or not record:
                 continue
             selected = {
                 key: text(record.get(key))
@@ -147,7 +147,7 @@ def professional_profile(upstream, minutes=None):
     lines.append("薪酬保留原始币种、月/年及税前税后表述；未提供口径不推算。")
     projects = []
     for record in resume.get("projects", []) if isinstance(resume.get("projects"), list) else []:
-        if not isinstance(record, dict):
+        if not isinstance(record, dict) or not record:
             continue
         project = {
             key: text(record.get(key))

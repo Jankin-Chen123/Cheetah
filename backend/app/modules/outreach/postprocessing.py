@@ -2,6 +2,7 @@
 
 from sqlalchemy import select
 
+from app.modules.outreach.minutes import require_evaluation_ready
 from app.modules.outreach.models import OutreachArtifact, OutreachCase
 from app.modules.outreach.steps import register_step
 
@@ -42,6 +43,10 @@ def schedule_postprocessing(session, *, case_id: str | None = None):
                 continue
             step = "D08"
         elif "D09" not in current:
+            try:
+                require_evaluation_ready(case, current["D08"])
+            except ValueError:
+                continue
             if any(artifact.type == "D09" for artifact in artifacts):
                 continue
             step = "D09"

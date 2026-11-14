@@ -96,7 +96,7 @@ def test_end_to_postprocessing_survives_poll_restart_without_approval(
         report = session.scalar(select(OutreachArtifact).where(OutreachArtifact.type == "D10"))
         if report:
             assert report.review_status == "pending_review"
-            assert "结果尚未独立核实" in report.content["unknowns"]
+            assert "部分岗位相关信息仍待核实。" in report.content["unknowns"]
         case = session.get(OutreachCase, "case")
         case.session_data = {**case.session_data, "correction_requires_recompute": True}
         for artifact in session.scalars(select(OutreachArtifact)):

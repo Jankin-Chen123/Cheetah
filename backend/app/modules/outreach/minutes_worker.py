@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.integrations.bailian import ModelUnavailable, generate_json
 from app.modules.outreach.budget import reserve_model_request
 from app.modules.outreach.handoff import require_extraction_session
-from app.modules.outreach.minutes import Minutes, extraction_indicators, generate_minutes
+from app.modules.outreach.minutes import extraction_context, extraction_indicators, generate_minutes
 from app.modules.outreach.models import ModelStep, OutreachCase
 from app.modules.outreach.postprocessing_prompts import MINUTES_INSTRUCTION
 from app.modules.outreach.steps import claim_step, finish_step, result_still_current
@@ -28,6 +28,7 @@ def execute_minutes(engine, settings, task_id):
             require_extraction_session(session, case)
             indicators = extraction_indicators(case)
             reserve_model_request(case, settings, "D08")
+            context = extraction_context(case, answers, indicators)
         except (ModelUnavailable, ValueError) as error:
             finish_step(task, error_code=str(error))
             return
@@ -35,7 +36,7 @@ def execute_minutes(engine, settings, task_id):
         result = generate_json(
             settings.model_copy(update={"model_max_tokens": settings.extraction_max_tokens}),
             MINUTES_INSTRUCTION,
-            {"schema": Minutes.model_json_schema(), "answers": answers, "indicators": indicators},
+            context,
         )
         failure = None
     except ModelUnavailable as error:

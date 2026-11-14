@@ -181,6 +181,8 @@ farewell=true仅允许已结束场次播报固定问候，不依赖已结束场�
 
 新D10在第一部分匹配线索后增加第二部分职业资料，从upstream_content.D03读取明确的profile、education、employment字段；employment逐条保留period/company/position/department/reports_to/team_scope/responsibilities/achievements，不推断年限、日期、任职或离职原因。没有结构化任职则明确待补充。该字段适配尚不代替完整A09资料共享许可合同。
 
+内部文档使用 `GET /outlines/{artifact_id}/export?version=N`（D07）、`GET /minutes/{artifact_id}/export?version=N`（D08）和 `GET /evaluations/{artifact_id}/export?version=N`（D09）。三者仅返回可编辑 Word，校验登录、案例归属和产物类型；不存在、类型不符或不归属均返回 404。失效或版本不符返回 409，分别为 `OUTLINE_VERSION_INVALID`、`MINUTES_VERSION_INVALID`、`EVALUATION_VERSION_INVALID`。文件名分别为 `internal-outline-vN.docx`、`internal-minutes-vN.docx`、`internal-evaluation-vN.docx`。内部下载不使用客户分享许可或 D10 审批。
+
 ### 候选人逐项处理许可与会话交接
 
 `POST /candidate/calls/{case_id}/processing-permissions` 使用候选人邀请Bearer、Origin校验及expected_revision，请求purpose为formal_interview/transcription/extraction/evaluation之一，authorized为布尔；响应为当前候选人会话视图（新增processing_permissions状态映射）。服务端生成receipt_id、时间、policy_version和历史，不接受客户端自填审批人或许可时间。撤回使D08—D10及旧批准失效，当前revision改变使迟到模型结果不能落库。候选人界面逐项同意后才开放接通，撤回时停止页面音频采集；此许可不包含向客户分享或发送邮件。
@@ -202,6 +204,16 @@ D10的client_profile.unresolved_conflicts非空时，批准与Markdown/Word导�
 
 请求包含 `expected_revision`、`minutes_id`、`minutes_version`、`field_path`、`value`、`answer_id`、`quote`、`reason`，可选 `conflict_index`。字段路径白名单覆盖 `profile` 当前城市/公司/岗位/在职状态，已有 `employment` 任职字段、已有 `education` 教育字段，以及 `qualifications`、`additional_projects_or_results`、`career_preferences` 列表项（允许顺序追加）。不接受任意 JSON 路径。
 
-确认值必须包含于引用原话，原话必须逐字出现在同案例已保存回答中；冲突索引必须属于当前有效 D08。确认记录绑定 D03 引用、D08 ID/版本、回答 ID/版本、操作者和理由。返回 `{revision, confirmation}`。来源变更后不再采用旧确认，不修改 D03、D08 原件；当前 D10 及批准失效，须显式生成新报告并单独审批。无关冲突继续保留。人工确认不等于独立核实，也不更改 D09 分数。
+确认值必须包含于引用原话，原话必须逐字出现在同案例已保存回答中。确认记录绑定 D03 引用、D08 ID/版本、回答 ID/版本、操作者和理由。返回 `{revision, confirmation}`。来源变化后旧确认失效。确认与撤销使当前 D10 和批准失效，须显式生成新报告并单独审批。D03、D08 原件和 D09 分数保留。
+
+`POST /api/v1/calls/{case_id}/career-confirmations/{confirmation_id}/revoke` 接收 `expected_revision` 和 `reason`，成功返回 `{revision}`。撤销先追加的一行后，投影可保留空对象或空字符串作为占位，后续确认仍使用原索引。前端隐藏空项时须保留写入索引。
+
+`conflict_index` 可引用 D08 的 `career_conflict_evidence`。提交字段、口述值、回答 ID 和原话须与该条证据一致，否则返回 `CAREER_CONFLICT_EVIDENCE_MISMATCH`。D10 批准与导出从 D09 引用的有效 D08 重新核对当前确认。未绑定的自由文本冲突仍需更正来源并显式重算。
 
 并发、失效来源、非法字段/引文/冲突引用返回 409；请求格式错误 422，非所属对象 404。运行时 OpenAPI 见 `openapi.goal-local.json`。目前代码及局部测试已接入，尚未完成此新增流程的浏览器与真实模型联合验收。
+
+候选人 GET 会话视图返回 `formal_outline_error`。正式面试确认、普通回答和正式转写校验当前 D07，业务错误为 `OUTLINE_REGENERATION_REQUIRED`、`OUTLINE_BLOCKED` 或 `OUTLINE_READINESS_REVIEW_REQUIRED`。会话未进入正式面试时，WebSocket 继续支持意愿沟通。
+
+D09 手动创建与自动调度、评分 worker 共用 A08 就绪校验。手动请求缺少当前有效 D08 时返回 `EVALUATION_READY_EXTRACTION_REQUIRED`。`PARTIAL_REVIEW` 或 `BLOCKED` 时返回 `MINUTES_REVIEW_REQUIRED`，自动调度保留 D08 供复核。无正式会话的隔离演示仅兼容 `DEMO_PREVIEW` 或历史空状态。
+
+`POST /api/v1/calls/{case_id}/outline-limitations-review` 接收 `expected_revision`、D07 的 `expected_version` 和 `rationale`，返回 `{revision, review}`。使用审核人会话、CSRF 和案例归属校验。回执记录当前准备稿 ID、版本、限制列表、审核人和理由。仅当前有效的 `READY_WITH_LIMITATIONS` 稿件可复核。D07 换版、限制变更或上游版本失效后，旧回执不能通过正式入口校验。

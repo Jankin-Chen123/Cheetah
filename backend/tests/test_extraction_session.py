@@ -17,6 +17,11 @@ from app.modules.outreach.handoff import require_extraction_session
         "version",
         "turn",
         "correction",
+        "parent",
+        "obsolete_receipt",
+        "stop_command",
+        "transcription_ref",
+        "outline_review",
     ],
 )
 def test_formal_extraction_requires_execution_and_independent_permissions(fault):
@@ -60,10 +65,11 @@ def test_formal_extraction_requires_execution_and_independent_permissions(fault)
         organization_id="org",
         job_id="job",
         candidate_id="person",
-        snapshot={},
+        snapshot={"fixture_only": True},
         session_data={
             "a06_session": package,
-            "answers": [{"id": "a", "text": "原话", "question": {"id": "q"}}],
+            "processing_permissions": deepcopy(package["permissions"]),
+            "answers": [{"id": "a", "turn_id": "t", "text": "原话", "question": {"id": "q"}}],
         },
     )
     if fault == "identity":
@@ -80,6 +86,17 @@ def test_formal_extraction_requires_execution_and_independent_permissions(fault)
         package["answer_turns"][0]["speaker"] = "interviewer"
     elif fault == "correction":
         case.session_data["answers"][0]["text"] = "已更正"
+    elif fault == "parent":
+        package["answer_turns"][0]["parent_question_id"] = "unrelated"
+    elif fault == "obsolete_receipt":
+        case.session_data["processing_permissions"]["extraction"]["receipt_id"] = "new"
+    elif fault == "stop_command":
+        case.session_data["answers"][0]["text"] = "请结束面试"
+        package["answer_turns"][0]["text"] = "请结束面试"
+    elif fault == "transcription_ref":
+        package["answer_turns"][0]["transcription_ref"] = "foreign-task"
+    elif fault == "outline_review":
+        package["outline_readiness_review"] = {"outline_id": "foreign-outline"}
     session = SimpleNamespace(get=lambda *args: outline)
     case.session_data["answers"][0]["execution_ref"] = {
         "outline_ref": {"id": "outline", "version": 1},
@@ -99,3 +116,6 @@ def test_fixture_exception_does_not_enable_unrecorded_formal_interview():
         require_extraction_session(None, case)
     case.snapshot = {"fixture_only": True}
     assert require_extraction_session(None, case) is None
+    case.session_data["processing_permissions"] = {"formal_interview": {"status": "AUTHORIZED"}}
+    with pytest.raises(ValueError, match="A06_SESSION_REQUIRED"):
+        require_extraction_session(None, case)

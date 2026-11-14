@@ -11,11 +11,21 @@ from app.modules.outreach.handoff import question_execution_ref
 from app.modules.outreach.interview import (
     InterviewDecision,
     bounded_topic_decision,
+    closing_acknowledged,
+    no_final_additions,
     validate_decision,
 )
 from app.modules.outreach.knowledge import retrieve
 from app.modules.outreach.models import ModelStep, OutreachArtifact, OutreachCase
+from app.modules.outreach.outline_inputs import require_execution_outline
+from app.modules.outreach.processing_permissions import PURPOSES, require_processing_permission
 from app.modules.outreach.steps import claim_step, finish_step, result_still_current
+
+
+def require_followup_execution(case, outline):
+    require_execution_outline(case, outline)
+    for purpose in PURPOSES:
+        require_processing_permission(case, purpose)
 
 
 def update_phase(engine, task_id, phase):
@@ -66,7 +76,36 @@ def execute_followup(engine, settings: Settings, task_id: str):
             if data.get("outline_id")
             else None
         )
+        try:
+            require_followup_execution(case, outline)
+        except ValueError as error:
+            finish_step(task, error_code=str(error))
+            return
         program_decision = bounded_topic_decision(data, outline.content if outline else {})
+        latest = data["answers"][-1]
+        planned = outline.content.get("questions", []) if outline else []
+        answered_ids = {answer["question"].get("id") for answer in data["answers"]}
+        remaining_required = next(
+            (
+                question
+                for question in planned
+                if question.get("priority") == "MUST" and question["id"] not in answered_ids
+            ),
+            None,
+        )
+        if not remaining_required and closing_acknowledged(
+            latest["question"]["question"], latest["text"]
+        ):
+            case.status = "ended"
+            case.session_data = {
+                **data,
+                "current_question": None,
+                "decision_status": "completed",
+                "termination_reason": "interview_completed",
+            }
+            case.revision += 1
+            finish_step(task, result_ref={"kind": "program_completion"})
+            return
         execution_outline = question_execution_ref(outline, "") if outline else None
         dimension_ids = set(
             outline.content.get("dimension_ids", ["responsibility", "results"])
@@ -173,6 +212,9 @@ def execute_followup(engine, settings: Settings, task_id: str):
     if settings.dialogue_understanding_enabled:
         update_phase(engine, task_id, "responding")
     try:
+        if plan and plan.intent == "stop" and no_final_additions(data["answers"][-1]["text"]):
+            plan = plan.model_copy(update={"intent": "answer", "response": None})
+            context["understanding"] = plan.model_dump()
         if plan and plan.intent == "stop":
             result = {
                 "content": {
@@ -227,6 +269,22 @@ def execute_followup(engine, settings: Settings, task_id: str):
                 context,
             )
         payload = dict(result["content"])
+        if (
+            payload.get("action") == "end"
+            and remaining_required
+            and not (plan and plan.intent == "stop")
+        ):
+            payload = {
+                "action": "next_topic",
+                "question": remaining_required["question"],
+                "dimension_id": remaining_required["dimension_id"],
+                "reason": "提纲仍有未回答的必问题，继续当前提纲。",
+            }
+            result = {
+                **result,
+                "generator_kind": "program_topic_transition",
+                "source_mode": "manual",
+            }
         if settings.dialogue_understanding_enabled and isinstance(
             payload.get("method_entry_ids"), list
         ):
@@ -319,6 +377,19 @@ def execute_followup(engine, settings: Settings, task_id: str):
             task.status = "cancelled"
             task.detail = {**task.detail, "error_code": "INPUT_CHANGED_OR_STOPPED"}
             return
+        outline_id = case.session_data.get("outline_id")
+        current_outline = session.get(OutreachArtifact, outline_id) if outline_id else None
+        try:
+            require_followup_execution(case, current_outline)
+        except ValueError as error:
+            task.status = "cancelled"
+            task.detail = {**task.detail, "error_code": str(error)}
+            return
+        current_execution = question_execution_ref(current_outline, "") if current_outline else None
+        if current_execution != execution_outline:
+            task.status = "cancelled"
+            task.detail = {**task.detail, "error_code": "INPUT_CHANGED_OR_STOPPED"}
+            return
         if not failure and settings.dialogue_understanding_enabled and methods:
             current_methods = {
                 m["entry_id"]: m
@@ -382,6 +453,17 @@ def execute_followup(engine, settings: Settings, task_id: str):
                 "provider": result.get("provider", settings.text_provider),
             },
         ]
+        planned_question = next(
+            (
+                q
+                for q in context["outline_questions"]
+                if decision.action == "next_topic"
+                and q["question"] == decision.question
+                and q["dimension_id"] == decision.dimension_id
+            ),
+            None,
+        )
+        question_id = (planned_question or {}).get("id") or f"followup-{len(history)}"
         case.session_data = {
             **case.session_data,
             "decisions": history,
@@ -394,13 +476,13 @@ def execute_followup(engine, settings: Settings, task_id: str):
             "current_question": None
             if decision.action == "end"
             else {
-                "id": f"followup-{len(history)}",
+                "id": question_id,
                 "question": decision.question,
                 "dimension_id": decision.dimension_id,
                 "method_entry_ids": decision.method_entry_ids,
                 "execution_ref": {
                     **execution_outline,
-                    "question_id": f"followup-{len(history)}",
+                    "question_id": question_id,
                     "parent_question_id": (
                         (case.session_data["answers"][-1].get("execution_ref") or {}).get(
                             "parent_question_id"
@@ -416,7 +498,8 @@ def execute_followup(engine, settings: Settings, task_id: str):
         }
         if decision.action == "end":
             case.status = "ended"
-            case.stop_status = "confirmed"
+            if plan and plan.intent == "stop":
+                case.stop_status = "confirmed"
             case.session_data = {
                 **case.session_data,
                 "termination_reason": "candidate_requested_stop"
