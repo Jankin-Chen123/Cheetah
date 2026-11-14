@@ -1,5 +1,7 @@
 # HTTP 数据模型、状态与前端映射
 
+2026-11-15：人才导入支持 DOC/DOCX、文本 PDF、UTF-8 TXT；旧版 DOC 仅提取主文档，拒绝加密、损坏或越界内容。任务新增稳定失败码 MODEL_OUTPUT_TRUNCATED（已确认截断，结算用量，不自动重试）与 MODEL_OUTPUT_INVALID（已确认格式不兼容；允许的显式恢复仅重放缓存，最多至既有尝试上限）。EXTERNAL_RESULT_UNKNOWN 继续表示未核对的外部结果，不自动重发。响应字段和来源枚举不变。[实际验证](../beta-validation-2026-11-15.md)。
+
 初筛 V2：`RuleContent.screening_rubric` 保存独立于面试标准的岗位七维评分规则；`D01Content.job_form`、`D03Content.resume_form/document_metadata` 为完整表单；`D05Content.portrait/assessment_refs` 为画像及版本；`D06Content.assessment/score_summary` 保存逐维证据和程序计算值。`coverage<100` 时 `total=null`，`contribution` 不能当正式总分。岗位分析增加后续任务类型和 `continuation_task_id`，主任务等待整个建议链完成。[完整执行口径](../intake-agents.md)。
 
 本文解释 [OpenAPI 草案](openapi.v1.json) 的字段语义。HTTP 读模型与当前 `frontend/src/domain/workspace.ts` 的本地演示模型不同，接入时需要转换层。所有样例仅用于隔离测试。

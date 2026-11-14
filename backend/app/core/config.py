@@ -34,7 +34,8 @@ class Settings(BaseSettings):
     model_endpoint: str | None = None
     model_api_key: SecretStr | None = None
     model_name: str | None = None
-    model_timeout_seconds: int = Field(default=30, ge=1, le=90)
+    model_timeout_seconds: int = Field(default=90, ge=1, le=90)
+    model_thinking: Literal["enabled", "disabled"] | None = None
     model_max_output_tokens: int = Field(default=16000, ge=100, le=64000)
     job_model_call_limit: int = Field(default=30, ge=1, le=1000)
     job_model_token_limit: int = Field(default=300000, ge=1)
@@ -64,7 +65,7 @@ class Settings(BaseSettings):
     a03_per_object_searches: int = Field(default=3, ge=1, le=8)
     a03_max_seconds: int = Field(default=300, ge=30, le=900)
     a03_no_progress_limit: int = Field(default=2, ge=1, le=5)
-    task_lease_seconds: int = Field(default=120, ge=100, le=600)
+    task_lease_seconds: int = Field(default=300, ge=100, le=600)
     task_attempt_limit: int = Field(default=3, ge=1, le=5)
     batch_limit: int = Field(default=10, ge=1, le=10)
     file_byte_limit: int = Field(default=5242880, ge=1, le=5242880)

@@ -3,10 +3,12 @@
 import json
 import re
 import xml.etree.ElementTree as ET
+from copy import deepcopy
 from io import BytesIO
 from zipfile import BadZipFile, ZipFile
 
 import httpx
+from json_repair import repair_json
 from pypdf import PdfReader
 
 from app.core.config import Settings
@@ -147,6 +149,10 @@ def parse_file(name: str, media_type: str, data: bytes, settings: Settings) -> s
             raise DomainError("PDF_TEXT_UNAVAILABLE", "PDF 无法提取文本", 422) from exc
         if all(part.startswith("[[UNREADABLE_PAGE:") for part in parts):
             raise DomainError("PDF_TEXT_UNAVAILABLE", "未提取到文本，暂不支持扫描 PDF OCR", 422)
+    elif suffix == "doc" and media_type in {"application/msword", "application/octet-stream"}:
+        from app.modules.intake.legacy_word import extract_legacy_word
+
+        text = extract_legacy_word(data)
     elif suffix == "docx" and media_type in {
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "application/octet-stream",
@@ -205,7 +211,7 @@ def parse_file(name: str, media_type: str, data: bytes, settings: Settings) -> s
     else:
         raise DomainError(
             "UNSUPPORTED_FILE_TYPE",
-            "支持 DOCX、文本 PDF 和 UTF-8 TXT；图片和旧版 Word 需转换为文本",
+            "支持 DOC/DOCX、文本 PDF 和 UTF-8 TXT；扫描图片需转换为文本",
             415,
         )
     text = text.replace("\r\n", "\n").replace("\r", "\n").strip()
@@ -239,8 +245,140 @@ def model_messages(kind: str, text: str) -> list[dict]:
     ]
 
 
+def normalize_extraction_output(data: dict) -> dict:
+    """Only downgrade unsupported facts; never repair a missing business value."""
+    result = deepcopy(data)
+
+    def normalize(fact, *, summary=False):
+        if not isinstance(fact, dict):
+            return
+        if summary:
+            # Legacy summaries have no note field; full forms retain their notes.
+            fact.pop("note", None)
+        status = fact.get("status")
+        if status in {"unknown", "conflict"}:
+            if not summary and fact.get("value") is not None and not fact.get("note"):
+                fact["note"] = "模型标记此项未知或冲突，不能作为已确认事实"
+            fact["value"], fact["quote"] = None, None
+        elif status == "stated" and (fact.get("value") is None or not fact.get("quote")):
+            fact.update(value=None, quote=None, status="unknown")
+            if not summary:
+                fact["note"] = "缺少完整原文支持，需核实"
+
+    for fact in result.get("facts", {}).values():
+        normalize(fact, summary=True)
+    form = result.get("job_form") or result.get("resume_form")
+    if isinstance(form, dict):
+        if result.get("resume_form"):
+            from app.modules.intake.form_contracts import RESUME_FIELDS
+
+            # Research objects are derived from the checked form, never this redundant hint.
+            form.pop("research_objects", None)
+            sections = form.get("sections")
+            if isinstance(sections, dict):
+                for section in RESUME_FIELDS:
+                    if section in form and section not in sections:
+                        sections[section] = form.pop(section)
+            if isinstance(result.get("limitations"), list):
+                form["limitations"] = [*form.get("limitations", []), *result.pop("limitations")]
+        for fact in form.get("fields", {}).values():
+            normalize(fact)
+        for statements in form.get("jd", {}).values():
+            for fact in statements:
+                normalize(fact)
+        for records in form.get("sections", {}).values():
+            for record in records:
+                for fact in record.get("fields", {}).values():
+                    normalize(fact)
+    return result
+
+
+def _json_values(content: str) -> list:
+    """Keep every key, scalar and colon; only container/separator repairs are permitted."""
+    pattern = re.compile(
+        r'"(?:[^"\\\x00-\x1f]|\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4}))*"'
+        r"|true|false|null|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?|:|[{}\[\],]|\s+"
+    )
+    values, position = [], 0
+    for match in pattern.finditer(content):
+        if match.start() != position:
+            raise ValueError("Invalid or incomplete JSON value")
+        position = match.end()
+        token = match.group()
+        if token.isspace() or token in "{}[],":
+            continue
+        values.append(("string", json.loads(token)) if token.startswith('"') else token)
+    if position != len(content):
+        raise ValueError("Invalid or incomplete JSON value")
+    return values
+
+
+def _reject_nonfinite(value):
+    raise ValueError("Non-finite JSON number")
+
+
+def _json_object(content: str) -> dict:
+    try:
+        data = json.loads(content, parse_constant=_reject_nonfinite)
+    except json.JSONDecodeError:
+        # A compatible provider may omit braces or separators despite finish_reason=stop.
+        # Reject all changes to keys/values and all incomplete values before schema checking.
+        if not content or content[-1] in ":,":
+            raise
+        original = _json_values(content)
+        repaired = repair_json(content, ensure_ascii=False, skip_json_loads=True)
+        if not isinstance(repaired, str) or _json_values(repaired) != original:
+            raise ValueError("JSON repair would change content") from None
+        data = json.loads(repaired, parse_constant=_reject_nonfinite)
+    if not isinstance(data, dict):
+        raise ValueError("Expected an object")
+    return data
+
+
+class ModelOutputError(ValueError):
+    """A confirmed response whose output is unusable, rather than an unknown call."""
+
+    def __init__(self, code: str, tokens: int, payload=None):
+        super().__init__(code)
+        self.code = code
+        self.tokens = tokens
+        self.payload = payload
+
+
+def parse_model_payload(payload: dict) -> tuple[dict, int]:
+    usage = payload.get("usage") if isinstance(payload, dict) else None
+    total = usage.get("total_tokens", 0) if isinstance(usage, dict) else 0
+    tokens = total if isinstance(total, int) and not isinstance(total, bool) and total > 0 else 0
+    try:
+        choice = payload["choices"][0]
+        if choice.get("finish_reason") == "length":
+            raise ModelOutputError("MODEL_OUTPUT_TRUNCATED", tokens, payload)
+        if choice.get("finish_reason") not in {None, "stop"}:
+            raise ModelOutputError("MODEL_OUTPUT_INVALID", tokens, payload)
+        content = choice["message"]["content"].strip()
+        fenced = re.fullmatch(r"```(?:json)?\s*\n?(.*?)\n?```", content, flags=re.DOTALL)
+        data = _json_object(fenced.group(1).strip() if fenced else content)
+    except ModelOutputError:
+        raise
+    except (ValueError, KeyError, IndexError, TypeError, AttributeError, RecursionError) as exc:
+        raise ModelOutputError("MODEL_OUTPUT_INVALID", tokens, payload) from exc
+    return data, tokens
+
+
 def invoke_model(settings: Settings, kind: str, text: str, request_id: str) -> tuple[dict, int]:
     model_ready(settings)
+    body = {
+        "model": settings.model_name,
+        "messages": model_messages(kind, text),
+        "response_format": {"type": "json_object"},
+        "max_tokens": settings.model_max_output_tokens,
+        "temperature": 0,
+    }
+    thinking = settings.model_thinking
+    if thinking is None and settings.model_name.casefold().startswith("deepseek"):
+        thinking = "disabled"
+    if thinking is not None:
+        body["thinking"] = {"type": thinking}
     with httpx.Client(
         timeout=httpx.Timeout(settings.model_timeout_seconds), follow_redirects=False
     ) as client:
@@ -251,13 +389,7 @@ def invoke_model(settings: Settings, kind: str, text: str, request_id: str) -> t
                 "Authorization": "Bearer " + settings.model_api_key.get_secret_value(),
                 "Idempotency-Key": request_id,
             },
-            json={
-                "model": settings.model_name,
-                "messages": model_messages(kind, text),
-                "response_format": {"type": "json_object"},
-                "max_tokens": settings.model_max_output_tokens,
-                "temperature": 0,
-            },
+            json=body,
         ) as response:
             response.raise_for_status()
             chunks, size = [], 0
@@ -267,10 +399,7 @@ def invoke_model(settings: Settings, kind: str, text: str, request_id: str) -> t
                     raise ValueError("Model response too large")
                 chunks.append(chunk)
             payload = json.loads(b"".join(chunks))
-        data = json.loads(payload["choices"][0]["message"]["content"])
-        total = payload.get("usage", {}).get("total_tokens", 0)
-        tokens = total if isinstance(total, int) and total > 0 else 0
-        return data, tokens
+        return parse_model_payload(payload)
 
 
 def mock_analysis(kind: str, text: str) -> dict:

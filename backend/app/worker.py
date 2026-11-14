@@ -128,7 +128,8 @@ def _finish_model(
         return _finish_standard(db, task, job, data)
     if task.kind == "job_analysis":
         profile = analysis.validate_quotes(
-            JobAnalysis.model_validate(data), analysis.job_material(job)
+            JobAnalysis.model_validate(analysis.normalize_extraction_output(data)),
+            analysis.job_material(job),
         )
         if task.payload.get("agent_spec_version") == 2 and profile.job_form is None:
             raise ValueError("A01 output is missing its complete standard form")
@@ -235,6 +236,11 @@ def _queue_standard(db, parent, job, kind, inputs):
 
 
 def _finish_standard(db, task, job, data):
+    if isinstance(data.get("rubric"), dict) and data["rubric"].get("dimensions_note") is None:
+        data = {
+            **data,
+            "rubric": {k: v for k, v in data["rubric"].items() if k != "dimensions_note"},
+        }
     rules = RuleContent.model_validate(job.draft)
     if task.kind == "interview_standard":
         standard = InterviewStandard.model_validate(data)
@@ -516,9 +522,10 @@ def run_once(settings: Settings, engine: Engine | None = None) -> bool:
                 and previous_usage
                 and previous_usage.result_payload is not None
             ):
-                task.result_refs = _finish_model(
-                    db, task, job, application, previous_usage.result_payload
-                )
+                cached = previous_usage.result_payload
+                if set(cached) == {"_confirmed_model_response"}:
+                    cached, _ = analysis.parse_model_payload(cached["_confirmed_model_response"])
+                task.result_refs = _finish_model(db, task, job, application, cached)
                 _complete_model_task(db, task)
                 refresh_batches(db, task.id)
                 return True
@@ -555,6 +562,20 @@ def run_once(settings: Settings, engine: Engine | None = None) -> bool:
             code = "INTERNAL_ERROR"
         with Session(engine) as db, db.begin():
             task = db.get(Task, task_id)
+            if task and isinstance(exc, analysis.ModelOutputError):
+                model_usage = db.get(ModelUsage, task.id)
+                if model_usage and model_usage.status == "reserved":
+                    settle_model(db, task, exc.tokens)
+                if model_usage:
+                    model_usage.result_payload = {"_confirmed_model_response": exc.payload}
+                task.external_state = "settled"
+                task.payload = {**task.payload, "model_reported_tokens": exc.tokens or None}
+                if task.status in {"running", "reconciling"}:
+                    task.status, task.error_code = "failed", exc.code
+                    task.finished_at = utcnow()
+                    task.revision += 1
+                    refresh_batches(db, task_id)
+                return True
             if task and task.lease_token == token and task.status == "running":
                 unknown = submitted or task.external_state in {"submitted", "unknown"}
                 task.status = "reconciling" if unknown else "failed"

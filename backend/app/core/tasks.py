@@ -70,6 +70,7 @@ def retryable(task: Task, settings: Settings) -> bool:
         task.kind in INTERNAL_KINDS
         and not task.payload.get("continuation_task_id")
         and task.status == "failed"
+        and task.error_code != "MODEL_OUTPUT_TRUNCATED"
         and task.external_state in {None, "settled"}
         and task.attempt_count < settings.task_attempt_limit
     )
@@ -131,6 +132,10 @@ def task_view(task: Task, settings: Settings, db: Session) -> dict:
         )
         for ref in task.payload.get("input_refs", [])
     ]
+    model_errors = {
+        "MODEL_OUTPUT_TRUNCATED": "模型输出已达长度上限，未生成完整结果；请核对推理模式和输出限额",
+        "MODEL_OUTPUT_INVALID": "模型已响应，但未返回有效的 JSON 对象；请核对模型配置",
+    }
     return {
         "id": task.id,
         "kind": task.kind,
@@ -146,7 +151,7 @@ def task_view(task: Task, settings: Settings, db: Session) -> dict:
         else None,
         "error": {
             "code": task.error_code,
-            "message": "任务未完成",
+            "message": model_errors.get(task.error_code, "任务未完成"),
             "request_id": task.id,
             "details": None,
         }

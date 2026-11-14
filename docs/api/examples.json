@@ -3483,6 +3483,106 @@
           }
         ]
       }
+    },
+    "task_model_output_truncated": {
+      "schema": "Task",
+      "value": {
+        "id": "fixture-task-001",
+        "kind": "job_analysis",
+        "status": "failed",
+        "revision": 3,
+        "resource_type": "job",
+        "resource_id": "fixture-job-001",
+        "input_refs": [
+          {
+            "kind": "material",
+            "id": "fixture-material-001",
+            "version": 1
+          }
+        ],
+        "result_refs": [],
+        "reason": null,
+        "error": {
+          "code": "MODEL_OUTPUT_TRUNCATED",
+          "message": "虚构示例：模型已确认截断，未返回完整结果",
+          "request_id": "fixture-request-001",
+          "details": null
+        },
+        "attempt_count": 1,
+        "retryable": false,
+        "allowed_actions": [],
+        "poll_after_ms": null,
+        "usage": {
+          "tokens": 16000,
+          "search_count": null,
+          "call_seconds": null,
+          "estimated_cost": null,
+          "actual_cost": null,
+          "currency": "CNY"
+        },
+        "budget": {
+          "limit": null,
+          "reserved": null,
+          "settled": null,
+          "estimated": null,
+          "remaining": null,
+          "currency": "CNY",
+          "reconciliation_status": "confirmed"
+        },
+        "created_at": "2026-11-13T02:20:00Z",
+        "started_at": "2026-11-13T02:20:00Z",
+        "finished_at": "2026-11-13T02:20:00Z"
+      }
+    },
+    "task_model_output_invalid": {
+      "schema": "Task",
+      "value": {
+        "id": "fixture-task-001",
+        "kind": "job_analysis",
+        "status": "failed",
+        "revision": 3,
+        "resource_type": "job",
+        "resource_id": "fixture-job-001",
+        "input_refs": [
+          {
+            "kind": "material",
+            "id": "fixture-material-001",
+            "version": 1
+          }
+        ],
+        "result_refs": [],
+        "reason": null,
+        "error": {
+          "code": "MODEL_OUTPUT_INVALID",
+          "message": "虚构示例：响应格式无法可靠恢复，内部重放次数已用尽",
+          "request_id": "fixture-request-001",
+          "details": null
+        },
+        "attempt_count": 3,
+        "retryable": false,
+        "allowed_actions": [],
+        "poll_after_ms": null,
+        "usage": {
+          "tokens": 16000,
+          "search_count": null,
+          "call_seconds": null,
+          "estimated_cost": null,
+          "actual_cost": null,
+          "currency": "CNY"
+        },
+        "budget": {
+          "limit": null,
+          "reserved": null,
+          "settled": null,
+          "estimated": null,
+          "remaining": null,
+          "currency": "CNY",
+          "reconciliation_status": "confirmed"
+        },
+        "created_at": "2026-11-13T02:20:00Z",
+        "started_at": "2026-11-13T02:20:00Z",
+        "finished_at": "2026-11-13T02:20:00Z"
+      }
     }
   }
 }

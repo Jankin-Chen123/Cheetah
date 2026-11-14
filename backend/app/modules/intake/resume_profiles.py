@@ -9,7 +9,9 @@ from app.modules.intake.service import queue_step, save_profile
 
 
 def prepare_profile(data, text, mode, *, full_form=True):
-    profile = analysis.validate_quotes(ResumeProfile.model_validate(data), text)
+    profile = analysis.validate_quotes(
+        ResumeProfile.model_validate(analysis.normalize_extraction_output(data)), text
+    )
     if full_form:
         if profile.resume_form is None:
             raise ValueError("A04 output is missing its nine-module standard form")

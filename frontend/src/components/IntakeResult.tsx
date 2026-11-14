@@ -1,10 +1,10 @@
-import { Descriptions, Empty, Table } from 'antd'
+import { Alert, Descriptions, Empty, Table } from 'antd'
 import type { components } from '../api/generated'
 
 const object = (value: unknown): Record<string, unknown> => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
 const list = (value: unknown): unknown[] => Array.isArray(value) ? value : []
 const text = (value: unknown) => typeof value === 'string' || typeof value === 'number' ? String(value) : '待确认'
-const factText = (value: unknown) => { const fact = object(value); return fact.status === 'stated' ? text(fact.value) : '待确认' }
+const factText = (value: unknown) => { const fact = object(value); return fact.status === 'stated' ? text(fact.value) : typeof fact.note === 'string' && fact.note.trim() ? `待确认：${fact.note}` : '待确认' }
 
 export default function IntakeResult({ artifact }: { artifact: components['schemas']['Artifact'] }) {
   const content = object(artifact.structured_content)
@@ -18,7 +18,8 @@ export default function IntakeResult({ artifact }: { artifact: components['schem
   </div>
   if (artifact.type === 'D03' && content.resume_form) {
     const sections = object(object(content.resume_form).sections)
-    return <div className="stack">{Object.entries(sections).map(([section, records]) => <section key={section}>
+    const form = object(content.resume_form)
+    return <div className="stack">{form.parse_status !== 'completed' && <Alert type="warning" showIcon title="简历仅部分识别，需补充或核实材料" description={list(form.limitations).map(text).join('；')} />}{Object.entries(sections).map(([section, records]) => <section key={section}>
       <h4>{section}</h4>{list(records).map((record, index) => <Descriptions key={index} column={1} size="small" bordered items={Object.entries(object(object(record).fields)).map(([key, value]) => ({ key, label: key, children: factText(value) }))} />)}
     </section>)}</div>
   }

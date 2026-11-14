@@ -136,6 +136,8 @@ function TalentDetails({ id, session }: { id: string; session: IntakeSession }) 
     {error && <Alert showIcon type="error" title={error} />}
     {person && <>
       <h2>{person.name}</h2><p>{statusText(person)} · {person.filename}</p>
+      {person.error_code && <Alert showIcon type={person.classification_state === 'reconciling' ? 'warning' : 'error'} title={({ MODEL_OUTPUT_TRUNCATED: '模型未返回完整内容，请核对推理模式与输出限额。', MODEL_OUTPUT_INVALID: '模型响应格式无法可靠读取，材料已保留，请核对服务端任务。', INVALID_MODEL_OUTPUT: '模型返回的字段或引用不符合要求，材料已保留。', EXTERNAL_RESULT_UNKNOWN: '模型调用结果尚未核对，系统不会自动重复提交。' } as Record<string, string>)[person.error_code] ?? '提取未完成，请核对服务端任务与依赖。'} />}
+      {person.profile?.resume_form?.parse_status !== undefined && person.profile.resume_form.parse_status !== 'completed' && <Alert type="warning" showIcon title="简历仅部分识别，缺失内容需补充文字材料" description={(person.profile.resume_form.limitations ?? []).join('；')} />}
       {person.directions.map(item => <section key={item.direction_id}><Tag>{data?.taxonomy.items.find(direction => direction.id === item.direction_id)?.label}</Tag><p>{item.reason}</p><blockquote>{item.quote}</blockquote></section>)}
       {person.profile_version && <Button onClick={() => { setBase(person); setSelected(person.directions.map(item => item.direction_id)); setQuote(person.directions[0]?.quote ?? ''); setReason(''); setEditing(true) }}>调整职能分类</Button>}
       {editing && <section className="panel stack">
@@ -182,7 +184,7 @@ export default function TalentPool({ session, onImport }: { session: IntakeSessi
     <section className="panel"><div className="filter-bar"><Input aria-label="搜索人才" placeholder="搜索人才姓名" allowClear value={q} onChange={event => { setQ(event.target.value); setPage(1) }} /></div>
       <Table<Talent> rowKey="id" loading={!data && !error} dataSource={data?.items ?? []} scroll={{ x: 600 }} pagination={{ current: page, pageSize: 20, total: data?.total ?? 0, onChange: setPage, showSizeChanger: false }} columns={[
         { title: '候选人', render: (_, person) => <Button type="link" onClick={() => setSelected({ id: person.id, section: 'summary' })}>{person.name || '姓名待确认'}</Button> },
-        { title: '适配岗位', render: (_, person) => <MatchedJobs jobs={talentMatchedJobs(person)} emptyText={person.classification_state === 'classified' ? '暂无适配岗位' : person.classification_state === 'processing' ? '匹配中' : '等待匹配'} /> },
+        { title: '适配岗位', render: (_, person) => <MatchedJobs jobs={talentMatchedJobs(person)} emptyText={person.classification_state === 'classified' ? '暂无适配岗位' : statusText(person)} /> },
         { title: '查看信息', render: (_, person) => <div className="candidate-row-actions"><Button onClick={() => setSelected({ id: person.id, section: 'summary' })}>基本信息</Button><Button onClick={() => setSelected({ id: person.id, section: 'call' })}>电话沟通情况</Button><Button onClick={() => setSelected({ id: person.id, section: 'reports' })}>评估与推荐</Button></div> },
       ]} />
     </section>
