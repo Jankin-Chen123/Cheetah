@@ -65,6 +65,9 @@ class EvidenceAssessment(BaseModel):
     score: float | None = Field(default=None, ge=0, le=10)
     evidence_ids: list[str] = Field(default_factory=list)
     reason: str
+    fact_evidence_ids: list[str] = Field(default_factory=list, max_length=50)
+    matched_anchor_band: str | None = Field(default=None, max_length=20)
+    anchor_rationale: str = Field(default="", max_length=4000)
 
 
 def validate_evaluation(
@@ -73,6 +76,7 @@ def validate_evaluation(
     answers: dict[str, str],
     *,
     fixture_only: bool,
+    evidence_items: list[dict] | None = None,
 ):
     if template.status == "demo" and not fixture_only:
         raise ValueError("Demo rules cannot evaluate real candidates")
@@ -80,9 +84,12 @@ def validate_evaluation(
     if {item.dimension_id for item in assessments} != expected or len(assessments) != len(expected):
         raise ValueError("Exactly one assessment per configured dimension is required")
     by_id = {item.dimension_id: item for item in assessments}
+    facts = {item["evidence_id"]: item for item in evidence_items or []}
     dimensions = []
     for dimension in template.dimensions:
         item = by_id[dimension.id]
+        if not item.reason.strip():
+            raise ValueError("ASSESSMENT_REASON_REQUIRED")
         if item.score is not None and (
             (template.score_scale == "0-5" and item.score > 5)
             or (template.score_scale == "1-10" and (item.score < 1 or not item.score.is_integer()))
@@ -94,6 +101,29 @@ def validate_evaluation(
         ):
             raise ValueError("Unknown or empty answer evidence")
         score = item.score if item.evidence_ids else None
+        if item.matched_anchor_band is not None and score is None:
+            raise ValueError("UNASSESSED_ANCHOR_NOT_ALLOWED")
+        if score is not None and (not fixture_only or item.matched_anchor_band is not None):
+            expected_band = (
+                f"{int(score) if int(score) % 2 else int(score) - 1}-"
+                f"{int(score) + 1 if int(score) % 2 else int(score)}"
+                if template.score_scale == "1-10"
+                else str(int(score))
+            )
+            if (
+                item.matched_anchor_band != expected_band
+                or expected_band not in dimension.scoring_anchors
+                or not item.anchor_rationale.strip()
+                or not item.fact_evidence_ids
+            ):
+                raise ValueError("SCORING_ANCHOR_BASIS_REQUIRED")
+        if len(item.fact_evidence_ids) != len(set(item.fact_evidence_ids)) or any(
+            key not in facts
+            or facts[key].get("answer_id") not in item.evidence_ids
+            or dimension.id not in facts[key].get("d02_dimension_ids", [])
+            for key in item.fact_evidence_ids
+        ):
+            raise ValueError("SCORING_FACT_REFERENCE_INVALID")
         weight_percent = Decimal(str(dimension.weight)) * 100
         weighted = (
             None
@@ -112,11 +142,29 @@ def validate_evaluation(
                 "weight_percent": float(weight_percent),
                 "weighted_score": float(weighted) if weighted is not None else None,
                 "status": "evaluated" if score is not None else "not_evaluated",
+                "anchor_basis_status": (
+                    "RECORDED"
+                    if score is not None and item.matched_anchor_band
+                    else "NOT_ASSESSED"
+                    if score is None
+                    else "LEGACY_NOT_RECORDED"
+                ),
+                "matched_anchor_text": dimension.scoring_anchors.get(item.matched_anchor_band),
             }
         )
     complete = all(item["score"] is not None for item in dimensions)
     total = sum(by_id[d.id].score * d.weight for d in template.dimensions) if complete else None
     return {
+        "assessment_status": "COMPLETE" if complete else "PARTIAL",
+        "summary": {
+            "dimension_count": len(dimensions),
+            "weight_total_percent": float(
+                sum(Decimal(str(d["weight_percent"])) for d in dimensions)
+            ),
+            "scored_dimension_count": sum(d["score"] is not None for d in dimensions),
+            "unassessed_dimension_count": sum(d["score"] is None for d in dimensions),
+            "total_score_status": "CALCULABLE" if complete else "NOT_CALCULABLE",
+        },
         "dimensions": dimensions,
         "score": total,
         "score_scale": template.score_scale,

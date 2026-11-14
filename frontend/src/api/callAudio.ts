@@ -6,11 +6,16 @@ export class TurnDetector {
   private duration = 0
   private started = false
   private prebuffer: Uint8Array[] = []
-  constructor(private callbacks: {
+  private callbacks: {
     start: (frames: Uint8Array[]) => void
     frame: (frame: Uint8Array) => void
     end: () => void
-  }, private sampleRate = 16000) {}
+  }
+  private sampleRate: number
+  constructor(callbacks: TurnDetector['callbacks'], sampleRate = 16000) {
+    this.callbacks = callbacks
+    this.sampleRate = sampleRate
+  }
   arm() {
     this.active = true; this.started = false; this.voicedFrames = 0
     this.silence = 0; this.duration = 0; this.prebuffer = []
@@ -37,7 +42,7 @@ export class TurnDetector {
     }
     this.callbacks.frame(bytes); this.duration += samples.length
     this.silence = speaking ? 0 : this.silence + samples.length
-    if (this.silence >= this.sampleRate * 1.8 || this.duration >= this.sampleRate * 599) {
+    if (this.silence >= this.sampleRate * 1.2 || this.duration >= this.sampleRate * 599) {
       this.disarm(); this.callbacks.end()
     }
   }

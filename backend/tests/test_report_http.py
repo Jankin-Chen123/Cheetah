@@ -1,3 +1,7 @@
+from io import BytesIO
+from zipfile import ZipFile
+
+import pytest
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 from sqlalchemy import create_engine, func, select
@@ -10,7 +14,8 @@ from app.main import create_app
 from app.modules.outreach.models import OutreachArtifact, OutreachCase, ReportAudit
 
 
-def test_review_export_audit_and_invalidation(monkeypatch):
+@pytest.mark.parametrize("export_format", ["markdown", "docx"])
+def test_review_export_audit_and_invalidation(monkeypatch, export_format):
     engine = create_engine(
         "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
     )
@@ -31,7 +36,14 @@ def test_review_export_audit_and_invalidation(monkeypatch):
                 candidate_id="candidate",
                 job_id="job",
                 snapshot={"artifact_refs": {}},
-                session_data={},
+                session_data={
+                    "client_context": {"client_company_id": "fictional-client", "job_id": "job"},
+                    "client_sharing": {
+                        "status": "AUTHORIZED",
+                        "receipt_id": "fixture-receipt",
+                        "scope": {"client_company_id": "fictional-client", "job_id": "job"},
+                    },
+                },
             )
         )
         session.add(
@@ -65,7 +77,7 @@ def test_review_export_audit_and_invalidation(monkeypatch):
         )
         headers["X-CSRF-Token"] = login.json()["csrf_token"]
         download_headers = {"X-Export-Request-ID": "fixture-download-001"}
-        url = "/api/v1/reports/report/export?version=1"
+        url = f"/api/v1/reports/report/export?version=1&format={export_format}"
         assert client.get(url, headers=download_headers).status_code == 409
         with Session(engine) as session, session.begin():
             session.get(OutreachArtifact, "report").valid = True
@@ -93,7 +105,12 @@ def test_review_export_audit_and_invalidation(monkeypatch):
         for _ in range(2):
             response = client.get(url, headers=download_headers)
             assert response.status_code == 200
-            assert response.text == "虚构推荐"
+            if export_format == "markdown":
+                assert response.text == "虚构推荐"
+            else:
+                with ZipFile(BytesIO(response.content)) as document:
+                    assert "虚构推荐" in document.read("word/document.xml").decode()
+                    assert "scoring_anchors" not in document.read("word/document.xml").decode()
         with Session(engine) as session, session.begin():
             assert session.scalar(select(func.count()).select_from(ReportAudit)) == 2
             session.get(OutreachArtifact, "report").valid = False

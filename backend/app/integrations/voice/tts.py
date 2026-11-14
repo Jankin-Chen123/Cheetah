@@ -13,8 +13,12 @@ from app.core.config import Settings
 def stream_question(settings: Settings, text: str, voice: str = "longanhuan_v3.1"):
     from app.modules.outreach.conversation_options import voice_catalog
 
-    if voice not in {item["id"] for item in voice_catalog()}:
+    if voice not in {item["id"] for item in voice_catalog(settings)}:
         raise ValueError("VOICE_NOT_SUPPORTED")
+    if settings.voice_provider == "volcengine":
+        from app.integrations.voice.volcengine import stream_tts
+
+        return (yield from stream_tts(settings, text, voice))
     if not text.strip() or len(text) > 1000:
         raise ValueError("SPEECH_TEXT_INVALID")
     if not settings.bailian_api_key or not settings.bailian_base_url:

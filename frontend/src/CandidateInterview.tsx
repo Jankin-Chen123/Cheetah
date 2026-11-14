@@ -5,6 +5,9 @@ import { candidateRequest, candidateSpeech, streamCandidateSpeech, sendBriefingE
 import { openCandidateStream } from './api/streaming'
 import { createCallMicrophone } from './api/callAudio'
 import './candidate-call.css'
+import CandidateCamera from './CandidateCamera'
+import ProcessingPermissions from './ProcessingPermissions'
+import { processingPurposes } from './api/candidate'
 
 const ended = (value: CandidateSession) => ['ended', 'cancelled'].includes(value.status) || value.stop_status !== 'none'
 const wait = () => new Promise(resolve => setTimeout(resolve, 400))
@@ -98,7 +101,9 @@ export default function CandidateInterview() {
             },
             message => {
               abortListen.current = null; live.current = null; microphone.current?.disarm()
-              turnCallbacks.current = null; reject(new Error(message))
+              turnCallbacks.current = null
+              setSubtitle(`${message} 您的已保存回答会保留，请再说一次。`)
+              resolve(null)
             }, true, true)
           for (const frame of frames) live.current.pushFrame(frame)
         },
@@ -340,14 +345,21 @@ export default function CandidateInterview() {
         <Button loading={sendingMail} disabled={!email || stopped} onClick={() => void emailMaterials()}>同意并发送岗位资料到此邮箱</Button>
         <p role="status">{mailStatus}</p>
       </details>}
+      {session && <ProcessingPermissions caseId={access.caseId} token={access.token} session={session} onChange={value => {
+        setSession(value)
+        if (running.current && processingPurposes.some(([purpose]) => value.processing_permissions?.[purpose] !== 'AUTHORIZED')) {
+          invalidate(); setConnected(false); setPhase('通话已暂停')
+        }
+      }} />}
+      <CandidateCamera key={`${access.caseId}:${stopped}:${phase === '正在挂断'}:${phase === '通话已暂停'}`} stopped={!session || stopped || phase === '正在挂断'} />
       <div className="call-controls">
-        {!connected && <Button type="primary" size="large" disabled={!session || stopped || setting} onClick={() => void connect()}>{seconds && !stopped ? '恢复通话' : '接通并开始语音面试'}</Button>}
+        {!connected && <Button type="primary" size="large" disabled={!session || stopped || setting || processingPurposes.some(([purpose]) => session.processing_permissions?.[purpose] !== 'AUTHORIZED')} onClick={() => void connect()}>{seconds && !stopped ? '恢复通话' : '接通并开始语音面试'}</Button>}
         <Button shape="circle" size="large" aria-label={muted ? '开启麦克风' : '静音麦克风'} disabled={!connected} icon={muted ? <AudioMutedOutlined /> : <AudioOutlined />} onClick={() => {
           mutedRef.current = !mutedRef.current; setMuted(mutedRef.current); microphone.current?.setMuted(mutedRef.current)
         }} />
         <Button danger type="primary" shape="circle" size="large" aria-label="挂断" disabled={!session || stopped} icon={<PhoneOutlined />} onClick={() => void hangup()} />
       </div>
-      <p className="call-note">接通即允许麦克风转写。可直接说话打断AI，停顿约1.8秒自动交棒。单次回答最长{Math.floor((session?.interview_limits.max_turn_seconds ?? 600) / 60)}分钟，整场最长{Math.floor((session?.interview_limits.max_seconds ?? 3600) / 60)}分钟。说“结束面试”或点击挂断结束。建议戴耳机减少回声；重复测试请开启新一轮。</p>
+      <p className="call-note">逐项同意后才开始语音面试。可直接说话打断AI，停顿约1.2秒自动交棒。单次回答最长{Math.floor((session?.interview_limits.max_turn_seconds ?? 600) / 60)}分钟，整场最长{Math.floor((session?.interview_limits.max_seconds ?? 3600) / 60)}分钟。说“结束面试”或点击挂断结束。建议戴耳机减少回声；重复测试请开启新一轮。</p>
     </section>
     {history.length > 0 && <details className="call-history"><summary>本次页面对话记录</summary>{history.map((line, index) => <p key={index}>{line}</p>)}</details>}
   </main>

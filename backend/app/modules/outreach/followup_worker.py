@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.config import Settings
 from app.integrations.bailian import ModelUnavailable, generate_json
 from app.modules.outreach.budget import reserve_model_request
+from app.modules.outreach.handoff import question_execution_ref
 from app.modules.outreach.interview import (
     InterviewDecision,
     bounded_topic_decision,
@@ -66,6 +67,12 @@ def execute_followup(engine, settings: Settings, task_id: str):
             else None
         )
         program_decision = bounded_topic_decision(data, outline.content if outline else {})
+        execution_outline = question_execution_ref(outline, "") if outline else None
+        dimension_ids = set(
+            outline.content.get("dimension_ids", ["responsibility", "results"])
+            if outline
+            else ["responsibility", "results"]
+        )
         try:
             reserve_model_request(case, settings, "followup")
             if settings.dialogue_understanding_enabled:
@@ -84,7 +91,7 @@ def execute_followup(engine, settings: Settings, task_id: str):
                 "answer_evidence_ids": [data["answers"][-1]["id"]],
                 "reason": "说明实际理由",
             },
-            "dimensions": ["responsibility", "results"],
+            "dimensions": sorted(dimension_ids),
             "topic_limit_guidance": program_decision.model_dump() if program_decision else None,
             "methods": methods,
             "answers": data["answers"][-8:],
@@ -109,7 +116,7 @@ def execute_followup(engine, settings: Settings, task_id: str):
                 {
                     **data,
                     "topic_guidance": program_decision.model_dump() if program_decision else None,
-                    "outline_questions": outline.content.get("questions", []) if outline else [],
+                    "outline_questions": context["outline_questions"],
                 },
             )
         except (ModelUnavailable, ValueError, TypeError) as error:
@@ -158,16 +165,32 @@ def execute_followup(engine, settings: Settings, task_id: str):
         }
         context["understanding"] = plan.model_dump() if plan else None
         context["working_memory"] = (
-            [fact.model_dump() for fact in plan.memory] if plan else data.get("dialogue_memory", [])
+            understanding_info.get("working_memory", [fact.model_dump() for fact in plan.memory])
+            if plan
+            else data.get("dialogue_memory", [])
         )
     stage_started = time.monotonic()
     if settings.dialogue_understanding_enabled:
         update_phase(engine, task_id, "responding")
     try:
-        if plan and not plan.needs_retrieval and plan.response:
+        if plan and plan.intent == "stop":
             result = {
                 "content": {
-                    "action": "next_topic" if plan.intent == "change_topic" else "clarify",
+                    "action": "end",
+                    "reason": "候选人明确要求结束本次面试。",
+                },
+                "model": understanding_info["model"],
+                "usage": understanding_info.get("usage"),
+                "provider": settings.text_provider,
+            }
+        elif plan and not methods and plan.response:
+            result = {
+                "content": {
+                    "action": "next_topic"
+                    if plan.intent == "change_topic"
+                    else "followup"
+                    if plan.intent == "answer"
+                    else "clarify",
                     "question": plan.response,
                     "dimension_id": plan.dimension_id,
                     "reason": "先理解候选人意图；本轮无需检索，直接回应。",
@@ -244,10 +267,7 @@ def execute_followup(engine, settings: Settings, task_id: str):
             if data["answers"][-1]["id"] not in payload["answer_evidence_ids"]:
                 payload["answer_evidence_ids"].append(data["answers"][-1]["id"])
                 attached.append("current_turn_link")
-        if payload.get("action") != "end" and payload.get("dimension_id") not in {
-            "responsibility",
-            "results",
-        }:
+        if payload.get("action") != "end" and payload.get("dimension_id") not in dimension_ids:
             payload["dimension_id"] = data["answers"][-1]["question"].get(
                 "dimension_id", "responsibility"
             )
@@ -284,7 +304,7 @@ def execute_followup(engine, settings: Settings, task_id: str):
             methods,
             data["answers"],
             [a["question"]["question"] for a in data["answers"]],
-            {"responsibility", "results"},
+            dimension_ids,
         )
         failure = None
     except (ModelUnavailable, ValueError, TypeError) as error:
@@ -378,10 +398,30 @@ def execute_followup(engine, settings: Settings, task_id: str):
                 "question": decision.question,
                 "dimension_id": decision.dimension_id,
                 "method_entry_ids": decision.method_entry_ids,
+                "execution_ref": {
+                    **execution_outline,
+                    "question_id": f"followup-{len(history)}",
+                    "parent_question_id": (
+                        (case.session_data["answers"][-1].get("execution_ref") or {}).get(
+                            "parent_question_id"
+                        )
+                        or case.session_data["answers"][-1]["question"].get("id")
+                    )
+                    if decision.action in {"followup", "clarify"}
+                    else None,
+                }
+                if execution_outline
+                else None,
             },
         }
         if decision.action == "end":
             case.status = "ended"
             case.stop_status = "confirmed"
+            case.session_data = {
+                **case.session_data,
+                "termination_reason": "candidate_requested_stop"
+                if plan and plan.intent == "stop"
+                else "interview_completed",
+            }
         case.revision += 1
         finish_step(task, result_ref={"kind": "decision", "sequence": len(history)})

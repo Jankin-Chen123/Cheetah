@@ -87,20 +87,29 @@ def result_still_current(task: ModelStep, case: OutreachCase) -> bool:
     return task.step not in {"D07", "followup"} or case.stop_status == "none"
 
 
-def recover_stale_steps(session: Session, *, older_than_seconds: int = 180):
+def recover_stale_steps(
+    session: Session, *, older_than_seconds: int = 180, case_id: str | None = None
+):
     if older_than_seconds < 120:
         raise ValueError("Recovery interval must exceed the bounded model timeout")
     recovered = 0
     now = datetime.now(UTC)
-    tasks = session.scalars(
-        select(ModelStep).where(ModelStep.status == "running").with_for_update(skip_locked=True)
-    )
+    query = select(ModelStep).where(ModelStep.status == "running")
+    if case_id is not None:
+        query = query.where(ModelStep.case_id == case_id)
+    tasks = session.scalars(query.with_for_update(skip_locked=True))
     for task in tasks:
-        started = task.detail.get("started_at")
+        started = task.detail.get("started_at") or task.detail.get("registered_at")
         if not started:
             continue
         elapsed = (now - datetime.fromisoformat(started)).total_seconds()
-        if elapsed < older_than_seconds:
+        timeout = (
+            max(older_than_seconds, 700) if task.step == "transcription" else older_than_seconds
+        )
+        if task.step == "D07":
+            # Generation, review, one revision and final review each have a 45s timeout.
+            timeout = max(timeout, 300)
+        if elapsed < timeout:
             continue
         finish_step(task, error_code="WORKER_INTERRUPTED_REVIEW_REQUIRED")
         recovered += 1

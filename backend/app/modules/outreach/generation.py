@@ -7,51 +7,75 @@ from sqlalchemy.orm import Session
 from app.core.config import Settings
 from app.integrations.bailian import ModelUnavailable, generate_json
 from app.modules.outreach.artifacts import save_artifact
+from app.modules.outreach.budget import reserve_model_request
+from app.modules.outreach.handoff import question_execution_ref
 from app.modules.outreach.interview import (
     InterviewDecision,
     Outline,
     termination_reason,
     validate_decision,
     validate_outline,
+    validate_question_cards,
 )
 from app.modules.outreach.knowledge import retrieve
 from app.modules.outreach.models import OutreachCase
+from app.modules.outreach.outline_inputs import outline_dimensions, outline_inputs
+from app.modules.outreach.outline_prompts import OUTLINE_INSTRUCTION, PROMPT_VERSION
+from app.modules.outreach.outline_review import review_and_revise_outline
+from app.modules.outreach.provenance import inherited_provenance
 
 
 def generate_outline(session: Session, case: OutreachCase, settings: Settings, *, preview: bool):
-    upstream = case.session_data.get("upstream_content")
-    if not upstream or not all(f"D{i:02}" in upstream for i in range(1, 7)):
-        raise ModelUnavailable("UPSTREAM_CONTENT_NOT_READY")
+    upstream = outline_inputs(case)
+    dimensions = outline_dimensions(case)
+    dimension_ids = {dimension["id"] for dimension in dimensions}
     methods = retrieve(
         session, {"responsibility", "results", "detail"}, preview=preview, structured_only=True
     )
-    if not methods:
-        raise ModelUnavailable("KNOWLEDGE_NOT_READY")
     result = generate_json(
         settings,
-        "Generate a Chinese candidate interview outline following the JSON schema.",
+        OUTLINE_INSTRUCTION,
         {
             "schema": Outline.model_json_schema(),
             "upstream": case.snapshot,
             "upstream_content": upstream,
             "methods": methods,
-            "dimensions": ["responsibility", "results"],
+            "dimensions": sorted(dimension_ids),
+            "confirmed_dimension_details": dimensions,
         },
     )
-    outline = validate_outline(
-        Outline.model_validate(result["content"]), methods, {"responsibility", "results"}
-    )
+    outline = validate_outline(Outline.model_validate(result["content"]), methods, dimension_ids)
+    if case.session_data.get("job_interview_standard"):
+        validate_question_cards(outline, dimension_ids, case.snapshot["artifact_refs"])
+        reserve_model_request(case, settings, "D07_quality_review")
+
+        def reserve_revision():
+            reserve_model_request(case, settings, "D07_wording_revision")
+            reserve_model_request(case, settings, "D07_revision_review")
+
+        outline, quality_review = review_and_revise_outline(settings, outline, reserve_revision)
+    else:
+        quality_review = None
     artifact = save_artifact(
         session,
         case,
         "D07",
-        {**outline.model_dump(), "retrieved_methods": methods, "knowledge_preview": preview},
+        {
+            **outline.model_dump(),
+            "retrieved_methods": methods,
+            "knowledge_preview": preview,
+            "dimension_ids": sorted(dimension_ids),
+            "dimension_details": dimensions,
+        },
         {
             "source_mode": "live",
-            "inherited_source_modes": ["mock"],
+            **inherited_provenance(case),
+            "agent_id": "A10",
+            "prompt_version": PROMPT_VERSION,
+            "job_interview_standard": case.session_data.get("job_interview_standard"),
+            "quality_review": quality_review,
             "model": result["model"],
             "usage": result["usage"],
-            "fixture_only": True,
         },
         [
             {"kind": "artifact", "id": ref["artifact_id"], "version": ref["version"]}
@@ -61,7 +85,11 @@ def generate_outline(session: Session, case: OutreachCase, settings: Settings, *
     case.session_data = {
         **case.session_data,
         "outline_id": artifact.id,
-        "current_question": outline.questions[0].model_dump(),
+        "outline_requires_regeneration": False,
+        "current_question": {
+            **outline.questions[0].model_dump(),
+            "execution_ref": question_execution_ref(artifact, outline.questions[0].id),
+        },
         "knowledge_preview": preview,
         "generation_status": "completed",
     }

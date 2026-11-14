@@ -1,5 +1,6 @@
 """Bounded audio-file probe; not a telephone adapter or automatic dialing path."""
 
+import asyncio
 import base64
 import json
 import time
@@ -23,6 +24,28 @@ def audio_roundtrip(
         raise ValueError("SPEECH_TEXT_INVALID")
     if speak_text is None and (not pcm or len(pcm) > 16000 * 2 * 10 or len(pcm) % 2):
         raise ValueError("PCM_16KHZ_MONO_S16LE_MAX_10_SECONDS_REQUIRED")
+    if settings.voice_provider == "volcengine":
+        from app.integrations.voice.tts import synthesize_question
+        from app.integrations.voice.volcengine import transcribe
+        from app.modules.outreach.conversation_options import voice_catalog
+
+        if speak_text is not None:
+            return synthesize_question(settings, speak_text, voice_catalog(settings)[0]["id"])
+
+        async def frames():
+            for offset in range(0, len(pcm), 3200):
+                yield pcm[offset : offset + 3200]
+
+        async def emit(event):
+            pass
+
+        result = asyncio.run(transcribe(settings, frames(), emit))
+        if transcription_only:
+            return result
+        speech = synthesize_question(
+            settings, "您好，语音连接测试完成。", voice_catalog(settings)[0]["id"]
+        )
+        return {**speech, "text": result["text"], "asr_timings": result.get("timings")}
     if not settings.bailian_api_key or not settings.bailian_base_url:
         raise RuntimeError("REALTIME_NOT_CONFIGURED")
     parsed = urlparse(settings.bailian_base_url)

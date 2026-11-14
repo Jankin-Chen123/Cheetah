@@ -60,6 +60,9 @@ async def candidate_audio_stream(socket: WebSocket, case_id: str):
         request = SimpleNamespace(headers={"authorization": "Bearer " + token}, app=socket.app)
         with database_session(request) as session, session.begin():
             case = candidate_case(session, case_id, request)
+            from app.modules.outreach.processing_permissions import require_processing_permission
+
+            require_processing_permission(case, "transcription")
             revision = hello.get("expected_revision")
             if (
                 case.revision != revision
@@ -144,7 +147,7 @@ async def candidate_audio_stream(socket: WebSocket, case_id: str):
             task.detail = {**task.detail, "result": result}
         await socket.send_json({"type": "transcript_completed", **result})
         await socket.close()
-    except Exception:
+    except Exception as error:
         if task_id:
             with database_session(socket) as session, session.begin():
                 task = session.get(ModelStep, task_id, with_for_update=True)
@@ -153,6 +156,7 @@ async def candidate_audio_stream(socket: WebSocket, case_id: str):
                     task.detail = {
                         **task.detail,
                         "error_code": "STREAM_RESULT_REQUIRES_RECONCILIATION",
+                        "failure_kind": type(error).__name__,
                     }
         try:
             await socket.send_json({"type": "error", "code": "STREAM_NOT_COMPLETED"})
@@ -345,6 +349,10 @@ def review(report_id: str, data: ReviewInput, request: Request):
     with database_session(request) as session, session.begin():
         report = report_for_user(session, report_id, identity)
         try:
+            if data.action == "approve":
+                from app.modules.outreach.client_sharing import require_client_sharing
+
+                require_client_sharing(session.get(OutreachCase, report.case_id))
             review_report(
                 report,
                 data.expected_version,
@@ -375,7 +383,12 @@ def review(report_id: str, data: ReviewInput, request: Request):
 
 
 @router.get("/reports/{report_id}/export")
-def download_report(report_id: str, request: Request, version: int = Query(ge=1)):
+def download_report(
+    report_id: str,
+    request: Request,
+    version: int = Query(ge=1),
+    format: Literal["markdown", "docx"] = "markdown",
+):
     identity = require_identity(request)
     export_id = request.headers.get("x-export-request-id", "")
     if (
@@ -389,13 +402,21 @@ def download_report(report_id: str, request: Request, version: int = Query(ge=1)
         if report.version != version:
             raise HTTPException(409)
         try:
+            from app.modules.outreach.client_sharing import require_client_sharing
+
+            require_client_sharing(session.get(OutreachCase, report.case_id))
             content = export_markdown(report)
         except ValueError:
             raise HTTPException(409) from None
+        action = "word_download" if format == "docx" else "markdown_download"
+        if format == "docx":
+            from app.modules.outreach.report_document import report_docx
+
+            content = report_docx(content)
         audit = session.scalar(
             select(ReportAudit).where(
                 ReportAudit.report_id == report.id,
-                ReportAudit.action == "markdown_download",
+                ReportAudit.action == action,
                 ReportAudit.request_id == export_id,
             )
         )
@@ -405,7 +426,7 @@ def download_report(report_id: str, request: Request, version: int = Query(ge=1)
                     id=uuid4().hex,
                     report_id=report.id,
                     version=report.version,
-                    action="markdown_download",
+                    action=action,
                     request_id=export_id,
                     actor_id=identity["user_id"],
                     detail={
@@ -414,11 +435,16 @@ def download_report(report_id: str, request: Request, version: int = Query(ge=1)
                     },
                 )
             )
+        extension = "docx" if format == "docx" else "md"
         return Response(
             content,
-            media_type="text/markdown; charset=utf-8",
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            if format == "docx"
+            else "text/markdown; charset=utf-8",
             headers={
-                "Content-Disposition": f'attachment; filename="recommendation-v{version}.md"',
+                "Content-Disposition": (
+                    f'attachment; filename="recommendation-v{version}.{extension}"'
+                ),
                 "Cache-Control": "no-store",
             },
         )
@@ -882,6 +908,16 @@ def candidate_view(case):
         "preflight": {
             key: state.get(key) for key in ("interested", "confirmed", "briefing_presented")
         },
+        "processing_permissions": {
+            purpose: receipt.get("status")
+            for purpose, receipt in case.session_data.get("processing_permissions", {}).items()
+        },
+        "client_sharing": {
+            "client_label": case.session_data["client_context"]["candidate_client_label"],
+            "status": (case.session_data.get("client_sharing") or {}).get("status", "UNKNOWN"),
+        }
+        if case.session_data.get("client_context")
+        else None,
         "question": (case.session_data.get("current_question") or {}).get("question")
         if state.get("confirmed")
         else None,
@@ -914,7 +950,9 @@ def candidate_session(case_id: str, request: Request):
                 case.session_data = {
                     **case.session_data,
                     "decision_status": "completed",
-                    "conversation_reply": "我想确认一下您的意思，您能再具体说一下吗？",
+                    "conversation_reply": (
+                        "刚才后台处理回复时出了点问题，您的回答已保留。您可以继续，我在听。"
+                    ),
                     "conversation_reply_model": None,
                     "conversation_reply_source": "program_clarification",
                     "conversation_recovered_task_id": task.id,
@@ -942,14 +980,25 @@ def candidate_session(case_id: str, request: Request):
             and case.stop_status == "none"
             and case.status not in {"ended", "cancelled"}
         ):
-            result["transcription"] = {
-                "status": transcription.status,
-                "task_id": transcription.id,
-                "text": transcription.detail.get("result", {}).get("text")
-                if transcription.status == "completed"
-                else None,
-                "error_code": transcription.detail.get("error_code"),
-            }
+            if transcription.status == "failed":
+                case.session_data = {
+                    **case.session_data,
+                    "transcription_recoveries": [
+                        *case.session_data.get("transcription_recoveries", [])[-19:],
+                        {"task_id": transcription.id, "input_revision": case.revision},
+                    ],
+                }
+                case.revision += 1
+                result = candidate_view(case)
+            else:
+                result["transcription"] = {
+                    "status": transcription.status,
+                    "task_id": transcription.id,
+                    "text": transcription.detail.get("result", {}).get("text")
+                    if transcription.status == "completed"
+                    else None,
+                    "error_code": transcription.detail.get("error_code"),
+                }
         return Response(
             content=json.dumps(result),
             media_type="application/json",
@@ -1119,7 +1168,7 @@ def candidate_speech(case_id: str, data: CandidateSpeechInput, request: Request)
     with database_session(request) as session, session.begin():
         case = candidate_case(session, case_id, request)
         try:
-            if case.revision != data.expected_revision:
+            if case.revision != data.expected_revision and not data.farewell:
                 raise ValueError("VERSION_CONFLICT")
             if (
                 case.status in {"ended", "cancelled"} or case.stop_status != "none"
@@ -1178,11 +1227,14 @@ def candidate_speech(case_id: str, data: CandidateSpeechInput, request: Request)
     }
     with database_session(request) as session, session.begin():
         case = candidate_case(session, case_id, request)
-        if case.revision != data.expected_revision or (
-            not data.farewell
-            and (case.status in {"ended", "cancelled"} or case.stop_status != "none")
+        if not data.farewell and (
+            case.revision != data.expected_revision
+            or case.status in {"ended", "cancelled"}
+            or case.stop_status != "none"
         ):
             raise HTTPException(409, detail="SPEECH_INPUT_CHANGED")
+        if data.farewell and case.status not in {"ended", "cancelled"}:
+            raise HTTPException(409, detail="FAREWELL_REQUIRES_ENDED_SESSION")
         task = session.get(ModelStep, task_id, with_for_update=True)
         task.status = "completed"
         task.detail = {**task.detail, "result": result}
@@ -1291,6 +1343,9 @@ def candidate_transcription(case_id: str, data: CandidateAudioInput, request: Re
             require_preflight(case)
             if case.session_data.get("decision_status") == "pending":
                 raise ValueError("DECISION_PENDING")
+            from app.modules.outreach.processing_permissions import require_processing_permission
+
+            require_processing_permission(case, "transcription")
             digest = hashlib.sha256(pcm).hexdigest()
             receipt, created = register_step(session, case.id, "transcription", case.revision)
             if not created:
@@ -1337,6 +1392,90 @@ def candidate_transcription(case_id: str, data: CandidateAudioInput, request: Re
     )
 
 
+class ProcessingPermissionInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    expected_revision: int = Field(ge=1)
+    purpose: Literal["formal_interview", "transcription", "extraction", "evaluation"]
+    authorized: bool
+
+
+class ClientContextInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    expected_revision: int = Field(ge=1)
+    client_company_id: str = Field(min_length=1, max_length=128)
+    candidate_client_label: str = Field(min_length=1, max_length=200)
+
+
+@router.post("/calls/{case_id}/client-context")
+def configure_client_context(case_id: str, data: ClientContextInput, request: Request):
+    from app.modules.outreach.client_sharing import set_client_context
+
+    identity = require_identity(request)
+    with database_session(request) as session, session.begin():
+        try:
+            case = locked_case(session, case_id, identity["organization_id"], identity["user_id"])
+            set_client_context(
+                session,
+                case,
+                data.client_company_id,
+                data.candidate_client_label,
+                data.expected_revision,
+            )
+        except LookupError:
+            raise HTTPException(404) from None
+        except ValueError as error:
+            raise HTTPException(409, detail=str(error)) from None
+        return {"revision": case.revision, "client_context": case.session_data["client_context"]}
+
+
+class ClientSharingInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    expected_revision: int = Field(ge=1)
+    authorized: bool
+
+
+@router.post("/candidate/calls/{case_id}/client-sharing")
+def candidate_client_sharing(case_id: str, data: ClientSharingInput, request: Request):
+    from app.core.auth import check_origin
+    from app.modules.outreach.client_sharing import record_client_sharing
+
+    check_origin(request)
+    with database_session(request) as session, session.begin():
+        case = candidate_case(session, case_id, request)
+        try:
+            record_client_sharing(session, case, data.authorized, data.expected_revision)
+        except ValueError as error:
+            raise HTTPException(409, detail=str(error)) from None
+        return Response(
+            content=json.dumps(candidate_view(case)),
+            media_type="application/json",
+            headers={"Cache-Control": "no-store"},
+        )
+
+
+@router.post("/candidate/calls/{case_id}/processing-permissions")
+def candidate_processing_permission(
+    case_id: str, data: ProcessingPermissionInput, request: Request
+):
+    from app.core.auth import check_origin
+    from app.modules.outreach.processing_permissions import record_processing_permission
+
+    check_origin(request)
+    with database_session(request) as session, session.begin():
+        case = candidate_case(session, case_id, request)
+        try:
+            record_processing_permission(
+                session, case, data.purpose, data.authorized, data.expected_revision
+            )
+        except ValueError as error:
+            raise HTTPException(409, detail=str(error)) from None
+        return Response(
+            content=json.dumps(candidate_view(case)),
+            media_type="application/json",
+            headers={"Cache-Control": "no-store"},
+        )
+
+
 @router.post("/candidate/calls/{case_id}")
 def candidate_action(case_id: str, data: CandidateAction, request: Request):
     from app.core.auth import check_origin
@@ -1351,6 +1490,20 @@ def candidate_action(case_id: str, data: CandidateAction, request: Request):
             if case.status in {"ended", "cancelled"} or case.stop_status != "none":
                 raise ValueError("INTERVIEW_STOPPED")
             voice_transcription = None
+            if data.action in {"begin", "answer", "voice"}:
+                from app.modules.outreach.interview import termination_reason
+                from app.modules.outreach.processing_permissions import (
+                    require_processing_permission,
+                )
+
+                if termination_reason(data.statement, 0, 0) != "candidate_requested_stop":
+                    for purpose in (
+                        "formal_interview",
+                        "transcription",
+                        "extraction",
+                        "evaluation",
+                    ):
+                        require_processing_permission(case, purpose)
             if data.action == "voice":
                 from app.modules.outreach.conversation import consent
                 from app.modules.outreach.interview import termination_reason
@@ -1366,6 +1519,9 @@ def candidate_action(case_id: str, data: CandidateAction, request: Request):
                 ):
                     raise ValueError("TRANSCRIPTION_REFERENCE_INVALID")
                 state = case.session_data.get("preflight", {})
+                from app.modules.outreach.conversation import spoken_prompt
+
+                previous_prompt = spoken_prompt(case)
                 case.session_data = {
                     **case.session_data,
                     "voice_clarification": None,
@@ -1381,6 +1537,7 @@ def candidate_action(case_id: str, data: CandidateAction, request: Request):
                             "voice_clarification": True,
                             "voice_clarification_transcription_id": voice_transcription.id,
                             "conversation_utterance": data.statement,
+                            "conversation_prompt": previous_prompt,
                             "decision_status": "pending",
                         }
                         case.revision += 1
@@ -1393,7 +1550,7 @@ def candidate_action(case_id: str, data: CandidateAction, request: Request):
                     if not choice:
                         record_interest(case, False, data.statement)
                         data.action = "stop"
-                    elif not state.get("interested"):
+                    elif not state.get("interested") or not state.get("briefing_presented"):
                         data.action = "interest"
                         data.interested = True
                     else:
@@ -1448,6 +1605,16 @@ def candidate_action(case_id: str, data: CandidateAction, request: Request):
                     ):
                         raise ValueError("TRANSCRIPTION_REFERENCE_INVALID")
                 record_answer(case, data.statement, data.expected_revision)
+                case.session_data = {
+                    **case.session_data,
+                    "answers": [
+                        *case.session_data["answers"][:-1],
+                        {
+                            **case.session_data["answers"][-1],
+                            "actor_type": "candidate_invitation",
+                        },
+                    ],
+                }
                 if transcription:
                     answers = list(case.session_data["answers"])
                     original = transcription.detail["result"]

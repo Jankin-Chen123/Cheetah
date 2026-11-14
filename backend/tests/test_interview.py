@@ -2,10 +2,43 @@ import pytest
 
 from app.modules.outreach.interview import (
     InterviewDecision,
+    Outline,
     bounded_topic_decision,
     termination_reason,
     validate_decision,
+    validate_question_cards,
 )
+
+
+def test_question_cards_require_coverage_budget_and_real_source():
+    outline = Outline.model_validate(
+        {
+            "questions": [
+                {
+                    "id": "Q1",
+                    "dimension_id": "custom",
+                    "question": "本人负责什么？",
+                    "method_entry_ids": ["m"],
+                    "evidence_target": "个人职责",
+                    "planned_minutes": 26,
+                    "source_refs": ["fixture-D03"],
+                    "stop_rule": "已说明或无法补充即停止",
+                    "conditional_followups": [
+                        {"trigger": "角色不明", "question": "您负责哪部分？"}
+                    ],
+                }
+            ]
+        }
+    )
+    refs = {"D03": {"artifact_id": "fixture-D03", "version": 1}}
+    assert validate_question_cards(outline, {"custom"}, refs) is outline
+    with pytest.raises(ValueError, match="DIMENSION_COVERAGE"):
+        validate_question_cards(outline, {"custom", "missing"}, refs)
+    with pytest.raises(ValueError, match="QUESTION_CARDS"):
+        validate_question_cards(outline, {"custom"}, {"D03": {"artifact_id": "other"}})
+    outline.questions[0].planned_minutes = 25
+    with pytest.raises(ValueError, match="QUESTION_CARDS"):
+        validate_question_cards(outline, {"custom"}, refs)
 
 
 def test_program_stop_and_limits():

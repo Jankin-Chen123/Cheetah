@@ -3,6 +3,9 @@ import { Alert, Button, Card, Checkbox, Input, Select, Space, Typography } from 
 import { api, download, type CallCase } from '../api/outreach'
 import InvitationCard from '../InvitationCard'
 import PreflightCard from '../PreflightCard'
+import EvaluationStandardCard from '../EvaluationStandardCard'
+import PostInterviewContent from '../PostInterviewContent'
+import ClientContextCard from '../ClientContextCard'
 
 export default function OutreachWorkspace() {
   const [password, setPassword] = useState('')
@@ -15,6 +18,10 @@ export default function OutreachWorkspace() {
   const [preview, setPreview] = useState(false)
   const [answerId, setAnswerId] = useState<string>()
   const [replacement, setReplacement] = useState('')
+  const currentEvaluation = current?.artifacts?.find(artifact => artifact.type === 'D09' && artifact.valid)
+  const waitingForReports = current?.status === 'ended' && Array.isArray(current.session.answers) && current.session.answers.length > 0 && !current.session.correction_requires_recompute &&
+    !current.failed_tasks?.length && !current.artifacts?.some(artifact => artifact.type === 'D10' && artifact.valid) &&
+    (!currentEvaluation || currentEvaluation.content.conclusion === 'recommended')
   async function refresh(id?: string) {
     const list = await api<{ items: CallCase[] }>('/calls'); setCalls(list.items)
     if (id) {
@@ -36,7 +43,7 @@ export default function OutreachWorkspace() {
     return () => { active = false }
   }, [])
   useEffect(() => {
-    if (!current?.active_tasks?.length) return
+    if (!current || (!current.active_tasks?.length && !waitingForReports)) return
     let cancelled = false
     const controller = new AbortController()
     let timer: ReturnType<typeof setTimeout>
@@ -53,7 +60,7 @@ export default function OutreachWorkspace() {
     }
     timer = setTimeout(() => void poll(), 3000)
     return () => { cancelled = true; controller.abort(); clearTimeout(timer) }
-  }, [current?.id, current?.active_tasks?.length])
+  }, [current, waitingForReports])
   const answers = (current?.session.answers ?? []) as { id: string; text: string; question: { question: string } }[]
   return <Space orientation="vertical" style={{ width: '100%' }}>
     <Typography.Title level={2}>面试与推荐工作区</Typography.Title>
@@ -71,10 +78,12 @@ export default function OutreachWorkspace() {
           options={calls.map(call => ({ value: call.id, label: `${call.candidate_id} · ${call.status}` }))}
           onChange={id => { setAnswerId(undefined); setReplacement(''); setReason(''); void run(() => refresh(id)) }} />
         <Button disabled={busy} onClick={() => void run(() => refresh(current?.id))}>刷新记录</Button>
-        <Button onClick={() => void run(async () => { await api('/auth/logout'); setLoggedIn(false); setCurrent(undefined); setCalls([]) })}>退出</Button>
+        <Button onClick={() => void run(async () => { await api('/auth/logout', {}); setLoggedIn(false); setCurrent(undefined); setCalls([]) })}>退出</Button>
       </Space>
       {current && <>
+        <EvaluationStandardCard key={`standard-${current.id}-${current.revision}`} current={current} refresh={() => refresh(current.id)} />
         <Card title="面试与报告进度">
+          {current.session.outline_requires_regeneration === true && <Alert type="warning" message="面试标准已更新，旧提纲已失效。请重新生成 D07 后继续面试；仍可随时停止。" />}
           <Typography.Paragraph>电话状态：{current.status}；停止状态：{current.stop_status}</Typography.Paragraph>
           <Space wrap>
             <Button disabled={busy || current.stop_status !== 'none' || ['ended', 'cancelled'].includes(current.status)} onClick={() => void run(async () => {
@@ -106,10 +115,14 @@ export default function OutreachWorkspace() {
           })}>保存新回答版本</Button>
         </Card>
         <Input.TextArea value={reason} onChange={event => setReason(event.target.value)} placeholder="核读具体推荐版本后填写真实审核意见" />
+        <ClientContextCard key={current.id} current={current} onSaved={() => refresh(current.id)} />
         {current.artifacts?.map(artifact => <Card key={artifact.id} title={`${artifact.type} v${artifact.version} · ${artifact.valid ? '有效' : '失效'} · ${artifact.review_status}`}>
-          <Typography.Paragraph style={{ whiteSpace: 'pre-wrap' }}>{typeof artifact.content.content_markdown === 'string' ? artifact.content.content_markdown : JSON.stringify(artifact.content, null, 2)}</Typography.Paragraph>
+          <PostInterviewContent artifact={artifact} />
+          {typeof artifact.content.content_markdown === 'string' && <Typography.Paragraph style={{ whiteSpace: 'pre-wrap' }}>{artifact.content.content_markdown}</Typography.Paragraph>}
+          <details><summary>结构化内容与证据引用</summary><pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(artifact.content, null, 2)}</pre></details>
           <details><summary>来源和输入版本</summary><pre>{JSON.stringify({ provenance: artifact.provenance, input_refs: artifact.input_refs }, null, 2)}</pre></details>
           {artifact.type === 'D10' && <Button disabled={!artifact.valid || artifact.review_status !== 'approved'} onClick={() => void run(() => download(artifact))}>下载已批准版本</Button>}
+          {artifact.type === 'D10' && <Button disabled={!artifact.valid || artifact.review_status !== 'approved'} onClick={() => void run(() => download(artifact, 'docx'))}>下载 Word</Button>}
           {artifact.type === 'D10' && <Space>{(['approve', 'reject'] as const).map(action => <Button key={action} disabled={busy || !artifact.valid || !reason.trim()} onClick={() => void run(async () => {
             await api(`/reports/${artifact.id}/review`, { expected_version: artifact.version, expected_revision: artifact.revision, action, reason: reason.trim() })
             setReason(''); await refresh(current.id)

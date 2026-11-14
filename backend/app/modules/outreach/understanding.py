@@ -18,7 +18,9 @@ class MemoryFact(BaseModel):
 
 class TurnUnderstanding(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    intent: Literal["answer", "question", "explanation", "change_topic", "correction", "unknown"]
+    intent: Literal[
+        "answer", "question", "explanation", "change_topic", "correction", "unknown", "stop"
+    ]
     needs_retrieval: bool = False
     search_query: str = Field(default="", max_length=500)
     response: str | None = Field(default=None, max_length=500)
@@ -33,9 +35,15 @@ def understand_turn(settings, data):
         "你是招聘面试官，先理解候选人最新一句话和上下文，再决定是否需要知识检索。"
         "正常交谈，不奉承、不刻板重复确认、不把没听懂直接当作负面评价。"
         "如果候选人提问、要求解释、换题、更正或记不清，先直接回应。"
+        "明确要求结束当前面试时intent=stop，needs_retrieval=false，response简短告别；"
+        "描述项目结束、询问一般面试流程或要求先别结束，不是结束请求。"
         "有足够岗位信息或一般语言即可回答时needs_retrieval=false，并给response。"
+        "即使needs_retrieval=true，也给出仅依据当前对话即可使用的response作为备用追问。"
+        "若检索没有相关材料，直接使用这条回复，避免无意义的二次等待。"
         "回复最多80个汉字，最多一个问题；提问必须先回答，不要把问题扔回候选人。"
         "question/explanation/correction/unknown意图，优先只回应当前话语，不要每次再附加面试问题。"
+        "岗位反问本轮只回答，不附加新面试题，也不催促回答上一题。"
+        "没有实际确认工具，不能承诺‘我会帮您确认’或‘已联系招聘方’，应说需要招聘方确认。"
         "任何‘您之前提到’的事实都必须在给定原话或工作记忆中存在，不能编造电商、行业或项目。"
         "只复述原话的责任范围，设计提纲和访谈不等于整个用户研究都独立负责。"
         "个人贡献包括协作中本人承担的具体工作，不要求全程独立或主导。"

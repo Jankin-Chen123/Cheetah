@@ -12,11 +12,21 @@ VOICES = [
     {"id": "longanhuan_v3.1", "label": "龙安欢 · 原音色"},
 ]
 DEFAULT_VOICE = "longyan_v3.1"
+VOLC_VOICES = [
+    {"id": "zh_female_vv_uranus_bigtts", "label": "Vivi 2.0 · 女声"},
+    {"id": "zh_female_xiaohe_uranus_bigtts", "label": "小何 2.0 · 女声"},
+    {"id": "zh_female_tuanzi_uranus_bigtts", "label": "团子 2.0 · 女声"},
+    {"id": "zh_male_m191_uranus_bigtts", "label": "云舟 2.0 · 男声"},
+    {"id": "zh_male_taocheng_uranus_bigtts", "label": "小天 2.0 · 男声"},
+    {"id": "zh_male_liufei_uranus_bigtts", "label": "刘飞 2.0 · 男声"},
+]
 PRACTICE_LIMITS = {"max_seconds": 3600, "max_rounds": 30, "max_turn_seconds": 600}
 
 
 def voice_id(case):
-    return case.session_data.get("voice_id", DEFAULT_VOICE)
+    catalog = voice_catalog()
+    selected = case.session_data.get("voice_id")
+    return selected if selected in {item["id"] for item in catalog} else catalog[0]["id"]
 
 
 def limits(case):
@@ -59,13 +69,14 @@ def enforce_duration(case):
         case.revision += 1
 
 
-def voice_catalog():
+def voice_catalog(settings=None):
     from app.core.config import get_settings
 
-    settings = get_settings()
+    settings = settings or get_settings()
+    voices = VOLC_VOICES if settings.voice_provider == "volcengine" else VOICES
     if settings.tts_custom_voice_id:
         return [
-            *VOICES,
+            *voices,
             {"id": settings.tts_custom_voice_id, "label": settings.tts_custom_voice_label},
         ]
-    return VOICES
+    return voices

@@ -1,10 +1,12 @@
 """Version-checked D08 execution with inference outside transactions."""
 
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app.integrations.bailian import ModelUnavailable, generate_json
 from app.modules.outreach.budget import reserve_model_request
-from app.modules.outreach.minutes import Minutes, generate_minutes
+from app.modules.outreach.handoff import require_extraction_session
+from app.modules.outreach.minutes import Minutes, extraction_indicators, generate_minutes
 from app.modules.outreach.models import ModelStep, OutreachCase
 from app.modules.outreach.postprocessing_prompts import MINUTES_INSTRUCTION
 from app.modules.outreach.steps import claim_step, finish_step, result_still_current
@@ -23,15 +25,17 @@ def execute_minutes(engine, settings, task_id):
             finish_step(task, error_code="NO_INTERVIEW_EVIDENCE")
             return
         try:
+            require_extraction_session(session, case)
+            indicators = extraction_indicators(case)
             reserve_model_request(case, settings, "D08")
-        except ModelUnavailable as error:
+        except (ModelUnavailable, ValueError) as error:
             finish_step(task, error_code=str(error))
             return
     try:
         result = generate_json(
             settings,
             MINUTES_INSTRUCTION,
-            {"schema": Minutes.model_json_schema(), "answers": answers},
+            {"schema": Minutes.model_json_schema(), "answers": answers, "indicators": indicators},
         )
         failure = None
     except ModelUnavailable as error:
@@ -50,7 +54,17 @@ def execute_minutes(engine, settings, task_id):
             return
         try:
             artifact = generate_minutes(session, case, settings, model_result=result)
-        except ValueError:
+        except ValueError as error:
+            if isinstance(error, ValidationError):
+                task.detail = {
+                    **task.detail,
+                    "validation_fields": [
+                        {"loc": list(item["loc"]), "type": item["type"]}
+                        for item in error.errors(include_input=False, include_url=False)[:12]
+                    ],
+                }
+            elif str(error).replace("_", "").isalnum() and str(error).isupper():
+                task.detail = {**task.detail, "output_validation_code": str(error)[:100]}
             finish_step(task, error_code="MODEL_OUTPUT_INVALID")
             return
         finish_step(task, result_ref={"id": artifact.id, "version": artifact.version})

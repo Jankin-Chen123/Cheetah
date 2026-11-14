@@ -35,7 +35,7 @@ def test_standard_binding_permissions_versions_and_invalidation(monkeypatch):
                     revision=1,
                 )
             )
-        for kind in ["D08", "D09", "D10"]:
+        for kind in ["D07", "D08", "D09", "D10"]:
             session.add(
                 OutreachArtifact(
                     id=kind,
@@ -114,7 +114,7 @@ def test_standard_binding_permissions_versions_and_invalidation(monkeypatch):
         assert len(case.session_data["evaluation_binding_history"]) == 1
         assert bind_templates(case, Settings(), "D09")["content"]["score_scale"] == "1-10"
         assert session.get(OutreachArtifact, "D08").valid
-        for kind in ["D09", "D10"]:
+        for kind in ["D07", "D09", "D10"]:
             assert not session.get(OutreachArtifact, kind).valid
             assert session.get(OutreachArtifact, kind).review_status == "expired"
         # Stored standards retain Decimal weights in JSON-safe form.

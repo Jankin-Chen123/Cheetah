@@ -1,3 +1,5 @@
+from datetime import UTC, datetime, timedelta
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -5,6 +7,36 @@ from sqlalchemy.orm import Session
 from app.core.database import Base
 from app.modules.outreach.models import ModelStep, OutreachCase
 from app.modules.outreach.steps import claim_step, finish_step, register_step, result_still_current
+
+
+def test_recover_orphan_speech_but_keep_active_long_transcription():
+    from app.modules.outreach.steps import recover_stale_steps
+
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    began = (datetime.now(UTC) - timedelta(seconds=200)).isoformat()
+    with Session(engine) as session, session.begin():
+        for kind in ["farewell", "transcription", "D07"]:
+            session.add(
+                ModelStep(
+                    id=kind,
+                    case_id="case",
+                    step=kind,
+                    input_revision=1,
+                    status="running",
+                    detail={"registered_at": began},
+                )
+            )
+    with Session(engine) as session, session.begin():
+        assert recover_stale_steps(session) == 1
+        assert session.get(ModelStep, "farewell").status == "failed"
+        assert session.get(ModelStep, "transcription").status == "running"
+        assert session.get(ModelStep, "D07").status == "running"
+        session.get(ModelStep, "D07").detail = {
+            "started_at": (datetime.now(UTC) - timedelta(seconds=301)).isoformat()
+        }
+        assert recover_stale_steps(session) == 1
+        assert session.get(ModelStep, "D07").status == "failed"
 
 
 def test_step_dedup_and_terminal_receipt_survive_new_session():

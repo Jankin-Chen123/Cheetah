@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 import pytest
 from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session
@@ -10,8 +13,9 @@ from app.modules.outreach.worker import execute_outline
 
 
 @pytest.mark.parametrize("stop_during_model", [False, True])
+@pytest.mark.parametrize("has_methods", [False, True])
 def test_outline_worker_releases_transaction_and_rechecks_stop(
-    tmp_path, monkeypatch, stop_during_model
+    tmp_path, monkeypatch, stop_during_model, has_methods
 ):
     engine = create_engine(f"sqlite:///{tmp_path / 'worker.db'}")
     Base.metadata.create_all(engine)
@@ -24,15 +28,29 @@ def test_outline_worker_releases_transaction_and_rechecks_stop(
                 application_id="app",
                 candidate_id="candidate",
                 job_id="job",
-                snapshot={"artifact_refs": {}},
-                session_data={"upstream_content": {"fixture_only": True}},
+                snapshot={
+                    "fixture_only": True,
+                    "screening_result": "passed",
+                    "artifact_refs": {
+                        f"D{i:02}": {"artifact_id": f"fixture-{i}", "version": 1}
+                        for i in range(1, 7)
+                    },
+                },
+                session_data={
+                    "upstream_content": json.loads(
+                        (Path(__file__).parents[1] / "config/fixture-upstream.v1.json").read_text(
+                            encoding="utf8"
+                        )
+                    )
+                },
             )
         )
         session.flush()
         task, _ = register_step(session, "case", "D07", 1)
         task_id = task.id
     monkeypatch.setattr(
-        "app.modules.outreach.worker.retrieve", lambda *a, **k: [{"entry_id": "m1"}]
+        "app.modules.outreach.worker.retrieve",
+        lambda *a, **k: [{"entry_id": "m1"}] if has_methods else [],
     )
 
     def model(settings, instruction, context):
@@ -51,7 +69,7 @@ def test_outline_worker_releases_transaction_and_rechecks_stop(
                         "id": "q1",
                         "dimension_id": "responsibility",
                         "question": "虚构问题？",
-                        "method_entry_ids": ["m1"],
+                        "method_entry_ids": ["m1"] if has_methods else [],
                         "evidence_target": "个人职责",
                     }
                 ]

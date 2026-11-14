@@ -13,6 +13,58 @@ from app.modules.outreach.models import ModelStep, OutreachArtifact, OutreachCas
 from app.modules.outreach.preflight import briefing_snapshot, confirm_preflight
 
 
+def test_failed_transcription_allows_new_turn_without_reusing_failed_result(monkeypatch):
+    engine = create_engine(
+        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
+    )
+    Base.metadata.create_all(engine)
+    monkeypatch.setattr(
+        "app.modules.outreach.router.database_session", lambda request: Session(engine)
+    )
+    with Session(engine) as db, db.begin():
+        case = OutreachCase(
+            id="recover",
+            organization_id="org",
+            owner_id="owner",
+            application_id="app",
+            candidate_id="candidate",
+            job_id="job",
+            revision=1,
+            status="in_progress",
+            stop_status="none",
+            snapshot={},
+            session_data={},
+        )
+        invitation = issue_invitation(case)
+        initial_revision = case.revision
+        db.add(case)
+        db.add(
+            ModelStep(
+                id="failed",
+                case_id=case.id,
+                step="transcription",
+                input_revision=initial_revision,
+                status="failed",
+                detail={"error_code": "STREAM_RESULT_UNKNOWN"},
+            )
+        )
+    headers = {"Authorization": "Bearer " + invitation["token"]}
+    with TestClient(create_app(Settings())) as client:
+        first = client.get("/api/v1/candidate/calls/recover", headers=headers).json()
+        assert first["revision"] == initial_revision + 1
+        assert first["stop_status"] == "none"
+        assert not first.get("transcription")
+        assert (
+            client.get("/api/v1/candidate/calls/recover", headers=headers).json()["revision"]
+            == initial_revision + 1
+        )
+    with Session(engine) as db:
+        assert db.get(ModelStep, "failed").status == "failed"
+        assert db.get(OutreachCase, "recover").session_data["transcription_recoveries"] == [
+            {"task_id": "failed", "input_revision": initial_revision}
+        ]
+
+
 def test_candidate_answer_transaction_queue_and_stop(monkeypatch):
     engine = create_engine(
         "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
@@ -75,6 +127,30 @@ def test_candidate_answer_transaction_queue_and_stop(monkeypatch):
         assert client.get(path).status_code == 401
         view = client.get(path, headers=headers).json()
         speech_requests = []
+        assert (
+            client.post(
+                path,
+                headers=headers,
+                json={
+                    "expected_revision": view["revision"],
+                    "action": "answer",
+                    "statement": "未许可",
+                },
+            ).status_code
+            == 409
+        )
+        for purpose in ["formal_interview", "transcription", "extraction", "evaluation"]:
+            permission = client.post(
+                path + "/processing-permissions",
+                headers=headers,
+                json={
+                    "expected_revision": view["revision"],
+                    "purpose": purpose,
+                    "authorized": True,
+                },
+            )
+            assert permission.status_code == 200
+            view = permission.json()
 
         def speech(settings, text, **kwargs):
             speech_requests.append(text)

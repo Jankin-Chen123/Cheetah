@@ -61,6 +61,10 @@ def test_voice_preflight_stream_answer_replay_and_stop(monkeypatch, decline):
             },
         )
         invitation = issue_invitation(case)
+        from app.modules.outreach.processing_permissions import record_processing_permission
+
+        for purpose in ["formal_interview", "transcription", "extraction", "evaluation"]:
+            record_processing_permission(db, case, purpose, True, case.revision)
         db.add(case)
     headers = {"Origin": "http://localhost:5173", "Authorization": "Bearer " + invitation["token"]}
     spoken = []
@@ -140,7 +144,7 @@ def test_voice_preflight_stream_answer_replay_and_stop(monkeypatch, decline):
             goodbye = client.post(
                 path + "/speech",
                 headers=headers,
-                json={"expected_revision": value["revision"], "farewell": True},
+                json={"expected_revision": value["revision"] - 1, "farewell": True},
             )
             assert goodbye.status_code == 200
             assert "再见" in spoken[-1]
@@ -151,6 +155,9 @@ def test_voice_preflight_stream_answer_replay_and_stop(monkeypatch, decline):
         assert "薪资范围：暂未提供" in value["spoken_prompt"]
         assert value["question"] is None
         assert "随后再确认" in value["spoken_prompt"]
+        turn("可以继续。")
+        assert value["preflight"]["confirmed"] is False
+        assert "薪资范围" in value["spoken_prompt"]
         value = client.post(
             path,
             headers=headers,

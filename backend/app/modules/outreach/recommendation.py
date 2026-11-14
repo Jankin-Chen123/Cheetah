@@ -39,6 +39,16 @@ class RecommendationOutput(BaseModel):
     unknowns: list[str] = Field(default_factory=list, max_length=20)
 
 
+def validate_indicator_scoring(assessments, indicator_evidence):
+    insufficient = {
+        row["dimension_id"]
+        for row in indicator_evidence
+        if row.get("evidence_sufficiency") == "INSUFFICIENT"
+    }
+    if any(item.score is not None and item.dimension_id in insufficient for item in assessments):
+        raise ValueError("INSUFFICIENT_INDICATOR_REQUIRES_REVIEW")
+
+
 def generate_evaluation(
     session: Session, case: OutreachCase, settings: Settings, *, model_result=None
 ):
@@ -68,11 +78,20 @@ def generate_evaluation(
         )
     )
     output = AssessmentOutput.model_validate(result["content"])
+    validate_indicator_scoring(output.assessments, minutes.content.get("indicator_evidence", []))
     content = validate_evaluation(
-        template, output.assessments, answers, fixture_only=case.snapshot["fixture_only"]
+        template,
+        output.assessments,
+        answers,
+        fixture_only=case.snapshot["fixture_only"],
+        evidence_items=minutes.content.get("evidence_items", []),
     )
     content["gaps"] = list(minutes.content.get("gaps", []))
     content["conflicts"] = list(minutes.content.get("conflicts", []))
+    content["extraction_limitations"] = list(minutes.content.get("extraction_limitations", []))
+    content["indicator_evidence"] = list(minutes.content.get("indicator_evidence", []))
+    content["evidence_items"] = list(minutes.content.get("evidence_items", []))
+    content["dimension_coverage"] = list(minutes.content.get("dimension_coverage", []))
     provenance = {
         "source_mode": "live",
         "prompt_version": PROMPT_VERSION,
@@ -134,6 +153,14 @@ def generate_recommendation(
     for claim in output.match_highlights:
         if not claim.text.strip() or not set(claim.answer_ids).issubset(allowed):
             raise ValueError("UNKNOWN_REPORT_EVIDENCE")
+    if model_result is None and not evaluation.content.get("demo_rules", False):
+        from app.modules.outreach.budget import reserve_model_request
+        from app.modules.outreach.report_review import review_report_claims
+
+        reserve_model_request(case, settings, "D10_evidence_review")
+        result["quality_review"] = review_report_claims(
+            settings, [claim.model_dump() for claim in output.match_highlights], answers
+        )
     # A model cannot silently omit unresolved upstream qualifications.
     output.unknowns = list(
         dict.fromkeys(
@@ -145,10 +172,24 @@ def generate_recommendation(
         )
     )
     markdown = (
-        f"# {template.title}\n\n> {template.disclaimer}\n\n## {template.highlights_heading}\n\n"
+        f"# {template.title}\n\n> {template.disclaimer}\n\n"
+        f"## 第一部分｜猎头机构评估\n\n## {template.highlights_heading}\n\n"
         + "\n\n".join(claim.text for claim in output.match_highlights)
     )
     markdown += f"\n\n## {template.unknowns_heading}\n\n" + "\n".join(output.unknowns)
+    from app.modules.outreach.report_profile import professional_profile
+
+    client_profile, career_section = professional_profile(
+        case.session_data.get("upstream_content", {})
+    )
+    markdown = markdown.replace(
+        "## 第一部分｜猎头机构评估",
+        "## 第一部分｜猎头机构评估\n\n"
+        f"推荐职位：{client_profile['recommended_job_title']}\n\n"
+        f"候选人：{client_profile['candidate_display_name']}",
+        1,
+    )
+    markdown += "\n\n" + career_section
     inherited = inherited_provenance(case, evaluation)
     if inherited["fixture_only"] or "mock" in inherited["inherited_source_modes"]:
         markdown += "\n\n> 本报告包含虚构或模拟来源，仅用于受限流程验证。"
@@ -162,7 +203,7 @@ def generate_recommendation(
         session,
         case,
         "D10",
-        {**output.model_dump(), "content_markdown": markdown},
+        {**output.model_dump(), "content_markdown": markdown, "client_profile": client_profile},
         {
             "source_mode": "live",
             "prompt_version": PROMPT_VERSION,
@@ -172,6 +213,8 @@ def generate_recommendation(
             "model": result["model"],
             "usage": result["usage"],
             "report_template_version": template.version,
+            "client_context": case.session_data.get("client_context"),
+            "quality_review": result.get("quality_review"),
             "report_template": template.model_dump(),
             "template_sha256": bound["sha256"],
         },

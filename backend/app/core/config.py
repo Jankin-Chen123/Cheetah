@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     dialogue_understanding_enabled: bool = False
     model_max_tokens: int = 2000
     model_max_requests_per_case: int = 100
+    voice_provider: Literal["bailian", "volcengine"] = "bailian"
+    volc_speech_api_key: SecretStr | None = None
+    volc_asr_resource_id: str = "volc.seedasr.sauc.duration"
+    volc_tts_resource_id: str = "seed-tts-2.0"
+    volc_custom_voice_resource_id: str = "seed-icl-2.0"
     tts_custom_voice_id: str | None = None
     tts_custom_voice_label: str = "自定义音色"
     tts_model: str = "qwen-audio-3.1-tts-flash"

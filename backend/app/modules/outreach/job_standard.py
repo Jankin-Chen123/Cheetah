@@ -157,6 +157,22 @@ def bind_confirmed_standard(
         }
     )
     case.session_data = data
+    # Keep original interview evidence, but preparation made for the old rubric expires.
+    from sqlalchemy import select
+
+    from app.modules.outreach.models import OutreachArtifact
+
+    for outline in session.scalars(
+        select(OutreachArtifact).where(
+            OutreachArtifact.case_id == case.id,
+            OutreachArtifact.type == "D07",
+            OutreachArtifact.valid.is_(True),
+        )
+    ):
+        outline.valid = False
+        outline.review_status = "expired"
+        outline.revision += 1
+        case.session_data = {**case.session_data, "outline_requires_regeneration": True}
     invalidate_downstream(session, case, "D08")
     case.revision += 1
     return {"revision": case.revision, "standard_version": confirmed.version}

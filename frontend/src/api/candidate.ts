@@ -1,4 +1,13 @@
+export const processingPurposes = [
+  ['formal_interview', '参加本次 AI 招聘面试'],
+  ['transcription', '将本次语音转写为文字问答记录'],
+  ['extraction', '从本次问答提取岗位相关职业信息'],
+  ['evaluation', '按当前岗位标准生成机构内部面试评估'],
+] as const
+
 export interface CandidateSession {
+  processing_permissions?: Record<string, string>
+  client_sharing?: { client_label: string; status: string } | null
   voice_id: string
   voices: { id: string; label: string }[]
   practice_available: boolean
@@ -43,6 +52,12 @@ async function candidateCommand<T>(caseId: string, token: string, action: string
   if (!response.ok) throw new Error(`操作未完成（${response.status}），请核对邀请有效期及当前状态。`)
   return response.json() as Promise<T>
 }
+
+export const setProcessingPermission = (caseId: string, token: string, revision: number, purpose: string, authorized: boolean) =>
+  candidateCommand<CandidateSession>(caseId, token, 'processing-permissions', { expected_revision: revision, purpose, authorized })
+
+export const setClientSharing = (caseId: string, token: string, revision: number, authorized: boolean) =>
+  candidateCommand<CandidateSession>(caseId, token, 'client-sharing', { expected_revision: revision, authorized })
 
 export const chooseCandidateVoice = (caseId: string, token: string, revision: number, voiceId: string) =>
   candidateCommand<CandidateSession>(caseId, token, 'voice', { expected_revision: revision, voice_id: voiceId })

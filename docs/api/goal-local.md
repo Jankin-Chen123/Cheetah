@@ -1,5 +1,11 @@
 # Goal 本地集成增量（进行中）
 
+A08指标门禁增量：D09 content保留上游indicator_evidence；若任一记录INSUFFICIENT而模型给对应维度分数，内部步骤拒绝MODEL_OUTPUT_INVALID，需提取复核后显式重算，不自动给零分。SUFFICIENT不强迫评分。旧无矩阵产物仍按原暂定合同处理，不代表新版A08正式验收。前端指标预检表已接代码，运行验证范围见A08接入差异。
+
+A07指标矩阵增量：D08通用content新增indicator_definitions与indicator_evidence。后者逐项保留dimension_id、真实字段路径indicator_ref、answer_ids、SUFFICIENT/PARTIAL/INSUFFICIENT预检、非空sufficiency_reason和gaps；仅绑定已确认案例标准时要求完整覆盖。充分性不是分数，引用存在不等于语义支持。新evidence_direction缺省UNCLASSIFIED，兼容旧UNKNOWN。外层HTTP和通用OpenAPI产物content仍不变；该增量未完成Final Package全部合同。
+
+2026-11-14 A07 Final Package接入增量：产物通用content内D08 facts新增可选evidence_kind（PAST_BEHAVIOR/SITUATIONAL/FACT_ONLY/GENERAL_CLAIM/UNKNOWN）及evidence_direction（SUPPORTING/LIMITING/NEUTRAL/UNKNOWN），旧内容缺省UNKNOWN；精确quote/answer_id校验保持。D08 preparation_refs仅为准备稿引用，不证明实际执行版本，extraction_limitations在D09内部继承并可读展示。通用产物HTTP外层与OpenAPI路径不变，仍使用不透明content对象；未宣称完成新版A07指标矩阵或正式许可交接。
+
 ## 面试后处理增量 2026年11月14日
 
 暂定业务口径见 [面试后处理规则](../面试后处理暂定业务规则_V0.1.md)。D08/D09/D10 同步与 worker 共用中文业务指令，产物 provenance.prompt_version 记录 post-interview.v0.1。此次指令替换已通过10项相关隔离测试，尚未以真实模型专业样本验证语义质量；不能将程序结构验证视为业务准确率证明。
@@ -21,6 +27,12 @@ D09 在现有内容上保留上游 gaps/conflicts 字符串数组；D10 的 unkn
 本地工作台提供 D08 原话和回答引用、D09 逐维依据及缺失冲突的可读展示，并保留原始结构查询。D09 默认仍为零至五分演示量表；显式绑定 A02 后按十分制解释，历史分数不自动换算。
 
 验证：后处理相关19项隔离测试通过，前端静态检查、类型检查及构建通过；浏览器视觉验收及真实业务样本质量评审尚未完成。
+
+浏览器增量：在5174本地页面使用独立虚构批次，完成登录、导入、动态维度与五档锚点填写、明确确认和标准绑定，服务端返回revision=3/standard_version=1，页面显示服务端确认人，无pageerror。截图与结果存work/postcall-standard-browser*；报告审批下载完整链仍未因此通过。修复旧请求迟到401可能清空新登录CSRF的竞态，新增回归测试；前端14项测试、静态检查和构建通过。
+
+正式 `#live` 工作区已复用标准确认表单及 D08/D09 可读展示，保留原始内容与引用；退出使用 POST，首次结束后在自动报告步骤间继续轮询。该入口本轮静态检查与构建通过，完整浏览器审核下载及更正流程仍待验证。
+
+正式工作台浏览器补证：独立虚构案例回放前述真实模型输出（provenance.browser_test_replay=true），完成未批下载禁用、批准具体v1、下载1471字节Markdown、保存回答更正、旧D10/审批失效及刷新恢复，无pageerror。记录为work/postcall-report-browser-result.json及两张截图。此证据验证持久化接口和页面版本门禁，不代表从真实通话自动生成的连续闭环，也不是专业内容批准；测试审核意见明确仅用于流程验收。该次全后端131项测试及OpenAPI/内部合同快照通过；全局ruff仍报告通话调优区域router.py长行、test_model_first_dialogue.py格式问题，未修改这些通话内容以通过检查。
 
 当前增量沿用统一 `/api/v1`，原 `openapi.v1.json` 仍是待冻结的完整平台设计稿。新增本地验收 DTO 与草案的 Call/Report/Session 尚有差异，不能把它们当作原草案全部实现。精确机器合同见运行时 `/openapi.json`；下一轮须同步静态合同与消费方。
 
@@ -135,6 +147,12 @@ POST /candidate/calls/{id}/speech接受expected_revision，Bearer/Origin/前置�
 
 ## 火山方舟、先理解再检索与工作记忆（2026-11-14）
 
+### 火山语音适配增量（2026-11-14）
+
+语音提供方通过 `CHEETA_VOICE_PROVIDER=bailian|volcengine` 选择。火山独立凭据为 `CHEETA_VOLC_SPEECH_API_KEY`，方舟文本 Key 不用于语音鉴权。火山使用流式识别2.0与语音合成2.0，沿用现有候选人 WebSocket、双轨字幕和 NDJSON PCM 播放接口。音色目录随提供方切换，包含 Vivi、小何、团子、云舟、小天、刘飞六种2.0音色；旧场次保存的异提供方音色在读取时映射至当前目录首项。自定义音色可通过既有 `TTS_CUSTOM_VOICE_ID/LABEL` 选择，火山复刻资源默认 `seed-icl-2.0`，须提前取得有效音色 ID。
+
+火山适配已覆盖分块首音频、协议校验、增量转写、完成事件及独立凭据测试。浏览器本地交棒静音阈值由1.8秒缩短至1.2秒，减少约600毫秒固定等待，也会更早截断长停顿。语音 Key 配置并开通后已切换本地运行配置。六种音色真实合成成功；通过5174代理的候选人试听接口成功，单次首音频1188ms；合成测试音频经候选人WebSocket入口真实识别成功，收到8次增量转写及最终结果。批量音色测试首音频约2.5至11秒，存在长尾；这些结果来自合成音频，真人浏览器麦克风和实际出声时延仍待验收。缺少凭据时明确失败，不自动跨提供方回退。
+
 本地已配置TEXT_PROVIDER=ark，ARK_MODEL=doubao-seed-2-1-lite-260915，关闭深度思考；ARK_EMBEDDING_MODEL=doubao-embedding-vision-251215，调用/embeddings/multimodal的文本输入。Key仅本地.env；百炼ASR/TTS配置独立保留。不增加SDK或服务，不修改公共交接事件合同。统一文本调用入口保留原Python导入路径以兼容现有D07—D10消费方；Ark不可用时明确记录错误，不悄悄切回百炼。
 
 打开DIALOGUE_UNDERSTANDING_ENABLED后：模型先识别意图和上下文，构造完整检索查询。岗位反问、解释、更正等可直接回应，跳过检索和第二次生成；项目经历、归因、职责边界等专业追问进入混合检索。检索先过滤启用/审核/版本/冲突与预览权限（不再用固定标签截前8条），当前候选池上限100。关键词词项重合与真实向量余弦结果经RRF融合，低相关不塞入，最多返回3条。当前余弦门槛0.35为工程初值，未做业务大样本校准。
@@ -146,3 +164,31 @@ POST /candidate/calls/{id}/speech接受expected_revision，Bearer/Origin/前置�
 候选人decision_task新增可空phase（understanding/retrieval/responding/completed），页面按阶段提示等待。任务持久化timings中的understanding_ms/retrieval_ms/response_ms/total_ms以定位长尾，均为服务端阶段耗时，非浏览器实际出声时间。模型慢响应不再仅因60秒页面轮询阈值而中断对话。知识库、事实和版本审批边界未放宽。
 
 本轮真实验证：Ark文本及2048维向量均可调用；同义表达的低词项重合查询命中个人贡献方法；17条真实本地方法的隔离复制库完成“理解→混合检索→模型追问”，无降级。D08/D09真实模型调用成功；样例D09不符合推荐门槛时D10被CURRENT_ELIGIBLE_INPUT_REQUIRED阻断，未批准/导出/发送报告。语言矩阵、连续对话、语音HTTP原始记录仅work/。不能把条件检查通过当成对全部自然语言或真人麦克风体验的保证；复杂检索轮次仍有数秒至十余秒时延，知识相似度阈值与回复冗长度还需持续校准。
+
+### 面试问题复核增量（2026-11-14）
+
+录音转写接口与实时WebSocket均跟随VOICE_PROVIDER，火山配置下通过火山识别。正式追问接收已核对来源的完整累积工作记忆；无相关知识且理解阶段已给有效回复时直接复用，省去二次生成。自然语言理解支持stop意图，常见明确停止仍由程序优先执行。D07两种生成入口允许知识库为空，method_entry_ids允许空列表，仍要求有效上游材料、岗位标准及非空引用真实性。
+
+GET候选人状态发现当前revision的转写任务failed时，保留原失败任务与审计引用，递增场次revision，允许下一次新录音；不复用失败结果或再次提交旧回答。running任务与已完成任务不按此处理。页面实时转写失败后核对状态并恢复聆听。中断任务恢复使用started_at或registered_at；转写的恢复等待至少700秒，避免回收仍在进行的10分钟回答。
+
+farewell=true仅允许已结束场次播报固定问候，不依赖已结束场次随后因报告处理变化的revision；普通语音仍执行版本校验。拒绝岗位与结束正式面试使用相应简短告别。语音介绍中提前肯定保留求职意愿，介绍和邮件步骤完成后再次确认，防止越过开场顺序。
+
+24项表达矩阵、8轮连续文本对话与5段火山合成测试音频经5174候选人接口的识别/意愿/解释/结束闭环已运行。五段音频测试未发送岗位邮件；邮件发送时机、防重、SMTP未知结果等由回归测试覆盖，既有单次SMTP接收证据仍有效。实际真人麦克风与回声未验收，模型回复仍存在长尾和质量波动。完整核对见[AI面试修复验收记录](../AI面试修复验收_2026-11-14.md)。
+
+### 推荐报告 Word 导出
+
+`GET /reports/{report_id}/export?version=N&format=docx` 返回可编辑Word，`format=markdown`为默认兼容格式。二者复用对象归属、有效上游、指定内容版本与批准检查；均要求`X-Export-Request-ID`，Word下载审计为`word_download`，Markdown为`markdown_download`。下载不等于外发。客户文件仅使用已保存的content_markdown，不序列化内部评分、EV及审批元数据。旧批准报告不会因新模板实现而自动改内容。
+
+新D10在第一部分匹配线索后增加第二部分职业资料，从upstream_content.D03读取明确的profile、education、employment字段；employment逐条保留period/company/position/department/reports_to/team_scope/responsibilities/achievements，不推断年限、日期、任职或离职原因。没有结构化任职则明确待补充。该字段适配尚不代替完整A09资料共享许可合同。
+
+### 候选人逐项处理许可与会话交接
+
+`POST /candidate/calls/{case_id}/processing-permissions` 使用候选人邀请Bearer、Origin校验及expected_revision，请求purpose为formal_interview/transcription/extraction/evaluation之一，authorized为布尔；响应为当前候选人会话视图（新增processing_permissions状态映射）。服务端生成receipt_id、时间、policy_version和历史，不接受客户端自填审批人或许可时间。撤回使D08—D10及旧批准失效，当前revision改变使迟到模型结果不能落库。候选人界面逐项同意后才开放接通，撤回时停止页面音频采集；此许可不包含向客户分享或发送邮件。
+
+候选人提交的回答记录actor_type、服务端turn_id及选题时execution_ref。结束后限定案例调度从实际回答和许可回执生成a06_session，再执行身份、D07/D02版本、原文和轮次校验。意愿确认不替代处理许可，事后补的正式面试/转写许可不能用来包装旧问答；文本提交标CANDIDATE_TEXT，不冒充电话口述。无许可回执的旧fixture仍保留受限验证路径与明确缺口，显式撤回不可利用fixture例外绕过。
+
+### 指定客户分享许可
+
+审核人使用`POST /calls/{case_id}/client-context`设置client_company_id及明确获准向候选人披露的candidate_client_label，带expected_revision与现有会话/CSRF。更换范围使旧D10与批准失效。候选人使用邀请Bearer与Origin调用`POST /candidate/calls/{case_id}/client-sharing`，提交expected_revision/authorized；scope由服务端当前客户范围生成，不接受浏览器指定他人客户。该许可与四项内部处理许可独立，候选人结束后仍可管理分享许可。
+
+正式D10批准及下载同时要求当前客户范围一致的AUTHORIZED分享回执；没有配置客户的历史fixture保留受限演示，显式撤回不可绕过。页面新增客户范围表单与独立候选人分享选项；下载不触发外发。更换客户或撤回分享不重拨，不修改D08/D09内容。

@@ -19,13 +19,26 @@ from app.modules.outreach.minutes_worker import execute_minutes  # noqa: E402
 from app.modules.outreach.models import ModelStep  # noqa: E402
 from app.modules.outreach.postprocessing import schedule_postprocessing  # noqa: E402
 from app.modules.outreach.report_worker import execute_report_step  # noqa: E402
-from app.modules.outreach.steps import recover_stale_steps  # noqa: E402
+from app.modules.outreach.steps import finish_step, recover_stale_steps  # noqa: E402
 from app.modules.outreach.worker import execute_outline  # noqa: E402
+
+
+def execute_safely(executor, engine, settings, task_id):
+    try:
+        executor(engine, settings, task_id)
+    except Exception as error:
+        with Session(engine) as session, session.begin():
+            task = session.get(ModelStep, task_id, with_for_update=True)
+            if task and task.status in {"queued", "running"}:
+                task.detail = {**task.detail, "failure_type": type(error).__name__}
+                finish_step(task, error_code="WORKER_EXECUTION_FAILED")
+        print("Worker task failed: " + type(error).__name__, file=sys.stderr, flush=True)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--once", action="store_true")
+    parser.add_argument("--case-id", help="Limit recovery, scheduling and execution to this case")
     args = parser.parse_args()
     settings = get_settings()
     if settings.database_url is None:
@@ -33,13 +46,14 @@ def main():
     engine = get_engine(settings.database_url.get_secret_value())
     while True:
         with Session(engine) as session, session.begin():
-            recover_stale_steps(session)
-            schedule_postprocessing(session)
+            recover_stale_steps(session, case_id=args.case_id)
+            schedule_postprocessing(session, case_id=args.case_id)
         with Session(engine) as session:
             task = session.scalar(
                 select(ModelStep)
                 .where(
                     ModelStep.status == "queued",
+                    ModelStep.case_id == args.case_id if args.case_id else True,
                     or_(
                         ModelStep.step.in_(
                             ["D07", "followup", "conversation", "D08", "D09", "D10"]
@@ -64,7 +78,7 @@ def main():
                     "D10": execute_report_step,
                 }[step]
             )
-            executor(engine, settings, task_id)
+            execute_safely(executor, engine, settings, task_id)
         if args.once:
             break
         if task_id is None:

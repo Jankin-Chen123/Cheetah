@@ -445,6 +445,20 @@
               "minimum": 1,
               "title": "Version"
             }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "markdown",
+                "docx"
+              ],
+              "type": "string",
+              "default": "markdown",
+              "title": "Format"
+            }
           }
         ],
         "responses": {
@@ -1723,6 +1737,156 @@
         }
       }
     },
+    "/api/v1/calls/{case_id}/client-context": {
+      "post": {
+        "tags": [
+          "outreach"
+        ],
+        "summary": "Configure Client Context",
+        "operationId": "configure_client_context_api_v1_calls__case_id__client_context_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientContextInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/candidate/calls/{case_id}/client-sharing": {
+      "post": {
+        "tags": [
+          "outreach"
+        ],
+        "summary": "Candidate Client Sharing",
+        "operationId": "candidate_client_sharing_api_v1_candidate_calls__case_id__client_sharing_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientSharingInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/candidate/calls/{case_id}/processing-permissions": {
+      "post": {
+        "tags": [
+          "outreach"
+        ],
+        "summary": "Candidate Processing Permission",
+        "operationId": "candidate_processing_permission_api_v1_candidate_calls__case_id__processing_permissions_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcessingPermissionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/calls/{case_id}/invitation": {
       "post": {
         "tags": [
@@ -2357,6 +2521,55 @@
         ],
         "title": "CandidateVoiceInput"
       },
+      "ClientContextInput": {
+        "properties": {
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Revision"
+          },
+          "client_company_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Client Company Id"
+          },
+          "candidate_client_label": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Candidate Client Label"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_revision",
+          "client_company_id",
+          "candidate_client_label"
+        ],
+        "title": "ClientContextInput"
+      },
+      "ClientSharingInput": {
+        "properties": {
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Revision"
+          },
+          "authorized": {
+            "type": "boolean",
+            "title": "Authorized"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_revision",
+          "authorized"
+        ],
+        "title": "ClientSharingInput"
+      },
       "ContactAuthorizationRef": {
         "properties": {
           "authorization_id": {
@@ -2977,6 +3190,37 @@
           "statement"
         ],
         "title": "PreflightInput"
+      },
+      "ProcessingPermissionInput": {
+        "properties": {
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Revision"
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "formal_interview",
+              "transcription",
+              "extraction",
+              "evaluation"
+            ],
+            "title": "Purpose"
+          },
+          "authorized": {
+            "type": "boolean",
+            "title": "Authorized"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_revision",
+          "purpose",
+          "authorized"
+        ],
+        "title": "ProcessingPermissionInput"
       },
       "ReviewInput": {
         "properties": {

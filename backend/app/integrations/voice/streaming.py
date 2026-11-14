@@ -16,6 +16,10 @@ async def transcribe_stream(
     frames: AsyncIterator[bytes],
     emit: Callable[[dict], Awaitable[None]],
 ):
+    if settings.voice_provider == "volcengine":
+        from app.integrations.voice.volcengine import transcribe
+
+        return await transcribe(settings, frames, emit)
     if not settings.bailian_api_key or not settings.bailian_base_url:
         raise RuntimeError("REALTIME_NOT_CONFIGURED")
     parsed = urlparse(settings.bailian_base_url)

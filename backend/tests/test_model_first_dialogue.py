@@ -1,3 +1,4 @@
+import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
@@ -41,11 +42,28 @@ def case_task(tmp_path):
 
 def test_understanding_precedes_semantic_search_and_generation(tmp_path, monkeypatch):
     engine, task_id = case_task(tmp_path)
+    from app.modules.outreach.models import OutreachArtifact
+
+    with Session(engine) as db, db.begin():
+        case = db.get(OutreachCase, "case")
+        case.session_data = {**case.session_data, "outline_id": "outline"}
+        db.add(
+            OutreachArtifact(
+                id="outline",
+                case_id="case",
+                type="D07",
+                version=1,
+                content={"questions": [{"question": "原问题？"}]},
+                provenance={},
+                input_refs=[],
+            )
+        )
     calls = []
     monkeypatch.setattr("app.modules.outreach.followup_worker.retrieve", lambda *a, **k: [])
 
     def understand(*args):
         calls.append("understand")
+        assert args[1]["outline_questions"] == [{"question": "原问题？"}]
         return TurnUnderstanding(
             intent="answer",
             needs_retrieval=True,
@@ -53,7 +71,13 @@ def test_understanding_precedes_semantic_search_and_generation(tmp_path, monkeyp
             memory=[
                 MemoryFact(key="count", text="实际访谈12位", answer_id="a1", status="corrected")
             ],
-        ), {"model": "fixture"}
+        ), {
+            "model": "fixture",
+            "working_memory": [
+                {"key": "count", "text": "实际访谈12位"},
+                {"key": "role", "text": "此前说明负责整理访谈提纲"},
+            ],
+        }
 
     def search(settings, query, candidates):
         assert query == "完整上下文意图"
@@ -62,6 +86,8 @@ def test_understanding_precedes_semantic_search_and_generation(tmp_path, monkeyp
 
     def generate(*args):
         calls.append("generate")
+        assert len(args[2]["working_memory"]) == 2
+        assert args[2]["working_memory"][1]["key"] == "role"
         return {
             "content": {
                 "action": "followup",
@@ -108,6 +134,41 @@ def test_counterquestion_can_reply_without_search_or_second_model(tmp_path, monk
         case = db.get(OutreachCase, "case")
         assert case.session_data["decisions"][-1]["generator_kind"] == "model_direct_response"
         assert db.get(ModelStep, task_id).detail["retrieval"]["mode"] == "not_needed"
+
+
+@pytest.mark.parametrize("intent", ["answer", "stop"])
+def test_no_matching_knowledge_reuses_understanding_reply(tmp_path, monkeypatch, intent):
+    engine, task_id = case_task(tmp_path)
+    monkeypatch.setattr("app.modules.outreach.followup_worker.retrieve", lambda *a, **k: [])
+    monkeypatch.setattr(
+        "app.modules.outreach.understanding.understand_turn",
+        lambda *a: (
+            TurnUnderstanding(
+                intent=intent,
+                needs_retrieval=intent == "answer",
+                search_query="跨团队项目",
+                response="您当时具体协调了哪些事项？",
+            ),
+            {"model": "fixture", "usage": None},
+        ),
+    )
+    monkeypatch.setattr(
+        "app.modules.outreach.retrieval.hybrid_rank", lambda *a: ([], {"mode": "none"})
+    )
+
+    def unexpected(*args):
+        raise AssertionError("No second generation needed")
+
+    monkeypatch.setattr("app.modules.outreach.followup_worker.generate_json", unexpected)
+    execute_followup(engine, Settings(dialogue_understanding_enabled=True), task_id)
+    with Session(engine) as db:
+        case = db.get(OutreachCase, "case")
+        assert db.get(ModelStep, task_id).status == "completed"
+        if intent == "stop":
+            assert case.status == "ended"
+            assert case.session_data["termination_reason"] == "candidate_requested_stop"
+        else:
+            assert case.session_data["current_question"]["question"] == "您当时具体协调了哪些事项？"
 
 
 def test_memory_correction_replaces_old_value_and_rejects_unknown_source(monkeypatch):

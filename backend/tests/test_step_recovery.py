@@ -43,7 +43,7 @@ def test_stale_running_becomes_explicit_failure_without_reexecution():
                 step="D07",
                 input_revision=1,
                 status="running",
-                detail={"started_at": (datetime.now(UTC) - timedelta(seconds=200)).isoformat()},
+                detail={"started_at": (datetime.now(UTC) - timedelta(seconds=301)).isoformat()},
             )
         )
         session.add(

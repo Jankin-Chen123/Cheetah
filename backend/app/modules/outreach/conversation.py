@@ -8,10 +8,9 @@ from app.modules.outreach.preflight import briefing_snapshot
 def spoken_prompt(case):
     state = case.session_data.get("preflight", {})
     if case.status in {"ended", "cancelled"} or case.stop_status != "none":
-        return (
-            "本次面试已结束。后续由招聘方核对面试记录并确认是否进入下一环节；"
-            "内部评估报告不会自动发送。感谢您的时间，再见。"
-        )
+        if state.get("interested") is False:
+            return "好的，感谢您告知，今天就先不打扰了。祝您工作顺利，再见。"
+        return "本次面试已结束。招聘方会核对沟通记录并确认后续安排。感谢您的时间，再见。"
     if case.session_data.get("conversation_reply"):
         return case.session_data["conversation_reply"]
     if case.session_data.get("voice_clarification"):
@@ -37,8 +36,7 @@ def spoken_prompt(case):
             f"感谢您。本次岗位是{describe(material.get('job_title'))}。"
             f"主要需求：{describe(material.get('requirements'))[:80]}。"
             f"薪资范围：{describe(material.get('salary'))}。"
-            "完整资料可在页面查看，也可授权发送到邮箱。未确认的信息不作承诺。"
-            "我先处理您已授权的资料邮件，随后再确认是否开始面试。"
+            "我先处理您已授权的岗位资料邮件，发送状态请看页面，随后再确认是否开始面试。"
         )
     return (case.session_data.get("current_question") or {}).get("question")
 

@@ -6,11 +6,12 @@ from app.modules.outreach.models import OutreachArtifact, OutreachCase
 from app.modules.outreach.steps import register_step
 
 
-def schedule_postprocessing(session):
+def schedule_postprocessing(session, *, case_id: str | None = None):
     registered = 0
-    cases = session.scalars(
-        select(OutreachCase).where(OutreachCase.status == "ended").with_for_update(skip_locked=True)
-    )
+    query = select(OutreachCase).where(OutreachCase.status == "ended")
+    if case_id is not None:
+        query = query.where(OutreachCase.id == case_id)
+    cases = session.scalars(query.with_for_update(skip_locked=True))
     for case in cases:
         if (
             case.stop_status == "requested"
@@ -23,6 +24,14 @@ def schedule_postprocessing(session):
         )
         current = {artifact.type: artifact for artifact in artifacts if artifact.valid}
         if "D08" not in current:
+            if case.session_data.get("processing_permissions"):
+                from app.modules.outreach.processing_permissions import finalize_interview_session
+
+                try:
+                    finalize_interview_session(session, case)
+                except ValueError as error:
+                    case.session_data = {**case.session_data, "postprocessing_blocked": str(error)}
+                    continue
             # Existing invalid results require an explicit recompute, not an automatic restart.
             if any(artifact.type == "D08" for artifact in artifacts):
                 continue

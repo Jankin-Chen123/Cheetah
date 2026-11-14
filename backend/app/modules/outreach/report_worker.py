@@ -16,6 +16,7 @@ from app.modules.outreach.recommendation import (
     generate_evaluation,
     generate_recommendation,
 )
+from app.modules.outreach.report_review import review_report_claims
 from app.modules.outreach.steps import claim_step, finish_step, result_still_current
 from app.modules.outreach.templates import bind_templates
 
@@ -53,6 +54,9 @@ def execute_report_step(engine, settings, task_id):
             return
         try:
             reserve_model_request(case, settings, step)
+            review_required = step == "D10" and not upstream.content.get("demo_rules", False)
+            if review_required:
+                reserve_model_request(case, settings, "D10_evidence_review")
         except ModelUnavailable as error:
             finish_step(task, error_code=str(error))
             return
@@ -73,9 +77,16 @@ def execute_report_step(engine, settings, task_id):
             instruction = RECOMMENDATION_INSTRUCTION
     try:
         result = generate_json(settings, instruction, context)
+        if review_required:
+            output = RecommendationOutput.model_validate(result["content"])
+            result["quality_review"] = review_report_claims(
+                settings,
+                [claim.model_dump() for claim in output.match_highlights],
+                context["answers"],
+            )
         failure = None
-    except ModelUnavailable as error:
-        failure = str(error)
+    except (ModelUnavailable, ValueError) as error:
+        failure = str(error) if isinstance(error, ModelUnavailable) else "MODEL_OUTPUT_INVALID"
     with Session(engine) as session, session.begin():
         task = session.get(ModelStep, task_id, with_for_update=True)
         case = session.get(OutreachCase, task.case_id, with_for_update=True)

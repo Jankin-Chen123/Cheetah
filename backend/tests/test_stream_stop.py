@@ -32,6 +32,9 @@ def test_completed_stream_stop_is_programmatic_and_persisted(monkeypatch):
             session_data={},
         )
         invitation = issue_invitation(case)
+        from app.modules.outreach.processing_permissions import record_processing_permission
+
+        record_processing_permission(db, case, "transcription", True, case.revision)
         revision = case.revision
         db.add(case)
     monkeypatch.setattr(

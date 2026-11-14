@@ -72,6 +72,9 @@ def test_end_to_postprocessing_survives_poll_restart_without_approval(
 
     monkeypatch.setattr("app.modules.outreach.minutes_worker.generate_json", model)
     monkeypatch.setattr("app.modules.outreach.report_worker.generate_json", model)
+    with Session(engine) as session, session.begin():
+        assert schedule_postprocessing(session, case_id="unrelated-case") == 0
+        assert session.scalar(select(func.count()).select_from(ModelStep)) == 0
     for step in ["D08", "D09", "D10"]:
         with Session(engine) as session, session.begin():
             count = schedule_postprocessing(session)

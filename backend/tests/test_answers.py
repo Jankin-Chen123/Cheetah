@@ -25,6 +25,33 @@ def test_answer_saved_and_repeat_blocked():
         record_answer(item, "新回答", 2)
 
 
+def test_answer_keeps_selected_question_version_when_preparation_changes():
+    item = case()
+    execution = {
+        "outline_ref": {"id": "outline-v1", "version": 1},
+        "standard_binding": {"standard": {"version": 2}},
+        "question_id": "q1",
+        "parent_question_id": None,
+    }
+    item.session_data["current_question"]["execution_ref"] = execution
+    answer = record_answer(item, "本人负责访谈", 1)
+    execution["outline_ref"]["version"] = 9
+    assert answer["execution_ref"]["outline_ref"]["version"] == 1
+    revised = correct_answer(item, answer["id"], "本人负责十次访谈", item.revision, "reviewer")
+    assert revised["execution_ref"] == answer["execution_ref"]
+    assert item.session_data["answer_history"][0]["text"] == "本人负责访谈"
+
+
+def test_expired_outline_blocks_answers_but_keeps_stop_available():
+    item = case()
+    item.session_data = {**item.session_data, "outline_requires_regeneration": True}
+    with pytest.raises(ValueError, match="OUTLINE_REGENERATION_REQUIRED"):
+        record_answer(item, "继续回答", 1)
+    assert item.session_data["answers"] == []
+    record_answer(item, "请停止", 1)
+    assert item.status == "ended" and item.stop_status == "confirmed"
+
+
 def test_candidate_stop_is_immediate_and_reviewer_stop_is_requested():
     item = case()
     record_answer(item, "请停止", 1)

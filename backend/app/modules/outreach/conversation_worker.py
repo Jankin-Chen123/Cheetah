@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.integrations.bailian import ModelUnavailable, generate_json
 from app.modules.outreach.budget import reserve_model_request
+from app.modules.outreach.conversation import spoken_prompt
 from app.modules.outreach.models import ModelStep, OutreachCase
 from app.modules.outreach.preflight import briefing_snapshot
 from app.modules.outreach.steps import claim_step, finish_step, result_still_current
@@ -42,6 +43,8 @@ def execute_conversation(engine, settings, task_id):
             if case.session_data.get("preflight", {}).get("briefing_presented")
             else "interest",
             "utterance": case.session_data.get("conversation_utterance"),
+            "previous_prompt": case.session_data.get("conversation_prompt") or spoken_prompt(case),
+            "recent_exchanges": case.session_data.get("conversation_history", [])[-8:],
             "material": briefing_snapshot(case),
             "preflight": case.session_data.get("preflight", {}),
         }
@@ -120,6 +123,14 @@ def execute_conversation(engine, settings, task_id):
             if not failure
             else case.session_data.get("voice_clarification"),
             "conversation_reply_model": result["model"],
+            "conversation_history": [
+                *case.session_data.get("conversation_history", [])[-7:],
+                {
+                    "prompt": context["previous_prompt"],
+                    "candidate": context["utterance"],
+                    "reply": reply.reply,
+                },
+            ],
             "decision_status": "completed",
         }
         case.revision += 1

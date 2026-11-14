@@ -1,3 +1,4 @@
+import pytest
 from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session
 
@@ -8,7 +9,10 @@ from app.modules.outreach.models import ModelStep, OutreachArtifact, OutreachCas
 from app.modules.outreach.steps import register_step
 
 
-def test_minutes_discarded_after_concurrent_answer_change(tmp_path, monkeypatch):
+@pytest.mark.parametrize("formal_without_session", [False, True])
+def test_minutes_discarded_after_concurrent_answer_change(
+    tmp_path, monkeypatch, formal_without_session
+):
     engine = create_engine(f"sqlite:///{tmp_path / 'minutes.db'}")
     Base.metadata.create_all(engine)
     with Session(engine) as session, session.begin():
@@ -20,7 +24,7 @@ def test_minutes_discarded_after_concurrent_answer_change(tmp_path, monkeypatch)
                 application_id="app",
                 candidate_id="candidate",
                 job_id="job",
-                snapshot={},
+                snapshot={} if formal_without_session else {"fixture_only": True},
                 session_data={"answers": [{"id": "a1", "text": "原回答", "question": {}}]},
             )
         )
@@ -29,6 +33,7 @@ def test_minutes_discarded_after_concurrent_answer_change(tmp_path, monkeypatch)
         task_id = task.id
 
     def model(*args):
+        assert not formal_without_session, "Missing permission must block before inference"
         with Session(engine) as session, session.begin():
             case = session.get(OutreachCase, "case")
             case.revision += 1
@@ -46,5 +51,12 @@ def test_minutes_discarded_after_concurrent_answer_change(tmp_path, monkeypatch)
     monkeypatch.setattr("app.modules.outreach.minutes_worker.generate_json", model)
     execute_minutes(engine, Settings(), task_id)
     with Session(engine) as session:
-        assert session.get(ModelStep, task_id).status == "cancelled"
+        task = session.get(ModelStep, task_id)
+        assert task.status == ("failed" if formal_without_session else "cancelled")
+        if formal_without_session:
+            assert task.detail["error_code"] == "A06_SESSION_REQUIRED"
+            assert (
+                session.get(OutreachCase, "case").session_data.get("model_requests_reserved", 0)
+                == 0
+            )
         assert session.scalar(select(func.count()).select_from(OutreachArtifact)) == 0

@@ -1,6 +1,7 @@
 """Persist actual text answers independently from subsequent model generation."""
 
 import time
+from copy import deepcopy
 from uuid import uuid4
 
 from app.modules.outreach.interview import termination_reason
@@ -16,6 +17,8 @@ def record_answer(case: OutreachCase, answer: str, expected_revision: int):
 
     if termination_reason(answer, 0, 0) != "candidate_requested_stop":
         require_preflight(case)
+        if case.session_data.get("outline_requires_regeneration"):
+            raise ValueError("OUTLINE_REGENERATION_REQUIRED")
     data = case.session_data
     question = data.get("current_question")
     if not question or not answer.strip():
@@ -30,10 +33,12 @@ def record_answer(case: OutreachCase, answer: str, expected_revision: int):
         *data.get("answers", []),
         {
             "id": uuid4().hex,
+            "turn_id": uuid4().hex,
             "text": answer,
             "question": question,
             "recorded_at": now,
             "source_mode": "manual",
+            "execution_ref": deepcopy(question.get("execution_ref")),
         },
     ]
     from app.modules.outreach.conversation_options import case_termination
