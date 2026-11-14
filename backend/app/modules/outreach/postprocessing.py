@@ -29,6 +29,11 @@ def schedule_postprocessing(session, *, case_id: str | None = None):
 
                 try:
                     finalize_interview_session(session, case)
+                    if case.session_data.get("postprocessing_blocked"):
+                        case.session_data = {
+                            **case.session_data,
+                            "postprocessing_blocked": None,
+                        }
                 except ValueError as error:
                     case.session_data = {**case.session_data, "postprocessing_blocked": str(error)}
                     continue

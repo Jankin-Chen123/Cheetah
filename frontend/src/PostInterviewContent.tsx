@@ -30,6 +30,8 @@ export default function PostInterviewContent({ artifact }: { artifact: Artifact 
       {strings(content.unknowns).length > 0 && <Alert type="warning" message="提纲待核实事项" description={<ul>{strings(content.unknowns).map((note, index) => <li key={index}>{note}</li>)}</ul>} />}
     </>}
     {type === 'D08' && <>
+      <Alert type={content.extraction_status === 'READY_FOR_A08' ? 'info' : 'warning'}
+        message={content.extraction_status === 'READY_FOR_A08' ? '完整会话已交接评估；证据充分性仍须逐维核对。' : '部分会话或历史材料：仅供受限复核，不能据此宣称完整面试已完成。'} />
       <p>提取覆盖：{content.coverage === 'full' ? '已提取职责和结果事实' : '部分覆盖'}。以下为候选人自述，原话存在不代表已独立核实。</p>
       {records(content.facts).length === 0 && <Alert type="info" message="尚未提取到有效事实" />}
       {(records(content.evidence_items).length ? records(content.evidence_items) : records(content.facts)).map((fact, index) => <div key={index} style={{ marginBottom: 16 }}>

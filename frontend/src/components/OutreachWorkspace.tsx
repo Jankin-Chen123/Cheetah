@@ -20,6 +20,7 @@ export default function OutreachWorkspace() {
   const [replacement, setReplacement] = useState('')
   const currentEvaluation = current?.artifacts?.find(artifact => artifact.type === 'D09' && artifact.valid)
   const waitingForReports = current?.status === 'ended' && Array.isArray(current.session.answers) && current.session.answers.length > 0 && !current.session.correction_requires_recompute &&
+    !current.session.postprocessing_blocked &&
     !current.failed_tasks?.length && !current.artifacts?.some(artifact => artifact.type === 'D10' && artifact.valid) &&
     (!currentEvaluation || currentEvaluation.content.conclusion === 'recommended')
   async function refresh(id?: string) {
@@ -83,6 +84,9 @@ export default function OutreachWorkspace() {
       {current && <>
         <EvaluationStandardCard key={`standard-${current.id}-${current.revision}`} current={current} refresh={() => refresh(current.id)} />
         <Card title="面试与报告进度">
+          {typeof current.session.postprocessing_blocked === 'string' && <Alert type="warning"
+            message="面试后处理尚未开始"
+            description={`会话交接未通过：${current.session.postprocessing_blocked}。请核对候选人处理许可、实际问题版本与回答记录；补齐后由后台重新检查。不会自动重拨。`} />}
           {current.session.outline_requires_regeneration === true && <Alert type="warning" message="面试标准已更新，旧提纲已失效。请重新生成 D07 后继续面试；仍可随时停止。" />}
           <Typography.Paragraph>电话状态：{current.status}；停止状态：{current.stop_status}</Typography.Paragraph>
           <Space wrap>
