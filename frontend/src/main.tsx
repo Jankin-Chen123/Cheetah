@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client'
 import { ConfigProvider } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import App from './App'
+import GoalWorkspace from './GoalWorkspace'
+import CandidateInterview from './CandidateInterview'
 import './styles.css'
 
 createRoot(document.getElementById('root')!).render(
@@ -20,7 +22,7 @@ createRoot(document.getElementById('root')!).render(
         },
       }}
     >
-      <App />
+      {window.location.pathname === '/candidate' ? <CandidateInterview /> : window.location.pathname === '/goal' ? <GoalWorkspace /> : <App />}
     </ConfigProvider>
   </StrictMode>,
 )

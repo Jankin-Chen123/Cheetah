@@ -6,7 +6,7 @@ Cheetah 意为“猎豹”；中文名“猎报”，“猎”取自猎头，“
 
 面向猎头的网页端 Agent 自动化工作流：梳理 HR 招聘需求，批量分析与初筛简历，安排 AI 电话沟通，生成内部评估和候选人推荐报告。
 
-**当前为前端交互演示与后端初始化版本。** 前端已实现工作台、岗位与规则草案、简历暂存校验、候选人产物与证据查看、模拟电话状态、模拟报告版本审核与 Markdown 下载。所有样例均为虚构，修改仅存于当前页面内存，刷新重置。后端仅有健康检查和公共交接合同；真实登录、持久化业务任务、模型检索、电话与服务端报告审核导出尚未实现。
+**当前 personal/dev 包含两种入口。** 原工作台仍使用内存中的虚构演示数据；`/goal` 已接本地登录、PostgreSQL 电话任务、方法检索、实际文字回答、模型步骤及具体版本审核导出。已完成部分真实模型与 HTTP 验证，完整浏览器闭环仍未验收，真实电话线路未接入。准确启动、迁移、原文和结构化方法导入、worker 与验收状态见 [Goal 验收说明](docs/Goal_验收说明.md)；已实现接口与完整平台草案的差异见 [本地 API 增量](docs/api/goal-local.md)。本机使用 8001/5174，勿停止占用默认端口的其他项目。
 
 ## 架构与分工
 
@@ -19,7 +19,7 @@ Cheetah 意为“猎豹”；中文名“猎报”，“猎”取自猎头，“
 | 后端 B | `backend/app/modules/outreach/`、`backend/app/integrations/voice/` | 电话、访谈、评估与推荐，D07—D10 |
 | 公共基础 | `backend/app/core/` | 配置、数据库、健康检查、交接合同；后续补充鉴权、任务和证据 |
 
-九个 Agent 是逻辑职责，不要求九个独立服务。A/B 通过版本化产物和持久化事件交接；当前仅实现合同，不包含任务执行器。
+九个 Agent 是逻辑职责，不要求九个独立服务。后半段已有持久化模型步骤执行器；真实上游 A 的业务链尚未接通，开发入口只导入明确虚构的已达标合同与快照。
 
 ## 本地启动
 
@@ -36,7 +36,8 @@ Copy-Item .env.example .env
 ```powershell
 cd backend
 uv sync --locked
-uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+$env:CHEETA_ALLOWED_ORIGINS='["http://127.0.0.1:5174","http://localhost:5174"]'
+python -m uv run uvicorn app.main:app --host 127.0.0.1 --port 8001
 ```
 
 另开终端启动前端：
@@ -44,10 +45,11 @@ uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```powershell
 cd frontend
 npm ci
-npm run dev
+ $env:CHEETA_DEV_API_TARGET='http://127.0.0.1:8001'
+npm run dev -- --port 5174 --strictPort
 ```
 
-打开前端 [http://localhost:5173](http://localhost:5173)，API 文档为 [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)。前端开发代理将 `/api` 转发给本地后端。
+打开前端 [http://127.0.0.1:5174](http://127.0.0.1:5174)，API 文档为 [http://127.0.0.1:8001/docs](http://127.0.0.1:8001/docs)。前端开发代理将 `/api` 转发给本地后端。
 
 未运行数据库时后端仍可启动，存活检查返回成功；数据库就绪检查返回 503，不会把未连接状态冒充就绪。
 
@@ -61,7 +63,7 @@ cd backend
 uv run alembic upgrade head
 ```
 
-当前没有业务表迁移，后续由 A/B 按共享迁移约定添加。不要在两个模块分别自动创建或改写共享表。
+当前业务迁移至 `0005_model_steps`，须显式运行迁移。不要在两个模块分别自动创建或改写共享表。
 
 运行完整骨架：
 

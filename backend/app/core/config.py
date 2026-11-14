@@ -19,6 +19,16 @@ class Settings(BaseSettings):
 
     environment: Literal["development", "test", "production"] = "development"
     database_url: SecretStr | None = None
+    local_username: str = "local-reviewer"
+    local_password: SecretStr | None = None
+    bailian_api_key: SecretStr | None = None
+    bailian_base_url: str | None = None
+    bailian_model: str | None = None
+    bailian_region: str | None = None
+    model_max_tokens: int = 2000
+    model_max_requests_per_case: int = 24
+    evaluation_template_path: Path | None = None
+    report_template_path: Path | None = None
     allowed_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
 

@@ -1,7 +1,12 @@
 from alembic import context
 
+from app.core import auth  # noqa: F401
 from app.core.config import get_settings
 from app.core.database import Base, get_engine
+from app.modules.outreach import (
+    knowledge,  # noqa: F401
+    models,  # noqa: F401
+)
 
 settings = get_settings()
 if settings.database_url is None:

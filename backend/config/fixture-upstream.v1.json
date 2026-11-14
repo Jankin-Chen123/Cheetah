@@ -1,0 +1,10 @@
+{
+  "fixture_only": true,
+  "version": 1,
+  "D01": {"title": "虚构产品经理", "responsibilities": ["组织用户调研", "推动产品迭代"], "unknowns": ["薪资未提供"]},
+  "D02": {"dimensions": ["responsibility", "results"], "is_test_rule": true, "evaluation_template": {"id": "demo-evaluation", "version": 1}},
+  "D03": {"display_name": "虚构候选人甲", "claims": ["参与用户调研", "团队转化率提升20%"], "unknowns": ["个人职责边界", "成果统计口径"]},
+  "D04": {"source_mode": "mock", "findings": [], "gaps": ["未执行真实联网研究"]},
+  "D05": {"verification_questions": ["个人负责哪些行动", "20%提升如何计算及归因"]},
+  "D06": {"conclusion": "passed", "reason": "仅用于后半段流程验收的虚构初筛结果", "source_mode": "mock"}
+}

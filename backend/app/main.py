@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
+from app.core.auth import router as auth_router
 from app.core.config import Settings, get_settings
 from app.core.health import router as health_router
 from app.modules.intake.router import router as intake_router
@@ -64,6 +65,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     application.include_router(health_router, prefix="/api/v1")
+    application.include_router(auth_router, prefix="/api/v1")
     application.include_router(intake_router, prefix="/api/v1")
     application.include_router(outreach_router, prefix="/api/v1")
     return application
