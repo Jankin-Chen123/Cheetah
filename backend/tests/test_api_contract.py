@@ -36,7 +36,11 @@ def test_runtime_export_has_security_headers_and_both_import_formats():
     assert {"Origin", "X-CSRF-Token", "Idempotency-Key"} <= {
         p["name"] for p in operation["parameters"]
     }
-    assert "/api/v1/calls" not in actual["paths"]
+    assert actual["paths"]["/api/v1/calls"]["get"]["security"] == [{"CookieAuth": []}]
+    candidate = actual["paths"]["/api/v1/candidate/calls/{case_id}"]["post"]
+    assert candidate["security"] == [{"CandidateInvitation": []}]
+    assert not {"X-CSRF-Token", "Idempotency-Key"} & {p["name"] for p in candidate["parameters"]}
+    assert "/api/v1/interview-tasks/{task_id}" in actual["paths"]
     design = json.loads((ROOT / "docs/api/openapi.v1.json").read_text(encoding="utf-8"))
     required_routes = {
         ("/api/v1" + path, method)

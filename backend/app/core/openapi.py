@@ -34,6 +34,11 @@ def install_openapi(application):
             "in": "cookie",
             "name": "cheetah_session",
         }
+        schema["components"]["securitySchemes"]["CandidateInvitation"] = {
+            "type": "http",
+            "scheme": "bearer",
+            "description": "Candidate invitation token",
+        }
         for path, methods in schema["paths"].items():
             for method, operation in methods.items():
                 if method not in {"get", "post", "patch", "put", "delete"}:
@@ -48,8 +53,27 @@ def install_openapi(application):
                 if path.startswith("/api/v1/health"):
                     continue
                 public_auth = path in {"/api/v1/auth/login", "/api/v1/auth/register"}
+                candidate_access = path.startswith("/api/v1/candidate/")
+                outreach_route = candidate_access or path.startswith(
+                    tuple(
+                        "/api/v1/" + name
+                        for name in (
+                            "calls",
+                            "dev/fixture",
+                            "knowledge",
+                            "outlines",
+                            "minutes",
+                            "evaluations",
+                            "reports",
+                            "interview-tasks",
+                            "dev/screening-passed",
+                        )
+                    )
+                )
                 if not public_auth:
-                    operation["security"] = [{"CookieAuth": []}]
+                    operation["security"] = [
+                        {"CandidateInvitation" if candidate_access else "CookieAuth": []}
+                    ]
                 params = operation.setdefault("parameters", [])
                 for name in ["Origin"] if method != "get" else []:
                     params.append(
@@ -60,7 +84,7 @@ def install_openapi(application):
                             "schema": {"type": "string"},
                         }
                     )
-                if method != "get" and not public_auth:
+                if method != "get" and not public_auth and not candidate_access:
                     params.append(
                         {
                             "name": "X-CSRF-Token",
@@ -69,7 +93,7 @@ def install_openapi(application):
                             "schema": {"type": "string"},
                         }
                     )
-                if method == "post" and not path.startswith("/api/v1/auth/"):
+                if method == "post" and not path.startswith("/api/v1/auth/") and not outreach_route:
                     params.append(
                         {
                             "name": "Idempotency-Key",

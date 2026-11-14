@@ -15,6 +15,7 @@ COPY app ./app
 COPY alembic.ini ./
 COPY migrations ./migrations
 COPY scripts ./scripts
+COPY config ./config
 COPY --from=a03 /usr/local/bin/node /usr/local/bin/node
 COPY --from=a03 /agent/node_modules ./agents/a03/node_modules
 COPY agents/a03/src ./agents/a03/src
@@ -22,7 +23,8 @@ COPY agents/a03/resources ./agents/a03/resources
 COPY agents/a03/package-lock.json ./agents/a03/package-lock.json
 COPY agents/intake/resources ./agents/intake/resources
 RUN uv sync --locked --no-dev
-RUN useradd --create-home --uid 10001 cheeta
+RUN useradd --create-home --uid 10001 cheeta \
+    && mkdir -p /app/work && chown cheeta:cheeta /app/work
 USER cheeta
 EXPOSE 8000
 CMD ["/app/.venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

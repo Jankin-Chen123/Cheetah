@@ -48,6 +48,33 @@ services:
       CHEETA_A03_MAX_PAGES: ${CHEETA_A03_MAX_PAGES:-12}
       CHEETA_A03_PER_OBJECT_SEARCHES: ${CHEETA_A03_PER_OBJECT_SEARCHES:-3}
       CHEETA_A03_MAX_SECONDS: ${CHEETA_A03_MAX_SECONDS:-300}
+      CHEETA_TEXT_PROVIDER: ${CHEETA_TEXT_PROVIDER:-bailian}
+      CHEETA_BAILIAN_API_KEY: ${CHEETA_BAILIAN_API_KEY:-}
+      CHEETA_BAILIAN_BASE_URL: ${CHEETA_BAILIAN_BASE_URL:-}
+      CHEETA_BAILIAN_MODEL: ${CHEETA_BAILIAN_MODEL:-qwen-plus}
+      CHEETA_ARK_API_KEY: ${CHEETA_ARK_API_KEY:-}
+      CHEETA_ARK_BASE_URL: ${CHEETA_ARK_BASE_URL:-https://ark.cn-beijing.volces.com/api/v3}
+      CHEETA_ARK_MODEL: ${CHEETA_ARK_MODEL:-doubao-seed-2-1-lite-260915}
+      CHEETA_ARK_EMBEDDING_MODEL: ${CHEETA_ARK_EMBEDDING_MODEL:-doubao-embedding-vision-251215}
+      CHEETA_ARK_EMBEDDING_API: ${CHEETA_ARK_EMBEDDING_API:-multimodal}
+      CHEETA_VOICE_PROVIDER: ${CHEETA_VOICE_PROVIDER:-bailian}
+      CHEETA_VOLC_SPEECH_API_KEY: ${CHEETA_VOLC_SPEECH_API_KEY:-}
+      CHEETA_VOLC_ASR_RESOURCE_ID: ${CHEETA_VOLC_ASR_RESOURCE_ID:-volc.seedasr.sauc.duration}
+      CHEETA_VOLC_TTS_RESOURCE_ID: ${CHEETA_VOLC_TTS_RESOURCE_ID:-seed-tts-2.0}
+      CHEETA_VOLC_CUSTOM_VOICE_RESOURCE_ID: ${CHEETA_VOLC_CUSTOM_VOICE_RESOURCE_ID:-seed-icl-2.0}
+      CHEETA_TTS_CUSTOM_VOICE_ID: ${CHEETA_TTS_CUSTOM_VOICE_ID:-}
+      CHEETA_TTS_CUSTOM_VOICE_LABEL: ${CHEETA_TTS_CUSTOM_VOICE_LABEL:-自定义音色}
+      CHEETA_TTS_MODEL: ${CHEETA_TTS_MODEL:-qwen-audio-3.1-tts-flash}
+      CHEETA_DIALOGUE_UNDERSTANDING_ENABLED: ${CHEETA_DIALOGUE_UNDERSTANDING_ENABLED:-false}
+      CHEETA_MODEL_MAX_TOKENS: ${CHEETA_MODEL_MAX_TOKENS:-2000}
+      CHEETA_EXTRACTION_MAX_TOKENS: ${CHEETA_EXTRACTION_MAX_TOKENS:-4000}
+      CHEETA_MODEL_MAX_REQUESTS_PER_CASE: ${CHEETA_MODEL_MAX_REQUESTS_PER_CASE:-24}
+      CHEETA_RETRIEVAL_MIN_SIMILARITY: ${CHEETA_RETRIEVAL_MIN_SIMILARITY:-0.35}
+      CHEETA_SMTP_HOST: ${CHEETA_SMTP_HOST:-}
+      CHEETA_SMTP_PORT: ${CHEETA_SMTP_PORT:-465}
+      CHEETA_SMTP_USERNAME: ${CHEETA_SMTP_USERNAME:-}
+      CHEETA_SMTP_PASSWORD: ${CHEETA_SMTP_PASSWORD:-}
+      CHEETA_SMTP_SENDER: ${CHEETA_SMTP_SENDER:-}
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
@@ -59,6 +86,15 @@ services:
     restart: unless-stopped
     environment: *backend_environment
     command: ["/app/.venv/bin/python", "-m", "app.worker"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  interview-worker:
+    build: ./backend
+    restart: unless-stopped
+    environment: *backend_environment
+    command: ["/app/.venv/bin/python", "scripts/run_interview_worker.py"]
     depends_on:
       db:
         condition: service_healthy
