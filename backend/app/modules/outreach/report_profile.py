@@ -18,7 +18,12 @@ def professional_profile(upstream):
         f"候选人：{name}",
         "资料来源：候选人履历自述；未经独立核实。",
     ]
-    for key, label in [("current_city", "当前城市"), ("current_role", "当前岗位")]:
+    for key, label in [
+        ("current_city", "当前城市"),
+        ("current_employer", "当前任职公司"),
+        ("current_role", "当前岗位"),
+        ("current_employment_status", "在职状态"),
+    ]:
         lines.append(f"{label}：{text(profile.get(key))}")
     education = resume.get("education", [])
     if isinstance(education, list) and education:
@@ -33,6 +38,7 @@ def professional_profile(upstream):
                             ("institution", "学校或机构"),
                             ("major_or_course", "专业或课程"),
                             ("credential", "学历学位或证书"),
+                            ("notes", "说明"),
                         ]
                     )
                 )
@@ -52,6 +58,7 @@ def professional_profile(upstream):
                     "department",
                     "reports_to",
                     "team_scope",
+                    "reason_for_leaving",
                 ]
             }
             for key in ["responsibilities", "achievements"]:
@@ -71,11 +78,29 @@ def professional_profile(upstream):
             )
             lines.extend(f"职责：{item}" for item in selected["responsibilities"])
             lines.extend(f"自述成果：{item}" for item in selected["achievements"])
+            lines.append(f"离职原因：{selected['reason_for_leaving']}")
     if not history:
         lines.append("未提供结构化任职记录，完整履历待补充。")
+    additional = {}
+    for key, label in [
+        ("qualifications", "专业资格"),
+        ("additional_projects_or_results", "重要项目与专业成果"),
+        ("career_preferences", "求职条件与补充说明"),
+    ]:
+        values = resume.get(key, [])
+        values = (
+            [value.strip() for value in values if isinstance(value, str) and value.strip()]
+            if isinstance(values, list)
+            else []
+        )
+        additional[key] = values
+        if values:
+            lines.append(f"### {label}")
+            lines.extend(values)
     job = upstream.get("D01", {})
     return {
         "candidate_display_name": name,
         "recommended_job_title": text(job.get("title")) if isinstance(job, dict) else "待确认",
         "work_history": history,
+        **additional,
     }, "\n\n".join(lines)
