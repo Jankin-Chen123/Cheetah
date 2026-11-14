@@ -30,6 +30,15 @@ export default function PostInterviewContent({ artifact }: { artifact: Artifact 
       {strings(content.unknowns).length > 0 && <Alert type="warning" message="提纲待核实事项" description={<ul>{strings(content.unknowns).map((note, index) => <li key={index}>{note}</li>)}</ul>} />}
     </>}
     {type === 'D08' && <>
+      {records(content.question_execution_coverage).length > 0 && <Table size="small" pagination={false}
+        rowKey="question_id" scroll={{ x: 600 }} dataSource={records(content.question_execution_coverage)} columns={[
+          { title: '计划题号', dataIndex: 'question_id' },
+          { title: '维度', dataIndex: 'dimension_id' },
+          { title: '实际记录', render: (_, row) => row.execution_status === 'ANSWER_RECORDED' ? '已保存回答' : '未记录回答，原因未知' },
+          { title: '主问题回答', render: (_, row) => strings(row.answer_ids).join('、') || '无' },
+          { title: '追问回答', render: (_, row) => strings(row.followup_answer_ids).join('、') || '无' },
+          { title: '原话轮次', render: (_, row) => strings(row.turn_ids).join('、') || '未记录' },
+        ]} />}
       <Alert type={content.extraction_status === 'READY_FOR_A08' ? 'info' : 'warning'}
         message={content.extraction_status === 'READY_FOR_A08' ? '完整会话已交接评估；证据充分性仍须逐维核对。' : '部分会话或历史材料：仅供受限复核，不能据此宣称完整面试已完成。'} />
       <p>提取覆盖：{content.coverage === 'full' ? '已提取职责和结果事实' : '部分覆盖'}。以下为候选人自述，原话存在不代表已独立核实。</p>

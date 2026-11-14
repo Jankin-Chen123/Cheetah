@@ -109,4 +109,29 @@ def preparation_metadata(session, case):
             limitations.append("准备稿引用不证明每条回答执行了该版本；仍需逐轮题号版本记录。")
     if not case.session_data.get("a06_session"):
         limitations.append("当前仅依据已存回答提取；未提供完整A06会话包与逐项处理许可回执。")
-    return {"preparation_refs": refs, "extraction_limitations": limitations}
+    answers = case.session_data.get("answers", [])
+    planned = outline.content.get("questions", []) if outline and outline.case_id == case.id else []
+    question_coverage = []
+    for question in planned:
+        direct = [a for a in answers if a.get("question", {}).get("id") == question.get("id")]
+        followups = [
+            a
+            for a in answers
+            if (a.get("execution_ref") or {}).get("parent_question_id") == question.get("id")
+        ]
+        question_coverage.append(
+            {
+                "question_id": question.get("id"),
+                "dimension_id": question.get("dimension_id"),
+                "execution_status": "ANSWER_RECORDED" if direct else "NO_ANSWER_RECORDED",
+                "answer_ids": [a["id"] for a in direct],
+                "followup_answer_ids": [a["id"] for a in followups],
+                "turn_ids": [a["turn_id"] for a in [*direct, *followups] if a.get("turn_id")],
+                "note": "已保存回答不证明音频已播放；未记录回答的原因未知。",
+            }
+        )
+    return {
+        "preparation_refs": refs,
+        "extraction_limitations": limitations,
+        "question_execution_coverage": question_coverage,
+    }

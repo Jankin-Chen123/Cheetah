@@ -27,12 +27,16 @@ def test_handoff_uses_immutable_outline_standard_not_current_binding():
         type="D07",
         version=3,
         valid=False,
+        content={
+            "questions": [{"id": "q1", "dimension_id": "d1"}, {"id": "q2", "dimension_id": "d2"}]
+        },
         provenance={"job_interview_standard": original},
     )
     case = SimpleNamespace(
         id="case",
         session_data={
             "outline_id": "outline",
+            "answers": [{"id": "a1", "question": {"id": "q1"}, "turn_id": "t1"}],
             "job_interview_standard": {"standard": {"version": 2}},
         },
     )
@@ -40,3 +44,9 @@ def test_handoff_uses_immutable_outline_standard_not_current_binding():
     assert result["preparation_refs"]["D02"] == original
     assert result["preparation_refs"]["D07"]["valid"] is False
     assert any("不证明" in note for note in result["extraction_limitations"])
+
+    coverage = result["question_execution_coverage"]
+    assert coverage[0]["answer_ids"] == ["a1"]
+    assert coverage[0]["turn_ids"] == ["t1"]
+    assert coverage[1]["execution_status"] == "NO_ANSWER_RECORDED"
+    assert coverage[1]["answer_ids"] == []
