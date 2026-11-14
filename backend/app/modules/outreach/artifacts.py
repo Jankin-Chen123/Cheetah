@@ -99,6 +99,8 @@ def review_report(
         raise ValueError("Version conflict")
     if action not in {"approve", "reject"} or not reason.strip():
         raise ValueError("Review action and reason required")
+    if action == "approve" and report.content.get("client_profile", {}).get("unresolved_conflicts"):
+        raise ValueError("REPORT_FACT_CONFLICT_REQUIRES_CORRECTION")
     report.review_status = "approved" if action == "approve" else "rejected"
     report.provenance = {
         **report.provenance,
@@ -110,4 +112,6 @@ def review_report(
 def export_markdown(report: OutreachArtifact) -> str:
     if report.type != "D10" or not report.valid or report.review_status != "approved":
         raise ValueError("Report not approved or expired")
+    if report.content.get("client_profile", {}).get("unresolved_conflicts"):
+        raise ValueError("REPORT_FACT_CONFLICT_REQUIRES_CORRECTION")
     return report.content["content_markdown"]

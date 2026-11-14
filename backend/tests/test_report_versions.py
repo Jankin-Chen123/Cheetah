@@ -49,3 +49,28 @@ def test_approval_version_and_correction_gates():
         with pytest.raises(ValueError, match="expired"):
             export_markdown(report)
         assert report.provenance["inherited_source_modes"] == ["mock"]
+
+
+def test_unresolved_career_conflict_blocks_approval_and_old_approval_export():
+    from types import SimpleNamespace
+
+    report = SimpleNamespace(
+        type="D10",
+        valid=True,
+        version=1,
+        revision=1,
+        review_status="pending_review",
+        provenance={},
+        content={
+            "client_profile": {"unresolved_conflicts": ["任期冲突"]},
+            "content_markdown": "虚构草稿",
+        },
+    )
+    with pytest.raises(ValueError, match="REPORT_FACT_CONFLICT_REQUIRES_CORRECTION"):
+        review_report(report, 1, 1, "approve", "reviewer", "已核读")
+    assert report.review_status == "pending_review"
+    report.review_status = "approved"
+    with pytest.raises(ValueError, match="REPORT_FACT_CONFLICT_REQUIRES_CORRECTION"):
+        export_markdown(report)
+    review_report(report, 1, 1, "reject", "reviewer", "需更正事实后重算")
+    assert report.review_status == "rejected"

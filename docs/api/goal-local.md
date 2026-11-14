@@ -192,3 +192,7 @@ farewell=true仅允许已结束场次播报固定问候，不依赖已结束场�
 审核人使用`POST /calls/{case_id}/client-context`设置client_company_id及明确获准向候选人披露的candidate_client_label，带expected_revision与现有会话/CSRF。更换范围使旧D10与批准失效。候选人使用邀请Bearer与Origin调用`POST /candidate/calls/{case_id}/client-sharing`，提交expected_revision/authorized；scope由服务端当前客户范围生成，不接受浏览器指定他人客户。该许可与四项内部处理许可独立，候选人结束后仍可管理分享许可。
 
 正式D10批准及下载同时要求当前客户范围一致的AUTHORIZED分享回执；没有配置客户的历史fixture保留受限演示，显式撤回不可绕过。页面新增客户范围表单与独立候选人分享选项；下载不触发外发。更换客户或撤回分享不重拨，不修改D08/D09内容。
+
+### 职业事实冲突与报告审批
+
+D10的client_profile.unresolved_conflicts非空时，批准与Markdown/Word导出返回业务冲突（REPORT_FACT_CONFLICT_REQUIRES_CORRECTION），既有批准也不绕过。驳回不受此限制。应更正实际回答或源资料、使受影响产物失效并重算，再单独审核新版本；不能直接清空报告中的冲突字段或沿用旧批准。
