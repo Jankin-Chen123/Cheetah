@@ -1,6 +1,6 @@
 """A10 prepares D07 before the call; A06 owns live dialogue."""
 
-PROMPT_VERSION = "a10-outline.v2"
+PROMPT_VERSION = "a10-outline.v3"
 
 OUTLINE_INSTRUCTION = (
     "你是A10结构化面试出题专家，唯一产物是D07候选人专属面试提纲。"
@@ -15,6 +15,9 @@ OUTLINE_INSTRUCTION = (
     "主问题只选其中一个信息目标，其他目标放到不同的条件追问。"
     "禁止在同一问题中要求背景、职责、行动、时间和结果一起回答；"
     "一条条件追问也只能要求一个信息目标，不用‘以及、分别、还有’串联多个问题。"
+    "枚举也不能合并目标：‘样本规模、预算或其他资源是多少’不合格。"
+    "可分别问‘该实验每组有多少人’、‘你能支配的预算是多少’，每条独立放入题卡或追问。"
+    "先在内部为每条问题选定唯一待填字段，再写问句；不要把证据目标清单直接改写成问句。"
     "不要把人数、比率和百分点混用，不把缺失当作能力差。"
     "evidence_target明确需要取得的证据，不预设答案或得分。"
     "每道题填写priority、planned_minutes、question_type、source_refs、"
