@@ -61,7 +61,7 @@ def test_followup_late_result_is_discarded_after_stop(tmp_path, monkeypatch):
         assert not session.get(OutreachCase, "case").session_data.get("decisions")
 
 
-def test_program_topic_limit_skips_model_and_budget(tmp_path, monkeypatch):
+def test_topic_limit_still_uses_language_understanding(tmp_path, monkeypatch):
     engine = create_engine(f"sqlite:///{tmp_path / 'topic.db'}")
     Base.metadata.create_all(engine)
     with Session(engine) as session, session.begin():
@@ -107,17 +107,183 @@ def test_program_topic_limit_skips_model_and_budget(tmp_path, monkeypatch):
         session.flush()
         task, _ = register_step(session, "case", "followup", 1)
         task_id = task.id
-    monkeypatch.setattr("app.modules.outreach.followup_worker.retrieve", lambda *a, **k: [])
+    monkeypatch.setattr(
+        "app.modules.outreach.followup_worker.retrieve", lambda *a, **k: [{"entry_id": "m"}]
+    )
 
-    def unexpected(*args):
-        raise AssertionError("program topic limit must not call or reserve a model")
+    calls = []
 
-    monkeypatch.setattr("app.modules.outreach.followup_worker.generate_json", unexpected)
-    monkeypatch.setattr("app.modules.outreach.followup_worker.reserve_model_request", unexpected)
+    def model(settings, instruction, context):
+        calls.append(context["topic_limit_guidance"])
+        return {"content": context["topic_limit_guidance"], "model": "fixture", "usage": None}
+
+    monkeypatch.setattr("app.modules.outreach.followup_worker.generate_json", model)
     execute_followup(engine, Settings(), task_id)
     with Session(engine) as session:
         assert session.get(ModelStep, task_id).status == "completed"
         decision = session.get(OutreachCase, "case").session_data["decisions"][-1]
         assert decision["action"] == "next_topic"
-        assert decision["generator_kind"] == "program_topic_limit"
-        assert decision["model"] is None
+        assert decision["generator_kind"] == "model"
+        assert decision["model"] == "fixture"
+        assert len(calls) == 1
+
+
+def test_model_continues_without_knowledge(tmp_path, monkeypatch):
+    engine = create_engine(f"sqlite:///{tmp_path / 'no-knowledge.db'}")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session, session.begin():
+        session.add(
+            OutreachCase(
+                id="case",
+                organization_id="org",
+                owner_id="owner",
+                application_id="app",
+                candidate_id="candidate",
+                job_id="job",
+                snapshot={},
+                session_data={
+                    "decision_status": "pending",
+                    "answers": [
+                        {
+                            "id": "a1",
+                            "text": "你能解释一下个人贡献是什么意思吗？",
+                            "question": {"question": "职责？", "dimension_id": "responsibility"},
+                        }
+                    ],
+                },
+            )
+        )
+        session.flush()
+        task, _ = register_step(session, "case", "followup", 1)
+        task_id = task.id
+    monkeypatch.setattr("app.modules.outreach.followup_worker.retrieve", lambda *a, **k: [])
+    monkeypatch.setattr(
+        "app.modules.outreach.followup_worker.generate_json",
+        lambda *a: {
+            "content": {
+                "action": "clarify",
+                "question": "指您自己实际完成的工作，能举一个例子吗？",
+                "dimension_id": "responsibility",
+                "method_entry_ids": [],
+                "answer_evidence_ids": ["a1"],
+                "reason": "回应反问",
+            },
+            "model": "fixture",
+            "usage": None,
+        },
+    )
+    execute_followup(engine, Settings(), task_id)
+    with Session(engine) as session:
+        assert session.get(ModelStep, task_id).status == "completed"
+        assert (
+            session.get(OutreachCase, "case").session_data["decisions"][-1]["method_entry_ids"]
+            == []
+        )
+
+
+def test_model_failure_keeps_interview_listening(tmp_path, monkeypatch):
+    engine = create_engine(f"sqlite:///{tmp_path / 'failure.db'}")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session, session.begin():
+        session.add(
+            OutreachCase(
+                id="case",
+                organization_id="org",
+                owner_id="owner",
+                application_id="app",
+                candidate_id="candidate",
+                job_id="job",
+                snapshot={},
+                session_data={
+                    "decision_status": "pending",
+                    "answers": [
+                        {
+                            "id": "a1",
+                            "text": "你能解释一下个人贡献是什么意思吗？",
+                            "question": {"question": "职责？", "dimension_id": "responsibility"},
+                        }
+                    ],
+                },
+            )
+        )
+        session.flush()
+        task, _ = register_step(session, "case", "followup", 1)
+        task_id = task.id
+    monkeypatch.setattr("app.modules.outreach.followup_worker.retrieve", lambda *a, **k: [])
+    from app.integrations.bailian import ModelUnavailable
+
+    def unavailable(*args):
+        raise ModelUnavailable("MODEL_RESPONSE_INVALID")
+
+    monkeypatch.setattr("app.modules.outreach.followup_worker.generate_json", unavailable)
+    execute_followup(engine, Settings(), task_id)
+    with Session(engine) as session:
+        assert session.get(ModelStep, task_id).status == "completed"
+        case = session.get(OutreachCase, "case")
+        assert case.stop_status == "none"
+        assert case.session_data["decision_status"] == "completed"
+        assert case.session_data["decisions"][-1]["generator_kind"] == "program_clarification"
+        assert (
+            session.get(OutreachCase, "case").session_data["decisions"][-1]["method_entry_ids"]
+            == []
+        )
+
+
+def test_repeated_model_question_transitions_without_failure(tmp_path, monkeypatch):
+    engine = create_engine(f"sqlite:///{tmp_path / 'repeated.db'}")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session, session.begin():
+        session.add(
+            OutreachCase(
+                id="case",
+                organization_id="org",
+                owner_id="owner",
+                application_id="app",
+                candidate_id="candidate",
+                job_id="job",
+                snapshot={},
+                session_data={
+                    "decision_status": "pending",
+                    "answers": [
+                        {
+                            "id": "a1",
+                            "text": "你能解释一下个人贡献是什么意思吗？",
+                            "question": {"question": "职责？", "dimension_id": "responsibility"},
+                        }
+                    ],
+                },
+            )
+        )
+        session.flush()
+        task, _ = register_step(session, "case", "followup", 1)
+        task_id = task.id
+    monkeypatch.setattr("app.modules.outreach.followup_worker.retrieve", lambda *a, **k: [])
+    monkeypatch.setattr(
+        "app.modules.outreach.followup_worker.generate_json",
+        lambda *a: {
+            "content": {
+                "action": "clarify",
+                "question": "职责？",
+                "dimension_id": "responsibility",
+                "method_entry_ids": [],
+                "answer_evidence_ids": ["a1"],
+                "reason": "回应反问",
+            },
+            "model": "fixture",
+            "usage": None,
+        },
+    )
+    execute_followup(engine, Settings(), task_id)
+    with Session(engine) as session:
+        assert session.get(ModelStep, task_id).status == "completed"
+        assert (
+            session.get(OutreachCase, "case").session_data["decisions"][-1]["method_entry_ids"]
+            == []
+        )
+
+        assert (
+            session.get(ModelStep, task_id).detail["metadata_adjustments"][
+                "repeated_question_replaced"
+            ]
+            is True
+        )

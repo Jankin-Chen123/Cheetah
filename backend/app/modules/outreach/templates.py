@@ -25,6 +25,9 @@ class ReportTemplate(BaseModel):
 
 def snapshot(model):
     content = model.model_dump()
+    # Preserve hashes of existing five-point snapshots predating scale metadata.
+    if isinstance(model, EvaluationTemplate) and model.score_scale == "0-5":
+        content.pop("score_scale", None)
     digest = hashlib.sha256(
         json.dumps(content, sort_keys=True, ensure_ascii=False).encode()
     ).hexdigest()

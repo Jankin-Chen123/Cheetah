@@ -13,6 +13,12 @@ from app.modules.outreach.evaluation import (
     validate_evaluation,
 )
 from app.modules.outreach.models import OutreachArtifact, OutreachCase
+from app.modules.outreach.postprocessing_prompts import (
+    EVALUATION_INSTRUCTION,
+    PROMPT_VERSION,
+    RECOMMENDATION_INSTRUCTION,
+)
+from app.modules.outreach.provenance import inherited_provenance
 from app.modules.outreach.templates import ReportTemplate, bind_templates
 
 
@@ -53,8 +59,7 @@ def generate_evaluation(
         if model_result is not None
         else generate_json(
             settings,
-            "Assess only actual answers against the supplied DEMO rubric. "
-            "Missing evidence means null score. Return assessments JSON.",
+            EVALUATION_INSTRUCTION,
             {
                 "schema": AssessmentOutput.model_json_schema(),
                 "template": template.model_dump(),
@@ -66,10 +71,12 @@ def generate_evaluation(
     content = validate_evaluation(
         template, output.assessments, answers, fixture_only=case.snapshot["fixture_only"]
     )
+    content["gaps"] = list(minutes.content.get("gaps", []))
+    content["conflicts"] = list(minutes.content.get("conflicts", []))
     provenance = {
         "source_mode": "live",
-        "inherited_source_modes": ["mock", "manual"],
-        "fixture_only": True,
+        "prompt_version": PROMPT_VERSION,
+        **inherited_provenance(case, minutes),
         "knowledge_preview": case.session_data.get("knowledge_preview", False),
         "demo_rules": template.status == "demo",
         "model": result["model"],
@@ -113,8 +120,7 @@ def generate_recommendation(
         if model_result is not None
         else generate_json(
             settings,
-            "Write Chinese HR recommendation highlights from actual answers only. "
-            "Cite answer_ids. Exclude internal scores and contact details.",
+            RECOMMENDATION_INSTRUCTION,
             {
                 "schema": RecommendationOutput.model_json_schema(),
                 "answers": answers,
@@ -124,15 +130,30 @@ def generate_recommendation(
         )
     )
     output = RecommendationOutput.model_validate(result["content"])
-    allowed = {answer["id"] for answer in answers}
+    allowed = {answer["id"] for answer in answers if answer["text"].strip()}
     for claim in output.match_highlights:
-        if not set(claim.answer_ids).issubset(allowed):
+        if not claim.text.strip() or not set(claim.answer_ids).issubset(allowed):
             raise ValueError("UNKNOWN_REPORT_EVIDENCE")
+    # A model cannot silently omit unresolved upstream qualifications.
+    output.unknowns = list(
+        dict.fromkeys(
+            [
+                *output.unknowns,
+                *evaluation.content.get("gaps", []),
+                *evaluation.content.get("conflicts", []),
+            ]
+        )
+    )
     markdown = (
         f"# {template.title}\n\n> {template.disclaimer}\n\n## {template.highlights_heading}\n\n"
         + "\n\n".join(claim.text for claim in output.match_highlights)
     )
     markdown += f"\n\n## {template.unknowns_heading}\n\n" + "\n".join(output.unknowns)
+    inherited = inherited_provenance(case, evaluation)
+    if inherited["fixture_only"] or "mock" in inherited["inherited_source_modes"]:
+        markdown += "\n\n> 本报告包含虚构或模拟来源，仅用于受限流程验证。"
+    if "unknown" in inherited["inherited_source_modes"]:
+        markdown += "\n\n> 部分输入来源未确认，交付前须核实。"
     if case.session_data.get("knowledge_preview", False):
         markdown += (
             "\n\n> 本报告使用未审核方法知识的开发预览，评估规则为演示配置，不具有正式专业评估效力。"
@@ -144,8 +165,8 @@ def generate_recommendation(
         {**output.model_dump(), "content_markdown": markdown},
         {
             "source_mode": "live",
-            "inherited_source_modes": ["mock", "manual"],
-            "fixture_only": True,
+            "prompt_version": PROMPT_VERSION,
+            **inherited,
             "knowledge_preview": case.session_data.get("knowledge_preview", False),
             "demo_rules": evaluation.content.get("demo_rules", False),
             "model": result["model"],

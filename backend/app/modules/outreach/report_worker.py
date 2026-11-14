@@ -6,6 +6,10 @@ from sqlalchemy.orm import Session
 from app.integrations.bailian import ModelUnavailable, generate_json
 from app.modules.outreach.budget import reserve_model_request
 from app.modules.outreach.models import ModelStep, OutreachArtifact, OutreachCase
+from app.modules.outreach.postprocessing_prompts import (
+    EVALUATION_INSTRUCTION,
+    RECOMMENDATION_INSTRUCTION,
+)
 from app.modules.outreach.recommendation import (
     AssessmentOutput,
     RecommendationOutput,
@@ -58,9 +62,7 @@ def execute_report_step(engine, settings, task_id):
                 "template": bound["content"],
                 "minutes": upstream.content,
             }
-            instruction = (
-                "Assess actual answer evidence using the DEMO rubric. Missing evidence is null."
-            )
+            instruction = EVALUATION_INSTRUCTION
         else:
             context = {
                 "schema": RecommendationOutput.model_json_schema(),
@@ -68,10 +70,7 @@ def execute_report_step(engine, settings, task_id):
                 "evaluation": upstream.content,
                 "report_template": bound["content"],
             }
-            instruction = (
-                "Write Chinese HR highlights with answer_ids. "
-                "Exclude internal scores and contact details."
-            )
+            instruction = RECOMMENDATION_INSTRUCTION
     try:
         result = generate_json(settings, instruction, context)
         failure = None

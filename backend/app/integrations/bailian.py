@@ -18,33 +18,42 @@ class NoRedirect(HTTPRedirectHandler):
 
 
 def generate_json(settings: Settings, instruction: str, context: dict) -> dict:
-    if not all(
-        (
+    if settings.text_provider == "ark":
+        key, base_url, model, region = (
+            settings.ark_api_key,
+            settings.ark_base_url,
+            settings.ark_model,
+            "cn-beijing",
+        )
+        valid_hosts = {"ark.cn-beijing.volces.com"}
+    else:
+        key, base_url, model, region = (
             settings.bailian_api_key,
             settings.bailian_base_url,
             settings.bailian_model,
             settings.bailian_region,
         )
-    ):
+        valid_hosts = {"dashscope.aliyuncs.com", "dashscope-intl.aliyuncs.com"}
+    if not all((key, base_url, model, region)):
         raise ModelUnavailable("MODEL_NOT_CONFIGURED")
-    parsed = urlparse(settings.bailian_base_url)
+    parsed = urlparse(base_url)
+    allowed = parsed.hostname in valid_hosts or (
+        settings.text_provider == "bailian"
+        and (parsed.hostname or "").endswith(".maas.aliyuncs.com")
+    )
     if (
         parsed.scheme != "https"
         or parsed.username
         or parsed.password
         or parsed.query
         or parsed.fragment
-        or parsed.hostname is None
-        or not (
-            parsed.hostname == "dashscope.aliyuncs.com"
-            or parsed.hostname.endswith(".maas.aliyuncs.com")
-            or parsed.hostname == "dashscope-intl.aliyuncs.com"
-        )
+        or not allowed
     ):
         raise ModelUnavailable("MODEL_ENDPOINT_NOT_ALLOWED")
     payload = {
-        "model": settings.bailian_model,
+        "model": model,
         "stream": False,
+        "response_format": {"type": "json_object"},
         "max_tokens": min(max(settings.model_max_tokens, 128), 4000),
         "messages": [
             {
@@ -56,28 +65,35 @@ def generate_json(settings: Settings, instruction: str, context: dict) -> dict:
             {"role": "user", "content": json.dumps(context, ensure_ascii=False)},
         ],
     }
+    if settings.text_provider == "ark":
+        payload["thinking"] = {"type": "disabled"}
     request = Request(
-        settings.bailian_base_url.rstrip("/") + "/chat/completions",
+        base_url.rstrip("/") + "/chat/completions",
         data=json.dumps(payload).encode(),
         method="POST",
         headers={
             "Content-Type": "application/json",
-            "Authorization": "Bearer " + settings.bailian_api_key.get_secret_value(),
+            "Authorization": "Bearer " + key.get_secret_value(),
         },
     )
     try:
         with build_opener(NoRedirect()).open(request, timeout=45) as response:
             raw = response.read(256000)
         result = json.loads(raw)
-        content = json.loads(result["choices"][0]["message"]["content"])
+        text = result["choices"][0]["message"]["content"].strip()
+        if text.startswith("```"):
+            lines = text.splitlines()
+            text = "\n".join(lines[1:-1])
+        content = json.loads(text)
         if not isinstance(content, dict):
             raise ValueError("object required")
         return {
             "content": content,
-            "model": result.get("model", settings.bailian_model),
+            "model": result.get("model", model),
             "usage": result.get("usage"),
             "source_mode": "live",
-            "region": settings.bailian_region,
+            "region": region,
+            "provider": settings.text_provider,
         }
     except HTTPError as error:
         provider_code = None
@@ -97,5 +113,7 @@ def generate_json(settings: Settings, instruction: str, context: dict) -> dict:
             pass
         suffix = f"_{provider_code}" if provider_code else ""
         raise ModelUnavailable(f"MODEL_HTTP_{error.code}{suffix}") from None
-    except (URLError, TimeoutError, ValueError, KeyError, IndexError):
-        raise ModelUnavailable("MODEL_CALL_OR_OUTPUT_FAILED") from None
+    except (URLError, TimeoutError):
+        raise ModelUnavailable("MODEL_NETWORK_UNAVAILABLE") from None
+    except (ValueError, KeyError, IndexError, TypeError, AttributeError):
+        raise ModelUnavailable("MODEL_RESPONSE_INVALID") from None

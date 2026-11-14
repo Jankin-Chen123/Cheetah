@@ -43,7 +43,7 @@ def test_missing_evidence_is_unassessed_and_demo_is_isolated():
     with pytest.raises(ValueError, match="real candidates"):
         validate_evaluation(template(), assessments, {}, fixture_only=False)
     with pytest.raises(ValidationError):
-        EvidenceAssessment(dimension_id="results", score=6, reason="invalid")
+        EvidenceAssessment(dimension_id="results", score=11, reason="invalid")
 
 
 def test_unknown_evidence_rejected():

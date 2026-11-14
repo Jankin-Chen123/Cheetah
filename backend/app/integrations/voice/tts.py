@@ -10,7 +10,11 @@ from websockets.sync.client import connect
 from app.core.config import Settings
 
 
-def synthesize_question(settings: Settings, text: str):
+def stream_question(settings: Settings, text: str, voice: str = "longanhuan_v3.1"):
+    from app.modules.outreach.conversation_options import voice_catalog
+
+    if voice not in {item["id"] for item in voice_catalog()}:
+        raise ValueError("VOICE_NOT_SUPPORTED")
     if not text.strip() or len(text) > 1000:
         raise ValueError("SPEECH_TEXT_INVALID")
     if not settings.bailian_api_key or not settings.bailian_base_url:
@@ -21,7 +25,9 @@ def synthesize_question(settings: Settings, text: str):
     ):
         raise RuntimeError("CONFIRMED_BEIJING_WORKSPACE_REQUIRED")
     task_id = str(uuid4())
-    model = "qwen-audio-3.1-tts-flash"
+    model = settings.tts_model
+    began = time.monotonic()
+    first_audio_ms = None
     chunks = []
     size = 0
     deadline = time.monotonic() + 45
@@ -55,7 +61,7 @@ def synthesize_question(settings: Settings, text: str):
                 "input": {},
                 "parameters": {
                     "text_type": "PlainText",
-                    "voice": "longanhuan_v3.1",
+                    "voice": voice,
                     "format": "pcm",
                     "sample_rate": 24000,
                 },
@@ -65,10 +71,13 @@ def synthesize_question(settings: Settings, text: str):
         while time.monotonic() < deadline:
             event = socket.recv(timeout=min(15, max(0.1, deadline - time.monotonic())))
             if isinstance(event, bytes):
+                if first_audio_ms is None:
+                    first_audio_ms = round((time.monotonic() - began) * 1000)
                 size += len(event)
                 if size > 24000 * 2 * 120:
                     raise RuntimeError("TTS_OUTPUT_LIMIT")
                 chunks.append(event)
+                yield event
                 continue
             data = json.loads(event)
             header = data.get("header", {})
@@ -84,10 +93,24 @@ def synthesize_question(settings: Settings, text: str):
                 if not started or not size:
                     raise RuntimeError("TTS_EMPTY")
                 return {
+                    "timings": {
+                        "first_audio_ms": first_audio_ms,
+                        "total_ms": round((time.monotonic() - began) * 1000),
+                    },
                     "pcm": b"".join(chunks),
                     "sample_rate": 24000,
                     "model": model,
+                    "voice": voice,
                     "source_mode": "live",
                     "telephone_line": False,
                 }
     raise RuntimeError("TTS_DURATION_LIMIT")
+
+
+def synthesize_question(settings: Settings, text: str, voice: str = "longanhuan_v3.1"):
+    stream = stream_question(settings, text, voice)
+    while True:
+        try:
+            next(stream)
+        except StopIteration as completed:
+            return completed.value

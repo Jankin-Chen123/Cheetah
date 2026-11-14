@@ -54,3 +54,42 @@ def test_tts_waits_for_started_and_bounds_task_identity(monkeypatch, failure):
             synthesize_question(settings, "虚构问题？")
     else:
         assert synthesize_question(settings, "虚构问题？")["pcm"] == b"\x00\x00"
+
+
+def test_stream_yields_audio_before_task_finished(monkeypatch):
+    from app.integrations.voice.tts import stream_question
+
+    sent = []
+    consumed = []
+
+    class Socket:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def send(self, value):
+            sent.append(json.loads(value))
+
+        def recv(self, **kwargs):
+            task_id = sent[0]["header"]["task_id"]
+            consumed.append(True)
+            if len(consumed) == 1:
+                return json.dumps({"header": {"task_id": task_id, "event": "task-started"}})
+            if len(consumed) == 2:
+                return b"\x01\x00"
+            return json.dumps({"header": {"task_id": task_id, "event": "task-finished"}})
+
+    monkeypatch.setattr("app.integrations.voice.tts.connect", lambda *a, **kw: Socket())
+    stream = stream_question(
+        Settings(
+            bailian_api_key="fixture",
+            bailian_base_url="https://fixture.cn-beijing.maas.aliyuncs.com",
+        ),
+        "问题？",
+    )
+    assert next(stream) == b"\x01\x00"
+    assert len(consumed) == 2
+    with pytest.raises(StopIteration):
+        next(stream)

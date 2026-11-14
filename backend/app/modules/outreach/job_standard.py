@@ -5,6 +5,34 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.modules.outreach.evaluation import EvaluationTemplate
+
+
+def evaluation_template_from_standard(
+    standard: "JobInterviewStandard", *, threshold: float, report_template_version: int
+) -> EvaluationTemplate:
+    """Adapt a confirmed A02 standard without changing its scale or weights."""
+    if standard.status != "confirmed":
+        raise ValueError("STANDARD_CONFIRMATION_REQUIRED")
+    return EvaluationTemplate(
+        id=f"a02:{standard.job_id}",
+        version=standard.version,
+        status="approved",
+        score_scale="1-10",
+        threshold=threshold,
+        report_template_version=report_template_version,
+        dimensions=[
+            {
+                "id": dimension.id,
+                "label": dimension.label,
+                "weight": float(dimension.weight_percent / 100),
+                "required_evidence": dimension.indicators,
+                "scoring_anchors": dimension.anchors,
+            }
+            for dimension in standard.dimensions
+        ],
+    )
+
 
 class StandardDimension(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -77,3 +105,58 @@ def calculate_standard_score(standard: JobInterviewStandard, scores: dict[str, i
         "score_scale": "1-10",
         "total_scale": 100,
     }
+
+
+def bind_confirmed_standard(
+    session,
+    case,
+    standard: JobInterviewStandard,
+    *,
+    threshold: float,
+    report_template_version: int,
+    expected_revision: int,
+    actor_id: str,
+):
+    from datetime import UTC, datetime
+
+    from app.modules.outreach.artifacts import invalidate_downstream
+    from app.modules.outreach.templates import snapshot
+
+    if case.revision != expected_revision:
+        raise ValueError("VERSION_CONFLICT")
+    if standard.job_id != case.job_id:
+        raise ValueError("STANDARD_JOB_MISMATCH")
+    if standard.status != "confirmed":
+        raise ValueError("STANDARD_CONFIRMATION_REQUIRED")
+    previous = case.session_data.get("job_interview_standard")
+    if previous and standard.version <= previous["standard"]["version"]:
+        raise ValueError("STANDARD_VERSION_MUST_INCREASE")
+    confirmed = standard.model_copy(update={"confirmed_by": actor_id})
+    template = evaluation_template_from_standard(
+        confirmed, threshold=threshold, report_template_version=report_template_version
+    )
+    data = dict(case.session_data)
+    history = list(data.get("evaluation_binding_history", []))
+    if data.get("evaluation_template"):
+        history.append(
+            {
+                "evaluation_template": data["evaluation_template"],
+                "job_interview_standard": previous,
+            }
+        )
+    data.update(
+        {
+            "evaluation_template": snapshot(template),
+            "evaluation_binding_history": history,
+            "job_interview_standard": {
+                "standard": confirmed.model_dump(mode="json"),
+                "confirmed_at": datetime.now(UTC).isoformat(),
+                "threshold": threshold,
+                "report_template_version": report_template_version,
+            },
+        }
+    )
+    case.session_data = data
+    invalidate_downstream(session, case, "D08")
+    case.revision += 1
+    return {"revision": case.revision, "standard_version": confirmed.version}

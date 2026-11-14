@@ -76,12 +76,23 @@ def test_candidate_answer_transaction_queue_and_stop(monkeypatch):
         view = client.get(path, headers=headers).json()
         speech_requests = []
 
-        def speech(settings, text):
+        def speech(settings, text, **kwargs):
             speech_requests.append(text)
             return {"pcm": b"\x00\x00", "sample_rate": 24000, "model": "fixture"}
 
         monkeypatch.setattr("app.integrations.voice.tts.synthesize_question", speech)
         speech_body = {"expected_revision": view["revision"]}
+
+        def speech_stream(*args, **kwargs):
+            yield b"\x00\x00"
+
+        monkeypatch.setattr("app.integrations.voice.tts.stream_question", speech_stream)
+        streamed = client.post(path + "/speech-stream", headers=headers, json=speech_body)
+        assert streamed.status_code == 200
+        packets = [json.loads(line) for line in streamed.text.splitlines()]
+        assert packets[0]["type"] == "audio"
+        assert packets[-1]["type"] == "completed"
+
         spoken = client.post(path + "/speech", headers=headers, json=speech_body)
         assert spoken.status_code == 200
         assert (

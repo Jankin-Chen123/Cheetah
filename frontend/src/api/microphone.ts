@@ -19,7 +19,7 @@ export async function captureMicrophone(onFrame?: (pcm: Uint8Array) => void, onL
   const source = context.createMediaStreamSource(stream)
   // Bounded fallback for browsers without a bundled AudioWorklet module.
   const processor = context.createScriptProcessor(4096, 1, 1)
-  const maxSeconds = automatic ? 120 : 10
+  const maxSeconds = automatic ? 600 : 10
   let muted = false
   let voiced = false
   let silence = 0

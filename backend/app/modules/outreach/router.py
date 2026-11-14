@@ -26,6 +26,7 @@ from app.modules.outreach.http_models import (
     ReviewResult,
     TaskAccepted,
 )
+from app.modules.outreach.job_standard import JobInterviewStandard, bind_confirmed_standard
 from app.modules.outreach.knowledge import MethodDocument, MethodEntry, retrieve
 from app.modules.outreach.models import ModelStep, OutreachArtifact, OutreachCase, ReportAudit
 from app.modules.outreach.service import consume_fixture
@@ -435,6 +436,35 @@ class AnswerInput(BaseModel):
     answer: str = Field(min_length=1, max_length=10000)
 
 
+class EvaluationStandardInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    expected_revision: int = Field(ge=1)
+    standard: JobInterviewStandard
+    threshold: float = Field(ge=1, le=10)
+    report_template_version: int = Field(ge=1)
+
+
+@router.post("/calls/{case_id}/evaluation-standard")
+def confirm_evaluation_standard(case_id: str, data: EvaluationStandardInput, request: Request):
+    identity = require_identity(request)
+    with database_session(request) as session, session.begin():
+        try:
+            case = locked_case(session, case_id, identity["organization_id"], identity["user_id"])
+            return bind_confirmed_standard(
+                session,
+                case,
+                data.standard,
+                threshold=data.threshold,
+                report_template_version=data.report_template_version,
+                expected_revision=data.expected_revision,
+                actor_id=identity["user_id"],
+            )
+        except LookupError:
+            raise HTTPException(404) from None
+        except ValueError as error:
+            raise HTTPException(409, detail=str(error)) from None
+
+
 @router.post("/calls/{case_id}/answers/{answer_id}/corrections")
 def correct_interview_answer(case_id: str, answer_id: str, data: AnswerInput, request: Request):
     identity = require_identity(request)
@@ -822,6 +852,7 @@ def candidate_case(session, case_id: str, request: Request):
 
 def candidate_view(case):
     import hashlib
+    import time
 
     from app.modules.outreach.preflight import briefing_snapshot
 
@@ -830,15 +861,27 @@ def candidate_view(case):
     digest = hashlib.sha256(json.dumps(material, sort_keys=True).encode()).hexdigest()
     material.pop("upstream_refs", None)
     from app.modules.outreach.conversation import spoken_prompt
+    from app.modules.outreach.conversation_options import limits, voice_catalog, voice_id
 
     return {
         "spoken_prompt": spoken_prompt(case),
+        "voice_id": voice_id(case),
+        "voices": voice_catalog(),
+        "interview_limits": limits(case),
+        "elapsed_seconds": int(time.time() - case.session_data["started_at"])
+        if case.session_data.get("started_at")
+        else 0,
+        "practice_available": bool(
+            case.snapshot.get("fixture_only") and case.session_data.get("outline_id")
+        ),
         "revision": case.revision,
         "status": case.status,
         "stop_status": case.stop_status,
         "material": material,
         "material_sha256": digest,
-        "preflight": {key: state.get(key) for key in ("interested", "confirmed")},
+        "preflight": {
+            key: state.get(key) for key in ("interested", "confirmed", "briefing_presented")
+        },
         "question": (case.session_data.get("current_question") or {}).get("question")
         if state.get("confirmed")
         else None,
@@ -848,9 +891,45 @@ def candidate_view(case):
 
 @router.get("/candidate/calls/{case_id}")
 def candidate_session(case_id: str, request: Request):
-    with database_session(request) as session:
+    from app.modules.outreach.conversation_options import enforce_duration
+
+    with database_session(request) as session, session.begin():
         case = candidate_case(session, case_id, request)
+        enforce_duration(case)
         result = candidate_view(case)
+        if result.get("decision_status") == "pending":
+            task = session.scalar(
+                select(ModelStep).where(
+                    ModelStep.case_id == case.id,
+                    ModelStep.input_revision == case.revision,
+                    ModelStep.step.in_(["followup", "conversation"]),
+                )
+            )
+            if (
+                task
+                and task.status == "failed"
+                and case.stop_status == "none"
+                and case.status not in {"ended", "cancelled"}
+            ):
+                case.session_data = {
+                    **case.session_data,
+                    "decision_status": "completed",
+                    "conversation_reply": "我想确认一下您的意思，您能再具体说一下吗？",
+                    "conversation_reply_model": None,
+                    "conversation_reply_source": "program_clarification",
+                    "conversation_recovered_task_id": task.id,
+                }
+                case.revision += 1
+                result = candidate_view(case)
+            result["decision_task"] = (
+                {
+                    "status": task.status,
+                    "error_code": task.detail.get("error_code"),
+                    "phase": task.detail.get("phase"),
+                }
+                if task
+                else None
+            )
         transcription = session.scalar(
             select(ModelStep).where(
                 ModelStep.case_id == case.id,
@@ -881,7 +960,7 @@ def candidate_session(case_id: str, request: Request):
 class CandidateAction(BaseModel):
     model_config = ConfigDict(extra="forbid")
     expected_revision: int = Field(ge=1)
-    action: Literal["interest", "confirm", "answer", "stop", "voice"]
+    action: Literal["interest", "confirm", "answer", "stop", "voice", "begin", "briefing_presented"]
     statement: str = Field(min_length=1, max_length=10000)
     interested: bool | None = None
     material_sha256: str | None = Field(default=None, max_length=64)
@@ -894,14 +973,146 @@ class CandidateAudioInput(BaseModel):
     pcm_base64: str = Field(min_length=4, max_length=426668)
 
 
+class BriefingEmailInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    email: str = Field(min_length=3, max_length=254)
+    request_id: str = Field(pattern=r"^[a-zA-Z0-9_-]{8,64}$")
+    consent: Literal[True]
+
+
+@router.post("/candidate/calls/{case_id}/briefing-email")
+def candidate_briefing_email(case_id: str, data: BriefingEmailInput, request: Request):
+    from app.core.auth import check_origin
+    from app.modules.outreach.briefing_mail import mail_configured, validate_email
+    from app.modules.outreach.preflight import briefing_snapshot
+
+    check_origin(request)
+    try:
+        recipient = validate_email(data.email.strip())
+    except ValueError:
+        raise HTTPException(422, detail="EMAIL_INVALID") from None
+    with database_session(request) as session, session.begin():
+        case = candidate_case(session, case_id, request)
+        if not mail_configured(request.app.state.settings):
+            raise HTTPException(503, detail="MAIL_NOT_CONFIGURED")
+        if not case.session_data.get("preflight", {}).get("interested"):
+            raise HTTPException(409, detail="JOB_INTEREST_REQUIRED")
+        if case.stop_status != "none" or case.status in {"ended", "cancelled"}:
+            raise HTTPException(409, detail="INTERVIEW_STOPPED")
+        import hashlib
+
+        step = "briefing_email_" + hashlib.sha256(data.request_id.encode()).hexdigest()[:32]
+        task, created = register_step(session, case.id, step, 1)
+        material = briefing_snapshot(case)
+        if created:
+            existing_mail = list(
+                session.scalars(
+                    select(ModelStep).where(
+                        ModelStep.case_id == case.id,
+                        ModelStep.step.like("briefing_email_%"),
+                        ModelStep.id != task.id,
+                    )
+                )
+            )
+            if any(t.status in {"queued", "running", "failed"} for t in existing_mail):
+                raise HTTPException(409, detail="MAIL_REQUIRES_RECONCILIATION")
+            count = session.scalar(
+                select(func.count())
+                .select_from(ModelStep)
+                .where(ModelStep.case_id == case.id, ModelStep.step.like("briefing_email_%"))
+            )
+            if count > 3:
+                raise HTTPException(409, detail="MAIL_SESSION_LIMIT")
+            task.detail = {
+                **task.detail,
+                "recipient": recipient,
+                "material": material,
+                "consent": True,
+            }
+        elif task.detail.get("recipient") != recipient or task.detail.get("material") != material:
+            raise HTTPException(409, detail="EMAIL_REQUEST_REUSED")
+        return {
+            "task_id": task.id,
+            "status": task.status,
+            "error_code": task.detail.get("error_code"),
+        }
+
+
+class CandidateSpeechInput(RevisionInput):
+    preview: bool = False
+    farewell: bool = False
+
+
+class CandidateVoiceInput(RevisionInput):
+    voice_id: str = Field(min_length=1, max_length=64)
+
+
+class PracticeInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    request_id: str = Field(pattern=r"^[a-zA-Z0-9_-]{8,64}$")
+
+
+@router.post("/candidate/calls/{case_id}/practice")
+def candidate_practice(case_id: str, data: PracticeInput, request: Request):
+    from app.core.auth import check_origin
+    from app.modules.outreach.practice import create_practice
+
+    check_origin(request)
+    with database_session(request) as session, session.begin():
+        source = candidate_case(session, case_id, request)
+        try:
+            case, token = create_practice(
+                session,
+                source,
+                data.request_id,
+                request.headers["authorization"][7:],
+                request.app.state.settings,
+            )
+        except ValueError as error:
+            raise HTTPException(409, detail=str(error)) from None
+        return Response(
+            content=json.dumps(
+                {"case_id": case.id, "token": token, "session": candidate_view(case)}
+            ),
+            media_type="application/json",
+            headers={"Cache-Control": "no-store"},
+        )
+
+
+@router.post("/candidate/calls/{case_id}/voice")
+def candidate_voice(case_id: str, data: CandidateVoiceInput, request: Request):
+    from app.core.auth import check_origin
+    from app.modules.outreach.conversation_options import voice_catalog
+
+    check_origin(request)
+    with database_session(request) as session, session.begin():
+        case = candidate_case(session, case_id, request)
+        if case.revision != data.expected_revision:
+            raise HTTPException(409, detail="VERSION_CONFLICT")
+        if case.status in {"ended", "cancelled"} or case.stop_status != "none":
+            raise HTTPException(409, detail="INTERVIEW_STOPPED")
+        if data.voice_id not in {item["id"] for item in voice_catalog()}:
+            raise HTTPException(422, detail="VOICE_NOT_SUPPORTED")
+        if case.session_data.get("decision_status") == "pending":
+            raise HTTPException(409, detail="DECISION_PENDING")
+        case.session_data = {**case.session_data, "voice_id": data.voice_id}
+        case.revision += 1
+        return Response(
+            content=json.dumps(candidate_view(case)),
+            media_type="application/json",
+            headers={"Cache-Control": "no-store"},
+        )
+
+
 @router.post("/candidate/calls/{case_id}/speech")
-def candidate_speech(case_id: str, data: RevisionInput, request: Request):
+def candidate_speech(case_id: str, data: CandidateSpeechInput, request: Request):
     import base64
 
     from app.core.auth import check_origin
     from app.integrations.bailian import ModelUnavailable
     from app.integrations.voice.tts import synthesize_question
     from app.modules.outreach.budget import reserve_model_request
+    from app.modules.outreach.conversation_options import voice_id
     from app.modules.outreach.preflight import require_preflight
 
     check_origin(request)
@@ -910,16 +1121,31 @@ def candidate_speech(case_id: str, data: RevisionInput, request: Request):
         try:
             if case.revision != data.expected_revision:
                 raise ValueError("VERSION_CONFLICT")
-            if case.status in {"ended", "cancelled"} or case.stop_status != "none":
+            if (
+                case.status in {"ended", "cancelled"} or case.stop_status != "none"
+            ) and not data.farewell:
                 raise ValueError("INTERVIEW_STOPPED")
             from app.modules.outreach.conversation import spoken_prompt
 
-            if case.session_data.get("preflight", {}).get("confirmed"):
+            if data.farewell and case.status not in {"ended", "cancelled"}:
+                raise ValueError("FAREWELL_REQUIRES_ENDED_SESSION")
+            if not data.farewell and case.session_data.get("preflight", {}).get("confirmed"):
                 require_preflight(case)
-            question = spoken_prompt(case)
-            if not question or case.session_data.get("decision_status") == "pending":
+            question = (
+                "您好，我是您的AI面试官。我们可以像平时聊天一样交流，您也可以随时打断我。"
+                if data.preview
+                else spoken_prompt(case)
+            )
+            if not question or (
+                not data.farewell and case.session_data.get("decision_status") == "pending"
+            ):
                 raise ValueError("QUESTION_NOT_READY")
-            task, created = register_step(session, case.id, "speech", case.revision)
+            task, created = register_step(
+                session,
+                case.id,
+                "farewell" if data.farewell else "voice_preview" if data.preview else "speech",
+                case.revision,
+            )
             if not created:
                 if task.status != "completed":
                     raise ValueError("SPEECH_REQUIRES_RECONCILIATION")
@@ -931,10 +1157,11 @@ def candidate_speech(case_id: str, data: RevisionInput, request: Request):
             reserve_model_request(case, request.app.state.settings, "speech")
             task.status = "running"
             task_id = task.id
+            voice = voice_id(case)
         except (ValueError, ModelUnavailable) as error:
             raise HTTPException(409, detail=str(error)) from None
     try:
-        audio = synthesize_question(request.app.state.settings, question)
+        audio = synthesize_question(request.app.state.settings, question, voice=voice)
     except (RuntimeError, OSError, TimeoutError):
         with database_session(request) as session, session.begin():
             task = session.get(ModelStep, task_id, with_for_update=True)
@@ -942,17 +1169,18 @@ def candidate_speech(case_id: str, data: RevisionInput, request: Request):
             task.detail = {**task.detail, "error_code": "SPEECH_RESULT_UNKNOWN"}
         raise HTTPException(503, detail="SPEECH_UNAVAILABLE") from None
     result = {
+        "timings": audio.get("timings"),
         "pcm_base64": base64.b64encode(audio["pcm"]).decode(),
         "sample_rate": audio["sample_rate"],
         "model": audio["model"],
         "source_mode": "live",
+        "voice": voice,
     }
     with database_session(request) as session, session.begin():
         case = candidate_case(session, case_id, request)
-        if (
-            case.revision != data.expected_revision
-            or case.status in {"ended", "cancelled"}
-            or case.stop_status != "none"
+        if case.revision != data.expected_revision or (
+            not data.farewell
+            and (case.status in {"ended", "cancelled"} or case.stop_status != "none")
         ):
             raise HTTPException(409, detail="SPEECH_INPUT_CHANGED")
         task = session.get(ModelStep, task_id, with_for_update=True)
@@ -962,6 +1190,75 @@ def candidate_speech(case_id: str, data: RevisionInput, request: Request):
         content=json.dumps(result),
         media_type="application/json",
         headers={"Cache-Control": "no-store"},
+    )
+
+
+@router.post("/candidate/calls/{case_id}/speech-stream")
+def candidate_speech_stream(case_id: str, data: CandidateSpeechInput, request: Request):
+    import base64
+
+    from fastapi.responses import StreamingResponse
+
+    from app.core.auth import check_origin
+    from app.integrations.voice.tts import stream_question
+    from app.modules.outreach.budget import reserve_model_request
+    from app.modules.outreach.conversation import spoken_prompt
+    from app.modules.outreach.conversation_options import voice_id
+
+    check_origin(request)
+    with database_session(request) as session, session.begin():
+        case = candidate_case(session, case_id, request)
+        if case.revision != data.expected_revision:
+            raise HTTPException(409, detail="VERSION_CONFLICT")
+        if case.status in {"ended", "cancelled"} or case.stop_status != "none":
+            raise HTTPException(409, detail="INTERVIEW_STOPPED")
+        if case.session_data.get("decision_status") == "pending":
+            raise HTTPException(409, detail="DECISION_PENDING")
+        text, voice = spoken_prompt(case), voice_id(case)
+        if not text:
+            raise HTTPException(409, detail="QUESTION_NOT_READY")
+        task, created = register_step(session, case.id, "speech_stream", case.revision)
+        if not created:
+            raise HTTPException(409, detail="SPEECH_REQUIRES_RECONCILIATION")
+        try:
+            reserve_model_request(case, request.app.state.settings, "speech")
+        except RuntimeError:
+            raise HTTPException(409, detail="SPEECH_BUDGET_EXCEEDED") from None
+        task.status = "running"
+        task_id = task.id
+
+    def events():
+        completed = False
+        try:
+            stream = stream_question(request.app.state.settings, text, voice)
+            for chunk in stream:
+                yield (
+                    json.dumps(
+                        {
+                            "type": "audio",
+                            "pcm": base64.b64encode(chunk).decode(),
+                            "sample_rate": 24000,
+                        }
+                    )
+                    + "\n"
+                )
+            completed = True
+            yield json.dumps({"type": "completed"}) + "\n"
+        except (RuntimeError, OSError, TimeoutError, ValueError):
+            yield json.dumps({"type": "error", "code": "SPEECH_UNAVAILABLE"}) + "\n"
+        finally:
+            with database_session(request) as session, session.begin():
+                task = session.get(ModelStep, task_id, with_for_update=True)
+                task.status = "completed" if completed else "failed"
+                task.detail = {
+                    **task.detail,
+                    "error_code": None if completed else "SPEECH_INTERRUPTED",
+                }
+
+    return StreamingResponse(
+        events(),
+        media_type="application/x-ndjson",
+        headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
     )
 
 
@@ -1069,7 +1366,11 @@ def candidate_action(case_id: str, data: CandidateAction, request: Request):
                 ):
                     raise ValueError("TRANSCRIPTION_REFERENCE_INVALID")
                 state = case.session_data.get("preflight", {})
-                case.session_data = {**case.session_data, "voice_clarification": None}
+                case.session_data = {
+                    **case.session_data,
+                    "voice_clarification": None,
+                    "conversation_reply": None,
+                }
                 if termination_reason(data.statement, 0, 0) == "candidate_requested_stop":
                     data.action = "stop"
                 elif not state.get("confirmed"):
@@ -1079,8 +1380,11 @@ def candidate_action(case_id: str, data: CandidateAction, request: Request):
                             **case.session_data,
                             "voice_clarification": True,
                             "voice_clarification_transcription_id": voice_transcription.id,
+                            "conversation_utterance": data.statement,
+                            "decision_status": "pending",
                         }
                         case.revision += 1
+                        register_step(session, case.id, "conversation", case.revision)
                         return Response(
                             content=json.dumps(candidate_view(case)),
                             media_type="application/json",
@@ -1097,7 +1401,22 @@ def candidate_action(case_id: str, data: CandidateAction, request: Request):
                         data.material_sha256 = candidate_view(case)["material_sha256"]
                 else:
                     data.action = "answer"
-            if data.action == "stop":
+            if data.action == "begin":
+                import time
+
+                if not case.session_data.get("started_at"):
+                    case.session_data = {**case.session_data, "started_at": time.time()}
+                    case.revision += 1
+            elif data.action == "briefing_presented":
+                state = case.session_data.get("preflight", {})
+                if state.get("interested") is not True:
+                    raise ValueError("JOB_INTEREST_REQUIRED")
+                case.session_data = {
+                    **case.session_data,
+                    "preflight": {**state, "briefing_presented": True},
+                }
+                case.revision += 1
+            elif data.action == "stop":
                 if case.session_data.get("attempts"):
                     case.stop_status = "requested"
                     confirm_mock_stop(case)

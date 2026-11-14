@@ -2,7 +2,12 @@ from decimal import Decimal
 
 import pytest
 
-from app.modules.outreach.job_standard import JobInterviewStandard, calculate_standard_score
+from app.modules.outreach.evaluation import EvidenceAssessment, validate_evaluation
+from app.modules.outreach.job_standard import (
+    JobInterviewStandard,
+    calculate_standard_score,
+    evaluation_template_from_standard,
+)
 
 
 def standard():
@@ -40,3 +45,29 @@ def test_ten_point_weighted_score_and_missing_coverage():
     draft = template.model_copy(update={"status": "draft", "confirmed_by": None})
     with pytest.raises(ValueError, match="CONFIRMATION"):
         calculate_standard_score(draft, {"one": 8, "two": 10})
+
+
+def test_confirmed_standard_adapts_to_evaluation_without_rescaling():
+    configured = evaluation_template_from_standard(
+        standard(), threshold=8, report_template_version=1
+    )
+    assessments = [
+        EvidenceAssessment(dimension_id=key, score=score, evidence_ids=["a1"], reason="自述")
+        for key, score in [("one", 8), ("two", 10)]
+    ]
+    result = validate_evaluation(configured, assessments, {"a1": "实际回答"}, fixture_only=True)
+    assert result["score"] == pytest.approx(9.6)
+    assert result["score_scale"] == "1-10"
+    assert result["total_score"] == pytest.approx(96)
+    assert result["scored_weight_percent"] == 100
+    assert result["dimensions"][0]["weighted_score"] == 16
+    assert result["conclusion"] == "recommended"
+    assessments[1].evidence_ids = []
+    missing = validate_evaluation(configured, assessments, {"a1": "实际回答"}, fixture_only=True)
+    assert missing["score"] is None and missing["total_score"] is None
+    assert missing["scored_weight_percent"] == 20
+    assert missing["dimensions"][0]["weighted_score"] == 16
+    assessments[1].evidence_ids = ["a1"]
+    assessments[0].score = 8.5
+    with pytest.raises(ValueError, match="configured scale"):
+        validate_evaluation(configured, assessments, {"a1": "实际回答"}, fixture_only=True)

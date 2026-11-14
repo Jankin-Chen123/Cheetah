@@ -25,7 +25,7 @@ async def transcribe_stream(
         raise RuntimeError("CONFIRMED_BEIJING_WORKSPACE_REQUIRED")
     model = "qwen3.8-omni-flash-realtime"
     async with (
-        asyncio.timeout(150),
+        asyncio.timeout(650),
         connect(
             f"wss://{parsed.hostname}/api-ws/v1/realtime?model={model}",
             additional_headers={
@@ -62,12 +62,12 @@ async def transcribe_stream(
 
         async def upload():
             size = 0
-            async with asyncio.timeout(125):
+            async with asyncio.timeout(605):
                 async for frame in frames:
                     if not frame or len(frame) % 2 or len(frame) > 32768:
                         raise ValueError("STREAM_PCM_FRAME_INVALID")
                     size += len(frame)
-                    if size > 3840000:
+                    if size > 19200000:
                         raise ValueError("STREAM_AUDIO_DURATION_LIMIT")
                     await socket.send(
                         json.dumps(

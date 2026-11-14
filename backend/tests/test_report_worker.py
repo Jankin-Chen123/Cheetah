@@ -35,7 +35,11 @@ def test_report_worker_three_decisions(tmp_path, monkeypatch, score, conclusion)
                 case_id="case",
                 type="D08",
                 version=1,
-                content={"qa": answers},
+                content={
+                    "qa": answers,
+                    "gaps": ["个人贡献尚未独立核实"],
+                    "conflicts": ["业绩统计口径存在冲突"],
+                },
                 provenance={},
                 input_refs=[],
             )
@@ -71,6 +75,8 @@ def test_report_worker_three_decisions(tmp_path, monkeypatch, score, conclusion)
     with Session(engine) as session, session.begin():
         evaluation = session.scalar(select(OutreachArtifact).where(OutreachArtifact.type == "D09"))
         assert evaluation.content["conclusion"] == conclusion
+        assert evaluation.content["gaps"] == ["个人贡献尚未独立核实"]
+        assert evaluation.content["conflicts"] == ["业绩统计口径存在冲突"]
         case = session.get(OutreachCase, "case")
         task, _ = register_step(session, "case", "D10", case.revision)
         report_task = task.id
@@ -83,6 +89,8 @@ def test_report_worker_three_decisions(tmp_path, monkeypatch, score, conclusion)
             assert "mock" in report.provenance["inherited_source_modes"]
             assert report.provenance["knowledge_preview"] is True
             assert report.provenance["demo_rules"] is True
+            assert "个人贡献尚未独立核实" in report.content["unknowns"]
+            assert "业绩统计口径存在冲突" in report.content["content_markdown"]
             assert "未审核方法知识" in report.content["content_markdown"]
         else:
             assert report is None

@@ -16,8 +16,14 @@ from app.modules.outreach.models import ModelStep, OutreachCase
     ("text", "expected"),
     [
         ("有，我正在找工作。", True),
+        ("可以继续。", True),
+        ("有的，有的。", True),
+        ("有的。", True),
         ("已经了解了，愿意继续", True),
         ("没有需求，谢谢", False),
+        ("没有", False),
+        ("没有。", False),
+        ("没有啊", False),
         ("我不愿意继续", False),
         ("不是不愿意，不过想问下薪资", None),
         ("这个机会在哪里？", None),
@@ -59,7 +65,7 @@ def test_voice_preflight_stream_answer_replay_and_stop(monkeypatch, decline):
     headers = {"Origin": "http://localhost:5173", "Authorization": "Bearer " + invitation["token"]}
     spoken = []
 
-    def speech(settings, text):
+    def speech(settings, text, **kwargs):
         spoken.append(text)
         return {"pcm": b"\x00\x00", "sample_rate": 24000, "model": "fixture"}
 
@@ -109,9 +115,21 @@ def test_voice_preflight_stream_answer_replay_and_stop(monkeypatch, decline):
 
         turn("我还不确定")
         assert value["preflight"]["interested"] is None
-        assert "确认您的意愿" in value["spoken_prompt"]
+        assert value["decision_status"] == "pending"
+        from app.modules.outreach.conversation_worker import execute_conversation
+
+        monkeypatch.setattr(
+            "app.modules.outreach.conversation_worker.generate_json",
+            lambda *args: {"content": {"reply": "请问您愿意继续了解岗位吗？"}, "model": "fixture"},
+        )
+        with Session(engine) as db:
+            task_id = db.scalar(select(ModelStep.id).where(ModelStep.step == "conversation"))
+        execute_conversation(engine, Settings(), task_id)
+        value = client.get(path, headers=headers).json()
+        assert value["decision_status"] == "completed"
+        assert value["preflight"]["interested"] is None
         if decline:
-            turn("暂时没有需求，谢谢")
+            turn("没有")
             assert value["status"] == "ended" and value["stop_status"] == "confirmed"
             assert (
                 client.post(
@@ -119,12 +137,31 @@ def test_voice_preflight_stream_answer_replay_and_stop(monkeypatch, decline):
                 ).status_code
                 == 409
             )
+            goodbye = client.post(
+                path + "/speech",
+                headers=headers,
+                json={"expected_revision": value["revision"], "farewell": True},
+            )
+            assert goodbye.status_code == 200
+            assert "再见" in spoken[-1]
             return
         turn("有，我正在找工作")
         assert value["preflight"]["interested"] is True
         assert value["preflight"]["confirmed"] is False
         assert "薪资范围：暂未提供" in value["spoken_prompt"]
         assert value["question"] is None
+        assert "随后再确认" in value["spoken_prompt"]
+        value = client.post(
+            path,
+            headers=headers,
+            json={
+                "action": "briefing_presented",
+                "expected_revision": value["revision"],
+                "statement": "岗位已介绍且邮件状态已提示",
+            },
+        ).json()
+        assert value["preflight"]["briefing_presented"] is True
+        assert "愿意继续面试" in value["spoken_prompt"]
         turn("已经了解了，愿意继续")
         assert value["preflight"]["confirmed"] is True
         assert value["spoken_prompt"] == "请介绍个人职责。"

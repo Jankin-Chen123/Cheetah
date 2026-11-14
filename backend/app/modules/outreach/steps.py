@@ -108,6 +108,8 @@ def recover_stale_steps(session: Session, *, older_than_seconds: int = 180):
 
 
 def retry_step(task: ModelStep, case: OutreachCase, actor_id: str):
+    if task.step.startswith("briefing_email_"):
+        raise ValueError("MAIL_REQUIRES_RECONCILIATION")
     if task.status != "failed":
         raise ValueError("ONLY_FAILED_INTERNAL_STEP_RETRYABLE")
     if task.detail.get("error_code") == "WORKER_INTERRUPTED_REVIEW_REQUIRED":

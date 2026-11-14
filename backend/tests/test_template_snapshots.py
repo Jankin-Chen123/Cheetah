@@ -41,5 +41,5 @@ def test_professional_configuration_requires_complete_score_anchors():
         dimension["scoring_anchors"] = {str(i): f"Fictional anchor {i}" for i in range(6)}
     assert EvaluationTemplate.model_validate(payload).status == "approved"
     payload["dimensions"][0]["scoring_anchors"].pop("0")
-    with pytest.raises(ValidationError, match="zero to five"):
+    with pytest.raises(ValidationError, match="complete score scale"):
         EvaluationTemplate.model_validate(payload)

@@ -7,14 +7,17 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from sqlalchemy import select  # noqa: E402
+from sqlalchemy import or_, select  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
 from app.core.config import get_settings  # noqa: E402
 from app.core.database import get_engine  # noqa: E402
+from app.modules.outreach.briefing_mail import execute_briefing_mail  # noqa: E402
+from app.modules.outreach.conversation_worker import execute_conversation  # noqa: E402
 from app.modules.outreach.followup_worker import execute_followup  # noqa: E402
 from app.modules.outreach.minutes_worker import execute_minutes  # noqa: E402
 from app.modules.outreach.models import ModelStep  # noqa: E402
+from app.modules.outreach.postprocessing import schedule_postprocessing  # noqa: E402
 from app.modules.outreach.report_worker import execute_report_step  # noqa: E402
 from app.modules.outreach.steps import recover_stale_steps  # noqa: E402
 from app.modules.outreach.worker import execute_outline  # noqa: E402
@@ -31,30 +34,41 @@ def main():
     while True:
         with Session(engine) as session, session.begin():
             recover_stale_steps(session)
+            schedule_postprocessing(session)
         with Session(engine) as session:
             task = session.scalar(
                 select(ModelStep)
                 .where(
                     ModelStep.status == "queued",
-                    ModelStep.step.in_(["D07", "followup", "D08", "D09", "D10"]),
+                    or_(
+                        ModelStep.step.in_(
+                            ["D07", "followup", "conversation", "D08", "D09", "D10"]
+                        ),
+                        ModelStep.step.like("briefing_email_%"),
+                    ),
                 )
                 .order_by(ModelStep.id)
                 .limit(1)
             )
             task_id, step = (task.id, task.step) if task else (None, None)
         if task_id:
-            executor = {
-                "D07": execute_outline,
-                "followup": execute_followup,
-                "D08": execute_minutes,
-                "D09": execute_report_step,
-                "D10": execute_report_step,
-            }[step]
+            executor = (
+                execute_briefing_mail
+                if step.startswith("briefing_email_")
+                else {
+                    "D07": execute_outline,
+                    "followup": execute_followup,
+                    "conversation": execute_conversation,
+                    "D08": execute_minutes,
+                    "D09": execute_report_step,
+                    "D10": execute_report_step,
+                }[step]
+            )
             executor(engine, settings, task_id)
         if args.once:
             break
         if task_id is None:
-            time.sleep(1)
+            time.sleep(0.2)
 
 
 if __name__ == "__main__":

@@ -15,3 +15,12 @@ def test_minutes_require_actual_answer_and_exact_quote():
         validate_minutes(minutes, [{"id": "a1", "text": "我们团队取得成功。"}])
     with pytest.raises(ValueError, match="UNSUPPORTED"):
         validate_minutes(minutes, [{"id": "different", "text": "我负责测试"}])
+
+
+@pytest.mark.parametrize("statement,quote", [("候选人负责测试", " "), (" ", "我负责测试")])
+def test_blank_extraction_cannot_be_used_as_evidence(statement, quote):
+    minutes = Minutes(
+        facts=[MinuteFact(statement=statement, answer_id="a1", quote=quote, kind="other")]
+    )
+    with pytest.raises(ValueError, match="UNSUPPORTED"):
+        validate_minutes(minutes, [{"id": "a1", "text": "我负责测试 。"}])

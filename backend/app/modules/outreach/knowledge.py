@@ -115,7 +115,7 @@ def import_document(session: Session, path: Path) -> tuple[str, int]:
 
 def retrieve(
     session: Session,
-    tags: set[str],
+    tags: set[str] | None,
     *,
     preview: bool = False,
     limit: int = 8,
@@ -157,7 +157,11 @@ def retrieve(
             continue
         if entry.content.get("conflicts"):
             continue
-        overlap = tags.intersection(entry.content["tags"])
+        overlap = (
+            tags.intersection(entry.content["tags"])
+            if tags is not None
+            else set(entry.content["tags"])
+        )
         if overlap:
             doc = session.get(MethodDocument, entry.document_id)
             newest = session.scalar(

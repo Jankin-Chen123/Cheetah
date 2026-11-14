@@ -39,7 +39,11 @@ def test_completed_stream_stop_is_programmatic_and_persisted(monkeypatch):
     )
 
     async def transcribe(*args):
-        return {"text": "请结束面试", "model": "fixture", "source_mode": "mock"}
+        return {
+            "text": "能不能结束面试啊？然后你给我发一个相关的报告，有什么后续的环节。",
+            "model": "fixture",
+            "source_mode": "mock",
+        }
 
     monkeypatch.setattr("app.integrations.voice.streaming.transcribe_stream", transcribe)
     sent = []
@@ -65,5 +69,5 @@ def test_completed_stream_stop_is_programmatic_and_persisted(monkeypatch):
     with Session(engine) as db:
         case = db.get(OutreachCase, "stream-stop")
         assert case.status == "ended" and case.stop_status == "confirmed"
-        assert case.session_data["candidate_stop_statement"] == "请结束面试"
+        assert "能不能结束面试啊" in case.session_data["candidate_stop_statement"]
         assert db.get(ModelStep, sent[-1]["transcription_task_id"]).status == "completed"

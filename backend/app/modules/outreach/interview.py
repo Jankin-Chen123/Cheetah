@@ -87,9 +87,9 @@ def termination_reason(
 ):
     clauses = re.split(r"[，。！？,!?;；\n]", answer.lower())
     stop_request = re.compile(
-        r"^(?:请|麻烦|我想|我要|我希望|我要求|现在|立即|马上|先|我们|可以|能否|能不能|请你|请您)*"
+        r"^(?:请|麻烦|我想|我要|我希望|我要求|我现在要|现在|立即|马上|先|我们|可以|能否|能不能|请你|请您)*"
         r"(?:停止|结束|挂断)(?:这次|本次|这场|当前|这个)?"
-        r"(?:面试|访谈|通话|电话|对话|聊天)?(?:吧|了|一下|好吗|可以吗)?$"
+        r"(?:面试|访谈|通话|电话|对话|聊天)?(?:吧|了|一下|好吗|可以吗|啊|呀|吗|呢)?$"
     )
     if any(
         stop_request.fullmatch(clause.strip())
@@ -118,8 +118,8 @@ def validate_decision(
     if not set(decision.answer_evidence_ids).issubset({item["id"] for item in answers}):
         raise ValueError("Unknown answer evidence")
     if decision.action != "end":
-        if not decision.question or not decision.question.strip() or not decision.method_entry_ids:
-            raise ValueError("Question and retrieved method required")
+        if not decision.question or not decision.question.strip():
+            raise ValueError("Question required")
         if decision.dimension_id not in dimension_ids:
             raise ValueError("Unknown dimension")
         normalized = "".join(decision.question.split()).rstrip("?？。")

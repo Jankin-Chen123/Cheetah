@@ -469,6 +469,56 @@
         }
       }
     },
+    "/api/v1/calls/{case_id}/evaluation-standard": {
+      "post": {
+        "tags": [
+          "outreach"
+        ],
+        "summary": "Confirm Evaluation Standard",
+        "operationId": "confirm_evaluation_standard_api_v1_calls__case_id__evaluation_standard_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluationStandardInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/calls/{case_id}/answers/{answer_id}/corrections": {
       "post": {
         "tags": [
@@ -1373,6 +1423,156 @@
         }
       }
     },
+    "/api/v1/candidate/calls/{case_id}/briefing-email": {
+      "post": {
+        "tags": [
+          "outreach"
+        ],
+        "summary": "Candidate Briefing Email",
+        "operationId": "candidate_briefing_email_api_v1_candidate_calls__case_id__briefing_email_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BriefingEmailInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/candidate/calls/{case_id}/practice": {
+      "post": {
+        "tags": [
+          "outreach"
+        ],
+        "summary": "Candidate Practice",
+        "operationId": "candidate_practice_api_v1_candidate_calls__case_id__practice_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PracticeInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/candidate/calls/{case_id}/voice": {
+      "post": {
+        "tags": [
+          "outreach"
+        ],
+        "summary": "Candidate Voice",
+        "operationId": "candidate_voice_api_v1_candidate_calls__case_id__voice_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CandidateVoiceInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/candidate/calls/{case_id}/speech": {
       "post": {
         "tags": [
@@ -1396,7 +1596,57 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RevisionInput"
+                "$ref": "#/components/schemas/CandidateSpeechInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/candidate/calls/{case_id}/speech-stream": {
+      "post": {
+        "tags": [
+          "outreach"
+        ],
+        "summary": "Candidate Speech Stream",
+        "operationId": "candidate_speech_stream_api_v1_candidate_calls__case_id__speech_stream_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CandidateSpeechInput"
               }
             }
           }
@@ -1743,6 +1993,34 @@
         ],
         "title": "ArtifactView"
       },
+      "BriefingEmailInput": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "minLength": 3,
+            "title": "Email"
+          },
+          "request_id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_-]{8,64}$",
+            "title": "Request Id"
+          },
+          "consent": {
+            "type": "boolean",
+            "const": true,
+            "title": "Consent"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "email",
+          "request_id",
+          "consent"
+        ],
+        "title": "BriefingEmailInput"
+      },
       "CallDetailView": {
         "properties": {
           "id": {
@@ -1953,7 +2231,9 @@
               "confirm",
               "answer",
               "stop",
-              "voice"
+              "voice",
+              "begin",
+              "briefing_presented"
             ],
             "title": "Action"
           },
@@ -2029,6 +2309,53 @@
           "pcm_base64"
         ],
         "title": "CandidateAudioInput"
+      },
+      "CandidateSpeechInput": {
+        "properties": {
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Revision"
+          },
+          "preview": {
+            "type": "boolean",
+            "title": "Preview",
+            "default": false
+          },
+          "farewell": {
+            "type": "boolean",
+            "title": "Farewell",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_revision"
+        ],
+        "title": "CandidateSpeechInput"
+      },
+      "CandidateVoiceInput": {
+        "properties": {
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Revision"
+          },
+          "voice_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Voice Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_revision",
+          "voice_id"
+        ],
+        "title": "CandidateVoiceInput"
       },
       "ContactAuthorizationRef": {
         "properties": {
@@ -2192,6 +2519,38 @@
         ],
         "title": "EnqueueInput"
       },
+      "EvaluationStandardInput": {
+        "properties": {
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Revision"
+          },
+          "standard": {
+            "$ref": "#/components/schemas/JobInterviewStandard"
+          },
+          "threshold": {
+            "type": "number",
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Threshold"
+          },
+          "report_template_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Report Template Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_revision",
+          "standard",
+          "threshold",
+          "report_template_version"
+        ],
+        "title": "EvaluationStandardInput"
+      },
       "EvidenceRef": {
         "properties": {
           "evidence_id": {
@@ -2316,6 +2675,62 @@
           "action"
         ],
         "title": "InvitationInput"
+      },
+      "JobInterviewStandard": {
+        "properties": {
+          "contract_version": {
+            "type": "string",
+            "const": "a02.v1",
+            "title": "Contract Version",
+            "default": "a02.v1"
+          },
+          "job_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Job Id"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Version"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "confirmed"
+            ],
+            "title": "Status",
+            "default": "draft"
+          },
+          "confirmed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed By"
+          },
+          "dimensions": {
+            "items": {
+              "$ref": "#/components/schemas/StandardDimension"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Dimensions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "job_id",
+          "version",
+          "dimensions"
+        ],
+        "title": "JobInterviewStandard"
       },
       "LoginInput": {
         "properties": {
@@ -2468,6 +2883,21 @@
           "expected_revision"
         ],
         "title": "OutlineInput"
+      },
+      "PracticeInput": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_-]{8,64}$",
+            "title": "Request Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request_id"
+        ],
+        "title": "PracticeInput"
       },
       "PreflightInput": {
         "properties": {
@@ -2832,6 +3262,64 @@
           "phone"
         ],
         "title": "SourceModes"
+      },
+      "StandardDimension": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Label"
+          },
+          "indicators": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Indicators"
+          },
+          "weight_percent": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Weight Percent"
+          },
+          "anchors": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Anchors"
+          },
+          "source_refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Source Refs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "indicators",
+          "weight_percent",
+          "anchors",
+          "source_refs"
+        ],
+        "title": "StandardDimension"
       },
       "TaskAccepted": {
         "properties": {

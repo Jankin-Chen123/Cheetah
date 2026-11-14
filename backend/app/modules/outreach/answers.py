@@ -36,7 +36,9 @@ def record_answer(case: OutreachCase, answer: str, expected_revision: int):
             "source_mode": "manual",
         },
     ]
-    reason = termination_reason(answer, len(answers), now - data.get("started_at", now))
+    from app.modules.outreach.conversation_options import case_termination
+
+    reason = case_termination(case, answer, len(answers), now - data.get("started_at", now))
     case.session_data = {
         **data,
         "answers": answers,
@@ -98,6 +100,7 @@ def correct_answer(
         "answers": answers,
         "answer_history": history,
         "correction_requires_recompute": True,
+        "dialogue_memory": [],
     }
     case.revision += 1
     return revised

@@ -6,6 +6,7 @@ from app.integrations.bailian import ModelUnavailable, generate_json
 from app.modules.outreach.budget import reserve_model_request
 from app.modules.outreach.minutes import Minutes, generate_minutes
 from app.modules.outreach.models import ModelStep, OutreachCase
+from app.modules.outreach.postprocessing_prompts import MINUTES_INSTRUCTION
 from app.modules.outreach.steps import claim_step, finish_step, result_still_current
 
 
@@ -29,7 +30,7 @@ def execute_minutes(engine, settings, task_id):
     try:
         result = generate_json(
             settings,
-            "Extract Chinese minutes with exact answer quotes.",
+            MINUTES_INSTRUCTION,
             {"schema": Minutes.model_json_schema(), "answers": answers},
         )
         failure = None

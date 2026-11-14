@@ -114,3 +114,6 @@ npm test
 - [前端演示范围与接入说明](docs/frontend-delivery.md)
 
 下一步先确认 API 合同与外部语音平台能力，再按开发计划并行推进。真实／模拟来源必须明确，实际外呼前须具备有效联系前提和停止能力；未审核的推荐版本不能对外交付。
+
+
+文本模型可通过`.env`的`CHEETA_TEXT_PROVIDER=ark`选择火山方舟，配置`CHEETA_ARK_API_KEY`和`CHEETA_ARK_MODEL`；语音ASR/TTS继续使用独立的百炼配置。`CHEETA_DIALOGUE_UNDERSTANDING_ENABLED=true`开启先理解后检索与工作记忆；向量模型配置见`.env.example`和[本地API增量](docs/api/goal-local.md)。开发知识预览可提前运行`uv run python scripts/warm_method_index.py --preview`，只建缓存、不自动审核方法。

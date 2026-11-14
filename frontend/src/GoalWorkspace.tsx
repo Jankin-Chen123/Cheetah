@@ -4,6 +4,8 @@ import { api, download, type CallCase } from './api/outreach'
 import KnowledgeReview from './KnowledgeReview'
 import PreflightCard from './PreflightCard'
 import InvitationCard from './InvitationCard'
+import PostInterviewContent from './PostInterviewContent'
+import EvaluationStandardCard from './EvaluationStandardCard'
 
 export default function GoalWorkspace() {
   const [password, setPassword] = useState('')
@@ -118,6 +120,7 @@ export default function GoalWorkspace() {
     {taskStatus && <Alert type="info" message={`模型步骤：${taskStatus}`} />}
     <KnowledgeReview />
     {current && <Space orientation="vertical" style={{ width: '100%' }}>
+      <EvaluationStandardCard key={`standard-${current.id}-${current.revision}`} current={current} refresh={() => refresh(current.id)} />
       <PreflightCard key={current.id} current={current} refresh={() => refresh(current.id)} />
       <InvitationCard key={`invitation-${current.id}`} current={current} refresh={() => refresh(current.id)} />
       <Card title={`任务 ${current.id} · revision ${current.revision}`}>
@@ -172,12 +175,13 @@ export default function GoalWorkspace() {
         })}>保存更正为新版本</Button>
       </Card>
       {current.artifacts?.map(a => <Card key={a.id} title={`${a.type} v${a.version} · ${a.review_status} · ${a.valid ? '有效' : '失效'}`}>
+        <PostInterviewContent artifact={a} />
         <details><summary>来源、知识预览与模板版本</summary>
           <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(a.provenance, null, 2)}</pre>
         </details>
         {typeof a.content.content_markdown === 'string' &&
           <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>{a.content.content_markdown}</pre>}
-        <details open={typeof a.content.content_markdown !== 'string'}><summary>结构化内容与证据引用</summary>
+        <details><summary>结构化内容与证据引用</summary>
           <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(a.content, null, 2)}</pre>
         </details>
         {a.type === 'D10' && <Space orientation="vertical" style={{ width: '100%' }}>
