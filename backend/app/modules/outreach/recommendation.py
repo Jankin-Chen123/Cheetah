@@ -179,8 +179,16 @@ def generate_recommendation(
     markdown += f"\n\n## {template.unknowns_heading}\n\n" + "\n".join(output.unknowns)
     from app.modules.outreach.report_profile import professional_profile
 
+    minutes = session.scalar(
+        select(OutreachArtifact).where(
+            OutreachArtifact.case_id == case.id,
+            OutreachArtifact.type == "D08",
+            OutreachArtifact.valid.is_(True),
+        )
+    )
     client_profile, career_section = professional_profile(
-        case.session_data.get("upstream_content", {})
+        case.session_data.get("upstream_content", {}),
+        minutes.content if minutes else None,
     )
     markdown = markdown.replace(
         "## 第一部分｜猎头机构评估",

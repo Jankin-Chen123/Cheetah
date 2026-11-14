@@ -1,7 +1,7 @@
 """Customer career section from explicit D03 fields, without model additions."""
 
 
-def professional_profile(upstream):
+def professional_profile(upstream, minutes=None):
     resume = upstream.get("D03", {})
     if not isinstance(resume, dict):
         resume = {}
@@ -109,10 +109,28 @@ def professional_profile(upstream):
         if values:
             lines.append(f"### {label}")
             lines.extend(values)
+    # Unstructured oral statements cannot safely overwrite individual resume fields.
+    # Preserve exact candidate wording and both sources until a field is confirmed.
+    supplements = []
+    for fact in (minutes or {}).get("facts", []):
+        if fact.get("kind") == "intention" and isinstance(fact.get("quote"), str):
+            quote = fact["quote"].strip()
+            if quote and quote not in supplements:
+                supplements.append(quote)
+    if supplements:
+        lines.append("### 本次沟通的求职条件补充")
+        lines.extend(f"候选人原话：{quote}" for quote in supplements)
+        lines.append("以上为本次沟通自述；与履历不一致的字段须确认后再更新。")
+    conflicts = [item for item in (minutes or {}).get("conflicts", []) if isinstance(item, str)]
+    if conflicts:
+        lines.append("### 职业资料待核事项")
+        lines.append("履历与本次沟通存在未解决的信息差异，需确认后再使用相关字段。")
     job = upstream.get("D01", {})
     return {
         "candidate_display_name": name,
         "recommended_job_title": text(job.get("title")) if isinstance(job, dict) else "待确认",
         "work_history": history,
         **additional,
+        "interview_career_statements": supplements,
+        "unresolved_conflicts": conflicts,
     }, "\n\n".join(lines)

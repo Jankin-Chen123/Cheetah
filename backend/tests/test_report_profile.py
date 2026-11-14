@@ -40,3 +40,22 @@ def test_optional_sections_are_omitted_without_sources():
     assert "### 重要项目与专业成果" not in body
     assert "### 专业资格" not in body
     assert "完整履历待补充" in body
+
+
+def test_interview_conditions_keep_exact_wording_and_unresolved_conflicts():
+    profile, body = professional_profile(
+        {"D03": {"profile": {"current_city": "虚构城市甲"}}},
+        {
+            "facts": [
+                {"kind": "intention", "quote": "期望年薪30万元，税前税后还没确定"},
+                {"kind": "other", "quote": "不应被用于求职条件"},
+            ],
+            "conflicts": ["所在地与履历不一致，待确认"],
+        },
+    )
+    assert "当前城市：虚构城市甲" in body
+    assert profile["interview_career_statements"] == ["期望年薪30万元，税前税后还没确定"]
+    assert profile["unresolved_conflicts"] == ["所在地与履历不一致，待确认"]
+    assert "所在地与履历不一致，待确认" not in body
+    assert "存在未解决的信息差异" in body
+    assert "不应被用于求职条件" not in body
