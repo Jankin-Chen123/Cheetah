@@ -3459,6 +3459,30 @@
         "display_name": "虚构猎头",
         "password": "fixture-only-password"
       }
+    },
+    "talent_direction_assignment": {
+      "schema": "DirectionAssignment",
+      "value": {
+        "direction_id": "backend",
+        "level": "primary",
+        "quote": "负责订单服务接口设计。",
+        "reason": "职责属于服务端研发，未评估胜任程度。"
+      }
+    },
+    "talent_import_receipt": {
+      "schema": "TalentReceipt",
+      "value": {
+        "items": [
+          {
+            "client_item_id": "fixture-one",
+            "name": "虚构简历.txt",
+            "disposition": "accepted",
+            "talent_id": "fixture-talent-001",
+            "task_id": "fixture-talent-task-001",
+            "error_code": null
+          }
+        ]
+      }
     }
   }
 }

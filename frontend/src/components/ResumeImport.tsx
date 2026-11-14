@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Alert, App, Button, Drawer, Empty, Input, Select, Space, Table, Tag } from 'antd'
 import type { ImportRecord, Job } from '../domain/workspace'
+import { areJobDocumentsConfirmed } from '../domain/jobDocuments'
 import { addImport, uid } from '../domain/workspace'
 import { Icon } from './ui'
 
@@ -9,13 +10,13 @@ export default function ResumeImport({ open, jobs, records, setRecords, onClose,
   onClose: () => void; initialJobId?: string;
 }) {
   const { message } = App.useApp()
-  const [jobId, setJobId] = useState(initialJobId ?? jobs.find(j => j.status === 'published')?.id)
+  const [jobId, setJobId] = useState(initialJobId ?? jobs.find(j => areJobDocumentsConfirmed(j) || j.status === 'published')?.id)
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const input = useRef<HTMLInputElement>(null)
   const replaceId = useRef<string | undefined>(undefined)
   const job = jobs.find(j => j.id === jobId)
-  const allowed = job?.status === 'published'
+  const allowed = !!job && (areJobDocumentsConfirmed(job) || job.status === 'published')
 
   async function fingerprint(bytes: ArrayBuffer) {
     return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))).map(x => x.toString(16).padStart(2, '0')).join('')
@@ -76,12 +77,11 @@ export default function ResumeImport({ open, jobs, records, setRecords, onClose,
 
   return <Drawer open={open} onClose={onClose} title="导入简历材料" size={740}>
     <div className="stack">
-      <Alert showIcon type="warning" title="演示材料 · 仅本页暂存，刷新清空" description="仅校验，不上传或解析。" />
-      <label className="field-label" htmlFor="import-job">目标岗位</label><Select id="import-job" value={jobId} onChange={setJobId} options={jobs.map(j => ({ value: j.id, label: `${j.title} · ${j.status === 'published' ? `测试规则 v${j.version}` : '规则未发布'}` }))} />
-      {!allowed && <Alert type="warning" title="请先发布测试规则" />}
+      <label className="field-label" htmlFor="import-job">目标岗位</label><Select id="import-job" value={jobId} onChange={setJobId} options={jobs.map(j => ({ value: j.id, label: `${j.title} · ${areJobDocumentsConfirmed(j) ? '产物已确认' : j.status === 'published' ? '可导入' : '产物待确认'}` }))} />
+      {!allowed && <Alert type="warning" title="请先确认岗位画像和面试评估表" />}
       <input ref={input} className="sr-only" type="file" multiple accept=".txt,.pdf" aria-label="选择简历文件" onChange={event => { void addFiles(Array.from(event.target.files ?? [])) }} />
       <div className="upload-area"><span className="upload-symbol"><Icon name="upload" size={28} /></span><p>TXT / 文本型 PDF · 每份最多 5 MB · 每次最多 10 份</p><Button type="primary" disabled={!allowed || busy} loading={busy} onClick={() => { replaceId.current = undefined; if (input.current) input.current.multiple = true; input.current?.click() }}>选择文件</Button></div>
-      <label className="field-label" htmlFor="resume-text">或粘贴简历文本</label><Input.TextArea id="resume-text" value={text} maxLength={30000} onChange={e => setText(e.target.value)} rows={4} placeholder="粘贴虚构或脱敏简历" /><div><Button disabled={!text.trim() || !allowed || busy} loading={busy} onClick={() => { void addText() }}>暂存文本</Button></div>
+      <label className="field-label" htmlFor="resume-text">或粘贴简历文本</label><Input.TextArea id="resume-text" value={text} maxLength={30000} onChange={e => setText(e.target.value)} rows={4} placeholder="粘贴简历文本" /><div><Button disabled={!text.trim() || !allowed || busy} loading={busy} onClick={() => { void addText() }}>暂存文本</Button></div>
       <div className="section-heading"><h3>导入记录</h3><span className="muted">等待 {records.filter(r => r.state === 'waiting').length} · 失败 {records.filter(r => r.state === 'failed').length}</span></div>
       <Table<ImportRecord> rowKey="id" size="small" dataSource={records.filter(r => r.jobId === jobId)} pagination={false} locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="尚未暂存材料" /> }} columns={[
         { title: '材料', dataIndex: 'name', render: (name, record) => <div className="import-name"><strong>{name}</strong><p>{record.reason}</p></div> },

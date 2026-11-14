@@ -1,0 +1,156 @@
+/* Shared visual language; layout and business states stay in their modules. */
+:root {
+  --ui-ink: #243d32;
+  --ui-text: #46594f;
+  --ui-muted: #627367;
+  --ui-green: #214f43;
+  --ui-green-soft: #edf3ef;
+  --ui-gold: #a48655;
+  --ui-canvas: #f3f5f2;
+  --ui-line: #e1e7e1;
+  --ui-shadow: 0 2px 6px #1f382905, 0 12px 30px #1f382904;
+  --ui-ease: cubic-bezier(.22, 1, .36, 1);
+  background: var(--ui-canvas);
+  color: var(--ui-text);
+}
+
+.app-shell { background: var(--ui-canvas); color: var(--ui-text); }
+.app-shell h1, .app-shell h2, .app-shell h3 { color: var(--ui-ink); }
+.app-shell h1 { font-weight: 650; letter-spacing: -1px; }
+.app-shell h2 { letter-spacing: -.35px; }
+.app-shell .muted, .app-shell .page-description { color: var(--ui-muted); }
+.app-shell .sidebar { background: #fbfcfa; border-color: var(--ui-line); }
+.app-shell .brand-word { color: #193e32; }
+.app-shell .brand-word small { color: #8b7b5a; }
+.app-shell .nav-item { color: #6a7b70; border-radius: 10px; font-weight: 500; }
+.app-shell .nav-item.selected { background: var(--ui-green); color: #fff; box-shadow: 0 4px 10px #163d3014; }
+.app-shell .nav-count { color: #456250; background: #e6ede6; }
+.app-shell .nav-item.selected .nav-count { color: #f1e5c7; background: #ffffff18; }
+.app-shell .profile { border-color: var(--ui-line); }
+.app-shell .profile strong { color: var(--ui-ink); }
+.app-shell .profile-avatar { background: #e9eee6; color: #647653; }
+.app-shell .profile div span { color: var(--ui-muted); }
+.app-shell .topbar { background: #ffffffd9; border-color: var(--ui-line); }
+.app-shell .breadcrumb { color: #687c6c; }
+.app-shell .breadcrumb strong { color: #40584a; }
+.app-shell .service-state { color: #68796e; border-radius: 7px; }
+.app-shell .demo-chip { color: #88744f; border-color: #e7dfd0; background: #faf8f3; border-radius: 6px; }
+.app-shell .panel { background: #fff; border-color: var(--ui-line); border-radius: 13px; box-shadow: var(--ui-shadow); }
+.app-shell .metric-card { background: #fff; border-color: var(--ui-line); border-radius: 13px; box-shadow: var(--ui-shadow); }
+.app-shell .metric-card > div { color: #6a7c70; }
+.app-shell .metric-card > strong { color: #254c3b; font-weight: 600; letter-spacing: -1.5px; }
+.app-shell .sage { background: #eaf2ec; color: #3f7057; }
+.app-shell .blue { background: #edf1f6; color: #607b97; }
+.app-shell .peach { background: #f7f0e5; color: #aa8351; }
+.app-shell .lilac { background: #efedf4; color: #8a7b9f; }
+.app-shell .count-pill { background: #edf1e9; color: #6c7d60; }
+.app-shell .todo-list > button { border-color: #edf0eb; border-radius: 7px; }
+.app-shell .todo-list strong { color: #3c5545; font-weight: 550; }
+.app-shell .todo-list div span { color: #66775f; }
+.app-shell .todo-icon { border-radius: 10px; flex-shrink: 0; }
+.app-shell .todo-list > button > svg { color: #9ba99c; }
+.app-shell .todo-list { scrollbar-width: thin; scrollbar-color: #bdcabf transparent; }
+.app-shell .todo-list::-webkit-scrollbar { width: 6px; }
+.app-shell .todo-list::-webkit-scrollbar-thumb { background: #bdcabf; border-radius: 8px; }
+.app-shell .todo-list::-webkit-scrollbar-thumb:hover { background: #8fa795; }
+
+.app-shell .job-card { border-color: var(--ui-line); }
+.app-shell .job-card-title, .app-shell .job-title-link { color: #294d3c; font-weight: 600; }
+.app-shell .job-card > p, .app-shell .job-facts, .app-shell .job-card-footer { color: #65775f; }
+.app-shell .job-card-footer { border-color: #e9eee8; }
+.app-shell .job-card-footer strong { color: #3c6550; }
+.app-shell .job-card-generating { background: #eef1ef; box-shadow: none; }
+.app-shell .job-card-generating .job-card-title { color: #7f8b83; }
+.app-shell .person strong { color: #344f3e; font-size: 13px; font-weight: 550; }
+.app-shell .person div span { color: #65765f; font-size: 11px; }
+.app-shell .matched-job-list { color: #526b57; line-height: 1.7; }
+.app-shell .ant-table-wrapper .ant-table-thead > tr > th { color: #5f725b; background: #f5f7f3; font-size: 12px; }
+.app-shell .ant-table-wrapper .ant-table-tbody > tr > td { color: #51664f; border-color: #edf0e9; }
+.app-shell .ant-table-wrapper .ant-table-tbody > tr.ant-table-row:hover > td { background: #f2f6f0; }
+.app-shell .table-main { color: #52694f; }
+.app-shell .table-sub { color: #7c8978; }
+.app-shell .candidate-mobile-card { border-color: var(--ui-line); }
+.app-shell .back-button { color: #66816b; border-radius: 8px; }
+.app-shell .document-content { color: #4d634d; background: #f8faf6; border-color: #e6ece1; border-radius: 10px; }
+.app-shell .job-form-table { color: #3a513c; }
+.app-shell .job-form-table th, .app-shell .job-form-table td { border-color: #e1e7db; }
+.app-shell .job-form-table thead th { background: #edf2e7; color: #3c573e; }
+.app-shell .job-form-table .form-group th { background: #f6f8f0; color: #466344; }
+.app-shell .report-document h2 { color: #2d523b; }
+.app-shell .body-large { color: #52694f; }
+.app-shell .upload-area, .app-shell .ant-upload-wrapper .ant-upload-drag { border-radius: 12px; background: #f8faf6; border-color: #d9e3d2; }
+.app-shell .ant-form-item-label > label { color: #4a6049; font-weight: 500; }
+
+.ant-btn { font-weight: 500; }
+.ant-btn-primary:not(:disabled):not(.ant-btn-disabled) { background: var(--ui-green); }
+.ant-btn-primary:not(:disabled):not(.ant-btn-disabled):hover { background: #2c6453; border-color: #2c6453; }
+body .ant-tag.ant-tag-green:not(.ant-tag-disabled).ant-tag-filled { background: #eef5ee; border-color: #dce9da; color: #4b7851; }
+body .ant-tag.ant-tag-orange:not(.ant-tag-disabled).ant-tag-filled { background: #fbf4e8; border-color: #f0e3cd; color: #896124; }
+body .ant-tag.ant-tag-blue:not(.ant-tag-disabled).ant-tag-filled { background: #edf3f7; border-color: #dce7ef; color: #426b83; }
+body .ant-tag.ant-tag-red:not(.ant-tag-disabled).ant-tag-filled { background: #fcf1ee; border-color: #f1ddd5; color: #9a5142; }
+.ant-modal .ant-modal-container { box-shadow: 0 24px 90px #203b2b24, 0 2px 10px #203b2b08; }
+.ant-drawer .ant-drawer-title { color: var(--ui-ink); font-weight: 600; }
+.ant-dropdown .ant-dropdown-menu { padding: 6px; box-shadow: 0 12px 40px #203b2b15; }
+.ant-dropdown .ant-dropdown-menu-item { border-radius: 6px; }
+.ant-tabs .ant-tabs-tab { font-weight: 500; }
+.ant-tabs .ant-tabs-tab-btn { outline-offset: 4px; }
+.ant-btn:focus-visible, .app-shell a:focus-visible, .app-shell button:focus-visible { outline: 3px solid #95b7a4; outline-offset: 3px; }
+
+.site-page { --ink: #233e32; --green: #214f43; --paper: #f5f6f1; }
+.site-page .site-hero h1 em { color: #998358; }
+.site-page .site-button.primary { background: var(--ui-green); }
+.site-page .site-button.primary:hover { background: #2b6151; }
+.site-page .site-button, .site-page .preview-window { border-radius: 11px; }
+.site-page .preview-window { box-shadow: 0 24px 60px #223d2c10; }
+.site-page .site-cta, .account-story { background: #214638; }
+.account-page { background: #f8f9f5; }
+.account-story h1 em { color: #d1bd87; }
+.account-story p { color: #becdba; }
+.account-form .ant-input, .account-form .ant-input-affix-wrapper { background: #fff; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .app-shell .nav-item, .ant-btn, .site-button {
+    transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 200ms ease, transform 200ms var(--ui-ease);
+  }
+  .app-shell .metric-card, .app-shell .job-card { transition: transform 220ms var(--ui-ease), box-shadow 220ms ease, border-color 180ms ease; }
+  .app-shell .todo-list > button, .app-shell .person-link strong, .app-shell .service-state { transition: background-color 160ms ease, color 160ms ease; }
+  .app-shell .ant-table-tbody > tr > td { transition: background-color 160ms ease; }
+  .ant-input, .ant-input-affix-wrapper, .ant-select-selector { transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease; }
+  .ant-tabs-tabpane-active { animation: cheetah-panel-in 180ms var(--ui-ease); }
+  .account-form { animation: cheetah-panel-in 300ms var(--ui-ease); }
+  .site-hero-copy { animation: cheetah-panel-in 360ms var(--ui-ease); }
+  .site-faq summary > span { transition: transform 200ms var(--ui-ease); }
+  .ant-btn:not(:disabled):not(.ant-btn-disabled):active, .site-button:active { transform: translateY(1px); }
+  .app-shell .metric-card:active { transform: translateY(0); }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .app-shell .nav-item:not(.selected):hover { background: #edf2e9; color: #34583f; }
+  .app-shell .todo-list > button:hover { background: #f4f7f0; }
+  .app-shell .service-state:hover { background: #f1f5ef; color: #4d6c50; }
+  .app-shell .metric-card:hover { border-color: #c7d5c0; box-shadow: 0 8px 24px #2744300c; }
+  .app-shell .job-card:not(.job-card-generating):hover, .app-shell .job-card:not(.job-card-generating):focus-within { border-color: #becfb7; box-shadow: 0 12px 30px #27443012; }
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .app-shell .nav-item:not(.selected):hover { transform: translateX(2px); }
+  .app-shell .metric-card:hover { transform: translateY(-3px); }
+}
+
+@media (max-width: 640px) {
+  .app-shell .sidebar { background: #fbfcf9f5; }
+  .app-shell .nav-item { border-radius: 8px; }
+  .app-shell .nav-item.selected { box-shadow: none; }
+  .app-shell .metric-card, .app-shell .panel { border-radius: 11px; }
+  .app-shell .person strong { font-size: 12px; }
+  .app-shell .heading-actions .ant-btn, .app-shell .candidate-row-actions .ant-btn { min-height: 42px; }
+}
+
+@keyframes cheetah-panel-in {
+  from { opacity: .6; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell .metric-card, .app-shell .job-card, .app-shell .nav-item, .ant-btn, .site-button { transform: none !important; }
+}

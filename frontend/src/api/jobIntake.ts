@@ -42,6 +42,7 @@ async function request<T>(path: string, options: RequestInit = {}, signal?: Abor
   if (!body || typeof body !== 'object') throw new IntakeApiError('服务返回格式不正确。', 'INVALID_RESPONSE', response.status)
   return body as T
 }
+export { request as intakeRequest }
 const json = (body: unknown, session: IntakeSession, key?: string): RequestInit => ({ method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': session.csrf_token, ...(key ? { 'Idempotency-Key': key } : {}) }, body: JSON.stringify(body) })
 
 export const getIntakeSession = (signal?: AbortSignal) => request<IntakeSession>('/auth/me', {}, signal)

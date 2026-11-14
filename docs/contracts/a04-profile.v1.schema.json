@@ -1,6 +1,63 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$defs": {
+    "DirectionAssignment": {
+      "additionalProperties": false,
+      "properties": {
+        "direction_id": {
+          "enum": [
+            "frontend",
+            "backend",
+            "fullstack",
+            "mobile",
+            "data",
+            "ai",
+            "devops",
+            "qa",
+            "product",
+            "design",
+            "sales",
+            "marketing",
+            "operations",
+            "finance",
+            "hr",
+            "legal",
+            "supply_chain",
+            "hardware"
+          ],
+          "title": "Direction Id",
+          "type": "string"
+        },
+        "level": {
+          "enum": [
+            "primary",
+            "secondary"
+          ],
+          "title": "Level",
+          "type": "string"
+        },
+        "quote": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Quote",
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "direction_id",
+        "level",
+        "quote",
+        "reason"
+      ],
+      "title": "DirectionAssignment",
+      "type": "object"
+    },
     "Fact": {
       "additionalProperties": false,
       "properties": {
@@ -252,6 +309,15 @@
   },
   "additionalProperties": false,
   "properties": {
+    "direction_assignments": {
+      "description": "Classify occupational directions from actual responsibilities and skills in context. Allow multiple directions, distinguish primary/secondary, quote the resume exactly. Do not infer frontend from management-backend UI terminology or incidental tools. Empty means unclassified, never rejected. This is routing, not qualification scoring.",
+      "items": {
+        "$ref": "#/$defs/DirectionAssignment"
+      },
+      "maxItems": 18,
+      "title": "Direction Assignments",
+      "type": "array"
+    },
     "facts": {
       "additionalProperties": {
         "$ref": "#/$defs/Fact"

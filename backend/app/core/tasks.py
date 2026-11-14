@@ -12,6 +12,7 @@ INTERNAL_KINDS = {
     "interview_standard",
     "screening_standard",
     "resume_parse",
+    "talent_parse",
     "research",
     "screening",
 }
@@ -21,7 +22,7 @@ def enqueue(
     db: Session,
     *,
     organization_id: str,
-    job_id: str,
+    job_id: str | None,
     kind: str,
     dedup_key: str,
     payload: dict,
@@ -42,17 +43,24 @@ def enqueue(
     return task
 
 
+def budget_key(task: Task) -> str:
+    # Budget/ModelUsage.job_id is the legacy budget scope column; jobless intake has its own scope.
+    return task.job_id or "talent:" + task.payload["talent_id"]
+
+
+def resource(task: Task) -> tuple[str, str]:
+    if task.kind == "talent_parse":
+        return "talent", task.payload["talent_id"]
+    if task.kind == "batch":
+        return "batch", task.payload["batch_id"]
+    return ("application", task.application_id) if task.application_id else ("job", task.job_id)
+
+
 def accepted(task: Task) -> dict:
     return {
         "task_id": task.id,
-        "resource_type": "batch"
-        if task.kind == "batch"
-        else "application"
-        if task.application_id
-        else "job",
-        "resource_id": task.payload["batch_id"]
-        if task.kind == "batch"
-        else task.application_id or task.job_id,
+        "resource_type": resource(task)[0],
+        "resource_id": resource(task)[1],
         "poll_after_ms": 3000,
     }
 
@@ -114,7 +122,7 @@ def task_view(task: Task, settings: Settings, db: Session) -> dict:
             if all(item.status == "settled" for item in agent_searches)
             else None
         )
-    budget = db.get(Budget, task.job_id)
+    budget = db.get(Budget, budget_key(task))
     refs = [
         (
             {"kind": "artifact", "id": ref["artifact_id"], "version": ref["version"]}
@@ -128,14 +136,8 @@ def task_view(task: Task, settings: Settings, db: Session) -> dict:
         "kind": task.kind,
         "status": task.status,
         "revision": task.revision,
-        "resource_type": "batch"
-        if task.kind == "batch"
-        else "application"
-        if task.application_id
-        else "job",
-        "resource_id": task.payload["batch_id"]
-        if task.kind == "batch"
-        else task.application_id or task.job_id,
+        "resource_type": resource(task)[0],
+        "resource_id": resource(task)[1],
         "input_refs": refs,
         "result_refs": task.result_refs,
         "continuation_task_id": task.payload.get("continuation_task_id"),
@@ -276,7 +278,7 @@ def reserve_model(db: Session, task: Task, maximum_tokens: int):
     result = db.execute(
         update(Budget)
         .where(
-            Budget.job_id == task.job_id,
+            Budget.job_id == budget_key(task),
             Budget.used + Budget.reserved < Budget.call_limit,
             Budget.tokens_used + Budget.tokens_reserved + maximum_tokens <= Budget.token_limit,
         )
@@ -288,7 +290,10 @@ def reserve_model(db: Session, task: Task, maximum_tokens: int):
         raise DomainError("BUDGET_EXCEEDED", "模型预算不足", 429)
     db.add(
         ModelUsage(
-            task_id=task.id, job_id=task.job_id, reserved_tokens=maximum_tokens, status="reserved"
+            task_id=task.id,
+            job_id=budget_key(task),
+            reserved_tokens=maximum_tokens,
+            status="reserved",
         )
     )
 
@@ -301,7 +306,7 @@ def settle_model(db: Session, task: Task, actual_tokens: int):
     charged = max(actual_tokens, 0) or usage.reserved_tokens
     db.execute(
         update(Budget)
-        .where(Budget.job_id == task.job_id)
+        .where(Budget.job_id == budget_key(task))
         .values(
             reserved=Budget.reserved - 1,
             used=Budget.used + 1,

@@ -51,3 +51,5 @@ uv run python scripts/export_contract_schema.py --check
 [a04-profile.v1.schema.json](a04-profile.v1.schema.json) 定义 A04 的多对象提取输出；[a03-report.v1.schema.json](a03-report.v1.schema.json) 定义按用户范本组织的 D04。六个 a03-tool-*.v1.schema.json 对应受控工具参数，由 `a03_contracts.py` 生成；Pi 不接受材料自行添加工具或加载任意 skill 路径。
 
 变更后运行 `uv run python scripts/export_a03_schema.py` 并用 `--check` 验证，同时更新 HTTP Schema、完整接口草案和前端类型。它们不是新增 A/B 事件版本；事件仍为 1.1，引用新产物精确版本及实际来源。配置和验证边界见 [A03 Pi Agent](../a03-pi-agent.md)。
+
+人才入库与职能分流新增 HTTP 读写模型，不改变 A/B 1.1 事件结构。分类产生待深度初筛关联，不发布 screening.passed。只有正式 A05 达标后才沿原事务交接；D03 的 talent_profile_ref 指向确切人才快照，旧产物仍能按既有合同读取。详见 [职能分流说明](../talent-routing.md)。

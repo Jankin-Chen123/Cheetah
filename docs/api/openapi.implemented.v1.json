@@ -193,6 +193,11 @@
             "title": "Revision",
             "type": "integer"
           },
+          "routing": {
+            "additionalProperties": true,
+            "title": "Routing",
+            "type": "object"
+          },
           "rule_pack_ref": {
             "$ref": "#/components/schemas/RulePackRef-Output"
           },
@@ -209,6 +214,7 @@
           },
           "stage": {
             "enum": [
+              "matched",
               "intake",
               "research",
               "screening",
@@ -231,6 +237,17 @@
               }
             ],
             "title": "Summary"
+          },
+          "talent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Talent Id"
           },
           "updated_at": {
             "format": "date-time",
@@ -411,6 +428,11 @@
             "title": "Revision",
             "type": "integer"
           },
+          "routing": {
+            "additionalProperties": true,
+            "title": "Routing",
+            "type": "object"
+          },
           "rule_pack_ref": {
             "$ref": "#/components/schemas/RulePackRef-Output"
           },
@@ -427,6 +449,7 @@
           },
           "stage": {
             "enum": [
+              "matched",
               "intake",
               "research",
               "screening",
@@ -449,6 +472,17 @@
               }
             ],
             "title": "Summary"
+          },
+          "talent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Talent Id"
           },
           "updated_at": {
             "format": "date-time",
@@ -1555,6 +1589,37 @@
         "title": "Claim",
         "type": "object"
       },
+      "ClassifyTalentInput": {
+        "additionalProperties": false,
+        "properties": {
+          "directions": {
+            "items": {
+              "$ref": "#/components/schemas/DirectionAssignment"
+            },
+            "maxItems": 18,
+            "title": "Directions",
+            "type": "array"
+          },
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "directions",
+          "reason"
+        ],
+        "title": "ClassifyTalentInput",
+        "type": "object"
+      },
       "ConditionResult": {
         "additionalProperties": true,
         "properties": {
@@ -1848,6 +1913,41 @@
             "minLength": 1,
             "title": "Material Text",
             "type": "string"
+          },
+          "routing_directions": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "frontend",
+                    "backend",
+                    "fullstack",
+                    "mobile",
+                    "data",
+                    "ai",
+                    "devops",
+                    "qa",
+                    "product",
+                    "design",
+                    "sales",
+                    "marketing",
+                    "operations",
+                    "finance",
+                    "hr",
+                    "legal",
+                    "supply_chain",
+                    "hardware"
+                  ],
+                  "type": "string"
+                },
+                "maxItems": 18,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Routing Directions"
           },
           "salary": {
             "anyOf": [
@@ -2428,6 +2528,13 @@
             "title": "Claims",
             "type": "array"
           },
+          "direction_assignments": {
+            "items": {
+              "$ref": "#/components/schemas/DirectionAssignment"
+            },
+            "title": "Direction Assignments",
+            "type": "array"
+          },
           "document_metadata": {
             "anyOf": [
               {
@@ -2485,6 +2592,16 @@
             },
             "title": "Skills",
             "type": "array"
+          },
+          "talent_profile_ref": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TalentProfileRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -4046,6 +4163,122 @@
         "title": "DimensionScore",
         "type": "object"
       },
+      "DirectionAssignment": {
+        "additionalProperties": false,
+        "properties": {
+          "direction_id": {
+            "enum": [
+              "frontend",
+              "backend",
+              "fullstack",
+              "mobile",
+              "data",
+              "ai",
+              "devops",
+              "qa",
+              "product",
+              "design",
+              "sales",
+              "marketing",
+              "operations",
+              "finance",
+              "hr",
+              "legal",
+              "supply_chain",
+              "hardware"
+            ],
+            "title": "Direction Id",
+            "type": "string"
+          },
+          "level": {
+            "enum": [
+              "primary",
+              "secondary"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "quote": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Quote",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "direction_id",
+          "level",
+          "quote",
+          "reason"
+        ],
+        "title": "DirectionAssignment",
+        "type": "object"
+      },
+      "DirectionCatalog": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DirectionOption"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "items"
+        ],
+        "title": "DirectionCatalog",
+        "type": "object"
+      },
+      "DirectionOption": {
+        "properties": {
+          "id": {
+            "enum": [
+              "frontend",
+              "backend",
+              "fullstack",
+              "mobile",
+              "data",
+              "ai",
+              "devops",
+              "qa",
+              "product",
+              "design",
+              "sales",
+              "marketing",
+              "operations",
+              "finance",
+              "hr",
+              "legal",
+              "supply_chain",
+              "hardware"
+            ],
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "DirectionOption",
+        "type": "object"
+      },
       "DisplayName": {
         "maxLength": 100,
         "minLength": 1,
@@ -4968,6 +5201,33 @@
             "title": "Revision",
             "type": "integer"
           },
+          "routing_directions": {
+            "items": {
+              "enum": [
+                "frontend",
+                "backend",
+                "fullstack",
+                "mobile",
+                "data",
+                "ai",
+                "devops",
+                "qa",
+                "product",
+                "design",
+                "sales",
+                "marketing",
+                "operations",
+                "finance",
+                "hr",
+                "legal",
+                "supply_chain",
+                "hardware"
+              ],
+              "type": "string"
+            },
+            "title": "Routing Directions",
+            "type": "array"
+          },
           "rule_status": {
             "enum": [
               "draft",
@@ -5694,6 +5954,21 @@
         "title": "Remaining",
         "type": "string"
       },
+      "RematchInput": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "RematchInput",
+        "type": "object"
+      },
       "ReplacesItemId": {
         "maxLength": 128,
         "minLength": 1,
@@ -6195,6 +6470,126 @@
           "sections"
         ],
         "title": "ResumeForm",
+        "type": "object"
+      },
+      "ResumeProfile": {
+        "additionalProperties": false,
+        "properties": {
+          "direction_assignments": {
+            "description": "Classify occupational directions from actual responsibilities and skills in context. Allow multiple directions, distinguish primary/secondary, quote the resume exactly. Do not infer frontend from management-backend UI terminology or incidental tools. Empty means unclassified, never rejected. This is routing, not qualification scoring.",
+            "items": {
+              "$ref": "#/components/schemas/DirectionAssignment"
+            },
+            "maxItems": 18,
+            "title": "Direction Assignments",
+            "type": "array"
+          },
+          "facts": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Fact"
+            },
+            "description": "Use canonical keys name, current_role, years_experience, education, skills, employer, employment_period, project and project_period when present. Preserve unknown/conflict rather than guessing. Include other predicate fields only with exact quotes.",
+            "maxProperties": 100,
+            "title": "Facts",
+            "type": "object"
+          },
+          "research_objects": {
+            "description": "Extract EVERY stated company, project, award, paper, patent, copyright, open-source work and certification. One object per record, stable unique object_id, original name/period and exact quotes. Company: description, industry, products, location, role, contribution, metrics, website. Project: company, goal, complexity, outcomes, role, contribution, metrics, link. Professional: official_name, organizer, year, platform, identifier, authors, ownership, status, link, contribution. Preserve explicit author_identifier, orcid, contributor_handle, certificate_number or author_url when supplied; never infer them from a name. Do not infer personal contribution from team results or invent absent types.",
+            "items": {
+              "$ref": "#/components/schemas/ResumeResearchObject"
+            },
+            "maxItems": 100,
+            "title": "Research Objects",
+            "type": "array"
+          },
+          "resume_form": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResumeForm"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unknown_fields": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Unknown Fields",
+            "type": "array"
+          }
+        },
+        "required": [
+          "facts"
+        ],
+        "title": "ResumeProfile",
+        "type": "object"
+      },
+      "ResumeResearchObject": {
+        "additionalProperties": false,
+        "properties": {
+          "facts": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Fact"
+            },
+            "maxProperties": 30,
+            "title": "Facts",
+            "type": "object"
+          },
+          "kind": {
+            "enum": [
+              "company",
+              "project",
+              "award",
+              "paper",
+              "patent",
+              "software_copyright",
+              "open_source",
+              "certification",
+              "professional_work",
+              "other_achievement"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "object_id": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "title": "Object Id",
+            "type": "string"
+          },
+          "parent_object_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Object Id"
+          },
+          "period": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Fact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "object_id",
+          "kind",
+          "name"
+        ],
+        "title": "ResumeResearchObject",
         "type": "object"
       },
       "RetryInput": {
@@ -7260,6 +7655,454 @@
         "title": "StartMs",
         "type": "integer"
       },
+      "TalentDetail": {
+        "properties": {
+          "applications": {
+            "items": {
+              "$ref": "#/components/schemas/TalentLink"
+            },
+            "title": "Applications",
+            "type": "array"
+          },
+          "classification_source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "model",
+                  "mock",
+                  "manual"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Classification Source"
+          },
+          "classification_state": {
+            "enum": [
+              "processing",
+              "classified",
+              "unclassified",
+              "failed",
+              "reconciling"
+            ],
+            "title": "Classification State",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "directions": {
+            "items": {
+              "$ref": "#/components/schemas/DirectionAssignment"
+            },
+            "title": "Directions",
+            "type": "array"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "execution_mode": {
+            "enum": [
+              "live",
+              "mock"
+            ],
+            "title": "Execution Mode",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResumeProfile"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "profile_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Version"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          },
+          "task_status": {
+            "title": "Task Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "revision",
+          "name",
+          "filename",
+          "profile_version",
+          "classification_state",
+          "directions",
+          "classification_source",
+          "task_id",
+          "task_status",
+          "error_code",
+          "execution_mode",
+          "applications",
+          "created_at",
+          "profile"
+        ],
+        "title": "TalentDetail",
+        "type": "object"
+      },
+      "TalentLink": {
+        "properties": {
+          "application_id": {
+            "title": "Application Id",
+            "type": "string"
+          },
+          "direction_ids": {
+            "items": {
+              "enum": [
+                "frontend",
+                "backend",
+                "fullstack",
+                "mobile",
+                "data",
+                "ai",
+                "devops",
+                "qa",
+                "product",
+                "design",
+                "sales",
+                "marketing",
+                "operations",
+                "finance",
+                "hr",
+                "legal",
+                "supply_chain",
+                "hardware"
+              ],
+              "type": "string"
+            },
+            "title": "Direction Ids",
+            "type": "array"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "job_title": {
+            "title": "Job Title",
+            "type": "string"
+          },
+          "profile_version": {
+            "title": "Profile Version",
+            "type": "integer"
+          },
+          "screening_result": {
+            "title": "Screening Result",
+            "type": "string"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "string"
+          }
+        },
+        "required": [
+          "application_id",
+          "job_id",
+          "job_title",
+          "stage",
+          "screening_result",
+          "profile_version",
+          "direction_ids"
+        ],
+        "title": "TalentLink",
+        "type": "object"
+      },
+      "TalentPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TalentView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "TalentPage",
+        "type": "object"
+      },
+      "TalentProfileRef": {
+        "properties": {
+          "talent_id": {
+            "title": "Talent Id",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "talent_id",
+          "version"
+        ],
+        "title": "TalentProfileRef",
+        "type": "object"
+      },
+      "TalentReceipt": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TalentReceiptItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "TalentReceipt",
+        "type": "object"
+      },
+      "TalentReceiptItem": {
+        "properties": {
+          "client_item_id": {
+            "title": "Client Item Id",
+            "type": "string"
+          },
+          "disposition": {
+            "enum": [
+              "accepted",
+              "duplicate",
+              "invalid"
+            ],
+            "title": "Disposition",
+            "type": "string"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "talent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Talent Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          }
+        },
+        "required": [
+          "client_item_id",
+          "name",
+          "disposition"
+        ],
+        "title": "TalentReceiptItem",
+        "type": "object"
+      },
+      "TalentView": {
+        "properties": {
+          "applications": {
+            "items": {
+              "$ref": "#/components/schemas/TalentLink"
+            },
+            "title": "Applications",
+            "type": "array"
+          },
+          "classification_source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "model",
+                  "mock",
+                  "manual"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Classification Source"
+          },
+          "classification_state": {
+            "enum": [
+              "processing",
+              "classified",
+              "unclassified",
+              "failed",
+              "reconciling"
+            ],
+            "title": "Classification State",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "directions": {
+            "items": {
+              "$ref": "#/components/schemas/DirectionAssignment"
+            },
+            "title": "Directions",
+            "type": "array"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "execution_mode": {
+            "enum": [
+              "live",
+              "mock"
+            ],
+            "title": "Execution Mode",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "profile_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Version"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          },
+          "task_status": {
+            "title": "Task Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "revision",
+          "name",
+          "filename",
+          "profile_version",
+          "classification_state",
+          "directions",
+          "classification_source",
+          "task_id",
+          "task_status",
+          "error_code",
+          "execution_mode",
+          "applications",
+          "created_at"
+        ],
+        "title": "TalentView",
+        "type": "object"
+      },
       "Task": {
         "additionalProperties": true,
         "properties": {
@@ -7336,6 +8179,7 @@
               "interview_standard",
               "screening_standard",
               "resume_parse",
+              "talent_parse",
               "research",
               "screening",
               "interview_outline",
@@ -7470,7 +8314,8 @@
               "application",
               "call",
               "report",
-              "task"
+              "task",
+              "talent"
             ],
             "title": "Resource Type",
             "type": "string"
@@ -7740,6 +8585,41 @@
             "minimum": 1.0,
             "title": "Expected Revision",
             "type": "integer"
+          },
+          "routing_directions": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "frontend",
+                    "backend",
+                    "fullstack",
+                    "mobile",
+                    "data",
+                    "ai",
+                    "devops",
+                    "qa",
+                    "product",
+                    "design",
+                    "sales",
+                    "marketing",
+                    "operations",
+                    "finance",
+                    "hr",
+                    "legal",
+                    "supply_chain",
+                    "hardware"
+                  ],
+                  "type": "string"
+                },
+                "maxItems": 18,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Routing Directions"
           },
           "status": {
             "anyOf": [
@@ -9179,6 +10059,187 @@
         "summary": "Review Screening",
         "tags": [
           "intake-corrections"
+        ],
+        "x-implementation-status": "implemented-local"
+      }
+    },
+    "/api/v1/applications/{application_id}/start-screening": {
+      "post": {
+        "operationId": "start_screening_api_v1_applications__application_id__start_screening_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "application_id",
+            "required": true,
+            "schema": {
+              "title": "Application Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Origin",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9_.:-]{8,128}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetryInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskAccepted"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "Location": {
+                "description": "新岗位详情或持久化任务查询地址；幂等重放保持相同地址",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          }
+        },
+        "security": [
+          {
+            "CookieAuth": []
+          }
+        ],
+        "summary": "Start Screening",
+        "tags": [
+          "talent-pool"
         ],
         "x-implementation-status": "implemented-local"
       }
@@ -13000,6 +14061,1160 @@
         "summary": "Read Rule Version",
         "tags": [
           "intake"
+        ],
+        "x-implementation-status": "implemented-local"
+      }
+    },
+    "/api/v1/talent-directions": {
+      "get": {
+        "operationId": "directions_api_v1_talent_directions_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectionCatalog"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          }
+        },
+        "security": [
+          {
+            "CookieAuth": []
+          }
+        ],
+        "summary": "Directions",
+        "tags": [
+          "talent-pool"
+        ],
+        "x-implementation-status": "implemented-local"
+      }
+    },
+    "/api/v1/talent-imports": {
+      "post": {
+        "operationId": "import_talents_api_v1_talent_imports_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Origin",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9_.:-]{8,128}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "execution_mode": {
+                    "default": "live",
+                    "enum": [
+                      "live",
+                      "mock"
+                    ],
+                    "title": "Execution Mode",
+                    "type": "string"
+                  },
+                  "items": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_item_id": {
+                          "maxLength": 128,
+                          "minLength": 1,
+                          "title": "Client Item Id",
+                          "type": "string"
+                        },
+                        "name": {
+                          "maxLength": 200,
+                          "minLength": 1,
+                          "title": "Name",
+                          "type": "string"
+                        },
+                        "text": {
+                          "maxLength": 30000,
+                          "title": "Text",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "client_item_id",
+                        "name",
+                        "text"
+                      ],
+                      "title": "TextItem",
+                      "type": "object"
+                    },
+                    "maxItems": 10,
+                    "minItems": 1,
+                    "title": "Items",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "items"
+                ],
+                "title": "ResumeBatchInput",
+                "type": "object"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "files": {
+                    "items": {
+                      "format": "binary",
+                      "type": "string"
+                    },
+                    "maxItems": 10,
+                    "type": "array"
+                  },
+                  "manifest": {
+                    "description": "JSON manifest with items and execution_mode",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "manifest",
+                  "files"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TalentReceipt"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "Location": {
+                "description": "新岗位详情或持久化任务查询地址；幂等重放保持相同地址",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          }
+        },
+        "security": [
+          {
+            "CookieAuth": []
+          }
+        ],
+        "summary": "Import Talents",
+        "tags": [
+          "talent-pool"
+        ],
+        "x-implementation-status": "implemented-local"
+      }
+    },
+    "/api/v1/talents": {
+      "get": {
+        "operationId": "list_talents_api_v1_talents_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TalentPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          }
+        },
+        "security": [
+          {
+            "CookieAuth": []
+          }
+        ],
+        "summary": "List Talents",
+        "tags": [
+          "talent-pool"
+        ],
+        "x-implementation-status": "implemented-local"
+      }
+    },
+    "/api/v1/talents/{talent_id}": {
+      "get": {
+        "operationId": "read_talent_api_v1_talents__talent_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "talent_id",
+            "required": true,
+            "schema": {
+              "title": "Talent Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TalentDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          }
+        },
+        "security": [
+          {
+            "CookieAuth": []
+          }
+        ],
+        "summary": "Read Talent",
+        "tags": [
+          "talent-pool"
+        ],
+        "x-implementation-status": "implemented-local"
+      }
+    },
+    "/api/v1/talents/{talent_id}/directions": {
+      "patch": {
+        "operationId": "classify_talent_api_v1_talents__talent_id__directions_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "talent_id",
+            "required": true,
+            "schema": {
+              "title": "Talent Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Origin",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClassifyTalentInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TalentDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          }
+        },
+        "security": [
+          {
+            "CookieAuth": []
+          }
+        ],
+        "summary": "Classify Talent",
+        "tags": [
+          "talent-pool"
+        ],
+        "x-implementation-status": "implemented-local"
+      }
+    },
+    "/api/v1/talents/{talent_id}/file": {
+      "get": {
+        "operationId": "read_talent_file_api_v1_talents__talent_id__file_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "talent_id",
+            "required": true,
+            "schema": {
+              "title": "Talent Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          }
+        },
+        "security": [
+          {
+            "CookieAuth": []
+          }
+        ],
+        "summary": "Read Talent File",
+        "tags": [
+          "talent-pool"
+        ],
+        "x-implementation-status": "implemented-local"
+      }
+    },
+    "/api/v1/talents/{talent_id}/route": {
+      "post": {
+        "operationId": "rematch_talent_api_v1_talents__talent_id__route_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "talent_id",
+            "required": true,
+            "schema": {
+              "title": "Talent Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Origin",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9_.:-]{8,128}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RematchInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TalentDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          }
+        },
+        "security": [
+          {
+            "CookieAuth": []
+          }
+        ],
+        "summary": "Rematch Talent",
+        "tags": [
+          "talent-pool"
         ],
         "x-implementation-status": "implemented-local"
       }

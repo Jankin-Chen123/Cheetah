@@ -22,29 +22,29 @@ function Landing({ session }: { session: IntakeSession | null }) {
     <header className="site-header"><Brand /><nav aria-label="官网导航"><button onClick={() => scrollTo('workflow')}>工作方式</button><button onClick={() => scrollTo('product')}>产品能力</button><button onClick={() => scrollTo('questions')}>常见问题</button></nav><div className="site-header-actions">{session ? <a className="site-button primary small" href="#app/overview">进入工作空间 <Icon name="arrow" size={15} /></a> : <><a className="site-login-link" href="#login">登录</a><a className="site-button primary small" href="#register">开始使用 <Icon name="arrow" size={15} /></a></>}</div></header>
     <main id="site-main" tabIndex={-1}>
       <section className="site-hero">
-        <div className="site-hero-copy"><span className="site-eyebrow"><span /> 为猎头而生的 Agent 工作空间</span><h1>招对人，<br /><em>快人一步。</em></h1><p>让繁杂的招聘流程有条不紊。<br />从梳理岗位需求开始，把时间留给值得深入的人才。</p><div className="site-hero-actions"><a className="site-button primary" href={session ? '#app/overview' : '#register'}>{session ? '进入我的工作空间' : '创建我的工作空间'}<Icon name="arrow" size={18} /></a><a className="site-button secondary" href="#demo/overview"><Icon name="grid" size={17} /> 体验演示</a></div><span className="site-caption">开发预览 · 演示使用虚构数据，不发起真实通话</span><div className="site-hero-signature"><span className="signature-line" /> 更清晰的判断，更从容的招聘。</div></div>
-        <div className="site-preview" aria-label="招聘工作流示意，非真实任务"><div className="preview-orbit" /><div className="preview-window"><div className="preview-top"><div><span /><span /><span /></div><span>CHEETAH WORKSPACE</span><span>流程示意</span></div><div className="preview-body"><div className="preview-heading"><div><span className="site-eyebrow">从一份需求开始</span><h2>让每一步，都有依据。</h2></div><span className="preview-mark"><Icon name="spark" size={23} /></span></div><div className="preview-material"><span className="preview-icon"><Icon name="file" size={23} /></span><div><strong>HR 岗位沟通记录</strong><span>需求文字 → 结构化岗位产物</span></div><span className="preview-file-tag">文字</span></div><div className="preview-connector"><span /> 梳理与确认 <span /></div><div className="preview-docs"><div><span>D01</span><strong>岗位画像</strong><p>职责 · 要求 · 待确认项</p><div className="preview-lines"><i /><i /><i /></div></div><div><span>D02</span><strong>面试评估表</strong><p>维度 · 标准 · 核实重点</p><div className="preview-lines"><i /><i /><i /></div></div></div><div className="preview-confirm"><Icon name="people" size={17} /><span>关键标准，由你确认。</span><span className="preview-status">人工复核</span></div></div></div><div className="preview-floating"><span><Icon name="briefcase" size={19} /></span><div><strong>从材料到判断</strong><p>留存来源，保留未知</p></div><Icon name="arrow" size={17} /></div><span className="preview-note">招聘流程的每一步，都值得认真对待。</span></div>
+        <div className="site-hero-copy"><span className="site-eyebrow"><span /> 为猎头而生的 Agent 工作空间</span><h1>招对人，<br /><em>快人一步。</em></h1><p>让繁杂的招聘流程有条不紊。<br />从梳理岗位需求开始，把时间留给值得深入的人才。</p><div className="site-hero-actions"><a className="site-button primary" href={session ? '#app/overview' : '#register'}>{session ? '进入我的工作空间' : '创建我的工作空间'}<Icon name="arrow" size={18} /></a><a className="site-button secondary" href="#demo/overview"><Icon name="grid" size={17} /> 预览工作台</a></div><div className="site-hero-signature"><span className="signature-line" /> 更清晰的判断，更从容的招聘。</div></div>
+        <div className="site-preview" aria-label="招聘工作流示意，非真实任务"><div className="preview-orbit" /><div className="preview-window"><div className="preview-top"><div><span /><span /><span /></div><span>CHEETAH WORKSPACE</span><span>流程示意</span></div><div className="preview-body"><div className="preview-heading"><div><span className="site-eyebrow">从一份需求开始</span><h2>让每一步，都有依据。</h2></div><span className="preview-mark"><Icon name="spark" size={23} /></span></div><div className="preview-material"><span className="preview-icon"><Icon name="file" size={23} /></span><div><strong>HR 岗位沟通记录</strong><span>需求文字 → 结构化岗位产物</span></div><span className="preview-file-tag">文字</span></div><div className="preview-connector"><span /> 梳理与确认 <span /></div><div className="preview-docs"><div><strong>岗位画像</strong><p>职责 · 要求 · 待确认项</p><div className="preview-lines"><i /><i /><i /></div></div><div><strong>面试评估表</strong><p>维度 · 标准 · 核实重点</p><div className="preview-lines"><i /><i /><i /></div></div></div><div className="preview-confirm"><Icon name="people" size={17} /><span>关键标准，由你确认。</span><span className="preview-status">人工复核</span></div></div></div><div className="preview-floating"><span><Icon name="briefcase" size={19} /></span><div><strong>从材料到判断</strong><p>留存来源，保留未知</p></div><Icon name="arrow" size={17} /></div><span className="preview-note">招聘流程的每一步，都值得认真对待。</span></div>
       </section>
       <section className="site-principles" aria-label="产品理念"><span><Icon name="file" size={18} /> 判断有来源</span><span><Icon name="people" size={18} /> 关键节点由人确认</span><span><Icon name="grid" size={18} /> 产物可查看、可修订</span></section>
       <section id="workflow" className="site-section"><div className="site-section-heading"><div><span className="site-eyebrow">THE WORKFLOW</span><h2>把招聘流程，串成一条清晰的线。</h2></div><p>Agent 辅助整理信息，你把握关键决策。<br />这是猎报正在构建的工作方式。</p></div><div className="site-steps">{[
         ['01', '梳理需求', '从沟通文字提取岗位画像与面试评估表，记录缺失与待确认项。', '已接入文字分析流程'],
-        ['02', '筛选人才', '围绕确认的岗位标准，整理简历信息、研究证据与初筛结论。', '前端演示 · 待接入'],
-        ['03', '深入沟通', '让候选人沟通与评估承接前序信息，保留值得核实的问题。', '前端演示 · 无真实通话'],
-        ['04', '形成推荐', '区分内部评估与对外推荐，在审核具体版本后再交付。', '前端演示 · 待接入'],
+        ['02', '筛选人才', '围绕确认的岗位标准，整理简历信息、研究证据与初筛结论。', '待接入'],
+        ['03', '深入沟通', '让候选人沟通与评估承接前序信息，保留值得核实的问题。', '待接入'],
+        ['04', '形成推荐', '区分内部评估与对外推荐，在审核具体版本后再交付。', '待接入'],
       ].map(([number, title, description, status]) => <article key={number}><span className="site-step-number">{number}</span><h3>{title}</h3><p>{description}</p><span className="site-step-status">{status}</span></article>)}</div></section>
       <section id="product" className="site-product site-section"><div><span className="site-eyebrow">BUILT FOR YOUR JUDGMENT</span><h2>少一点信息搬运，<br />多一点判断空间。</h2><p>把原始材料、岗位产物和修订版本放在一起。<br />信息不足时，留下问题；有新信息时，再完善判断。</p><a className="site-text-link" href="#demo/jobs">看看岗位工作区 <Icon name="arrow" size={17} /></a></div><div className="site-feature-list">{[
         ['file', '从沟通文字开始', '粘贴或导入文字，进入岗位分析流程。录音可本机留存，自动转写仍待接入。'],
-        ['grid', '让产物真正可用', '查看、修订 D01 / D02，保留本机历史版本，导出 PDF 或可编辑 Word。'],
+        ['grid', '让产物真正可用', '查看、修订岗位画像与面试评估表，保留本机历史版本，导出 PDF 或可编辑 Word。'],
         ['people', '把决定留在你手里', '岗位标准需要确认；未知不作负面事实；未审批的推荐版本不对外交付。'],
       ].map(([icon, title, description]) => <article key={title}><span><Icon name={icon} size={22} /></span><div><h3>{title}</h3><p>{description}</p></div></article>)}</div></section>
       <section id="questions" className="site-section site-faq"><div><span className="site-eyebrow">GOOD TO KNOW</span><h2>开始之前，你可能想知道</h2></div><div>{[
-        ['现在可以使用哪些功能？', '可以创建账号、登录并从沟通文字创建岗位，查看和导出岗位产物。生成需要后端数据库、模型和任务服务就绪，真实模型端到端仍待验收。候选人、电话和推荐页面目前仅供演示。'],
-        ['演示需要注册吗？', '不需要。点击“体验演示”即可查看虚构岗位、候选人与流程。演示区与账号工作空间分开，演示材料不会自动转移到账号。'],
+        ['现在可以使用哪些功能？', '可以创建账号、登录并从沟通文字创建岗位，查看和导出岗位产物。生成需要后端数据库、模型和任务服务就绪，真实模型端到端仍待验收。'],
+        ['预览需要注册吗？', '无需注册即可预览工作台，保存自己的岗位需要创建账号。'],
         ['材料会保存在哪里？', '岗位材料和网页修订版本保存在当前浏览器，按账号分开；已提交分析的文字和生成产物也由后端保存。目前不支持跨设备恢复本机列表，人工修订尚未回写后端。退出不会清除本机材料，共用设备请在使用后清理自己的资料。'],
-        ['猎报会自动拨打候选人电话吗？', '当前前端电话流程为模拟演示，不会发起真实通话。真实沟通能力仍待接入与验证；未来执行也需要满足授权、联系前提、时段和预算等条件。'],
+        ['猎报会自动拨打候选人电话吗？', '真实沟通能力仍待接入与验证；未来执行也需要满足授权、联系前提、时段和预算等条件。'],
       ].map(([question, answer]) => <details key={question}><summary>{question}<span>＋</span></summary><p>{answer}</p></details>)}</div></section>
       <section className="site-cta"><span className="site-eyebrow">YOUR NEXT GREAT HIRE STARTS HERE</span><h2>下一位合适的人才，<br />从更清晰的需求开始。</h2><a className="site-button light" href={session ? '#app/overview' : '#register'}>{session ? '进入工作空间' : '创建工作空间'}<Icon name="arrow" size={18} /></a></section>
-    </main><footer className="site-footer"><Brand /><span>招对人，快人一步。</span><a href="#demo/overview">查看演示 <Icon name="arrow" size={14} /></a><small>Cheetah 猎报 · 开发预览</small></footer>
+    </main><footer className="site-footer"><Brand /><span>招对人，快人一步。</span><a href="#demo/overview">查看工作台 <Icon name="arrow" size={14} /></a><small>Cheetah 猎报 · 开发预览</small></footer>
   </div>
 }
 
@@ -73,7 +73,7 @@ function AuthPage({ register, onAuthenticated, notice }: { register: boolean; on
       <Form.Item name="password" label="密码" rules={[{ required: true, message: '请输入密码' }, ...(register ? [{ min: 12, max: 128, message: '密码需要 12–128 个字符' }] : [])]}><Input.Password autoComplete={register ? 'new-password' : 'current-password'} placeholder={register ? '至少 12 个字符' : '请输入密码'} maxLength={register ? 128 : 1024} /></Form.Item>
       {register && <Form.Item name="confirm" label="确认密码" dependencies={['password']} rules={[{ required: true, message: '请再次输入密码' }, ({ getFieldValue }) => ({ validator(_, value) { return !value || value === getFieldValue('password') ? Promise.resolve() : Promise.reject(new Error('两次输入的密码不一致')) } })]}><Input.Password autoComplete="new-password" placeholder="再次输入密码" maxLength={128} /></Form.Item>}
       <Button type="primary" block size="large" htmlType="submit" loading={busy}>{register ? '创建账号并进入' : '登录工作空间'} <Icon name="arrow" size={17} /></Button>
-    </Form><p className="account-switch">{register ? '已经有账号？' : '还没有账号？'} <a href={register ? '#login' : '#register'}>{register ? '直接登录' : '创建账号'}</a></p><div className="account-divider"><span>先了解一下</span></div><a className="site-button secondary" href="#demo/overview">无需注册，体验演示 <Icon name="arrow" size={16} /></a><p className="account-footnote">{register ? '注册会创建独立工作空间。目前不支持团队邀请与密码找回，请妥善保管账号密码。' : '暂不支持自助找回密码；忘记密码请联系项目管理员。'}<br />材料在本机按账号保存，共用设备请注意清理。</p></div><span className="account-copyright">Cheetah 猎报 · 开发预览</span></main></div>
+    </Form><p className="account-switch">{register ? '已经有账号？' : '还没有账号？'} <a href={register ? '#login' : '#register'}>{register ? '直接登录' : '创建账号'}</a></p><div className="account-divider"><span>先了解一下</span></div><a className="site-button secondary" href="#demo/overview">无需注册，预览工作台 <Icon name="arrow" size={16} /></a><p className="account-footnote">{register ? '注册会创建独立工作空间。目前不支持团队邀请与密码找回，请妥善保管账号密码。' : '暂不支持自助找回密码；忘记密码请联系项目管理员。'}<br />材料在本机按账号保存，共用设备请注意清理。</p></div><span className="account-copyright">Cheetah 猎报 · 开发预览</span></main></div>
 }
 
 export default function SiteApp() {
@@ -87,7 +87,12 @@ export default function SiteApp() {
   const demo = route.startsWith('demo/')
   const publicPage = ['home', 'login', 'register'].includes(route)
   useEffect(() => {
-    const sync = () => { setPath(currentPath()); window.scrollTo(0, 0) }
+    const sync = () => {
+      const next = currentPath()
+      setPath(next)
+      // Workspace navigation restores each list's own scroll position.
+      if (!/^(app|demo)\//.test(next)) window.scrollTo(0, 0)
+    }
     window.addEventListener('hashchange', sync); window.addEventListener('popstate', sync)
     return () => { window.removeEventListener('hashchange', sync); window.removeEventListener('popstate', sync) }
   }, [])

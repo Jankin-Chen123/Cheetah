@@ -1,4 +1,5 @@
 import type { Artifact, ArtifactType, Candidate, Job } from '../domain/workspace'
+import { filledCandidates } from './filledCandidates'
 
 // Entirely fictional fixtures. No fixture is submitted to the backend or a voice provider.
 const at = '2026-11-13T02:20:00Z'
@@ -42,8 +43,9 @@ function artifacts(id: string, types: ArtifactType[]): Artifact[] {
 }
 
 export const demoCandidates: Candidate[] = [
+  ...filledCandidates,
   {
-    id: 'demo-lin', jobId: 'demo-job-product', name: '林予安', role: '产品经理 · 星河协作（虚构）', experience: '6 年经验', education: '本科 · 信息管理',
+    id: 'demo-lin', jobId: 'demo-job-product', matchedJobIds: ['demo-job-product'], name: '林予安', role: '产品经理 · 星河协作（虚构）', experience: '6 年经验', education: '本科 · 信息管理',
     screening: 'passed', ruleVersion: 1, source: 'mock', summary: '有企业协作产品经历，个人职责与团队贡献已在模拟访谈中初步区分。', gaps: ['指标统计口径待核实', '到岗时间与求职意向未评估'],
     artifacts: artifacts('demo-lin', ['D03', 'D04', 'D05', 'D06', 'D07', 'D08', 'D09', 'D10']),
     evidence: [{ id: 'demo-lin-e1', version: 1, title: '模拟访谈：个人职责', quote: '我负责访谈、需求排序和验收，工程实现由研发团队负责。', location: '预置模拟访谈 · 问答 1', kind: '模拟访谈', source: 'mock' }],
@@ -57,31 +59,31 @@ export const demoCandidates: Candidate[] = [
     ],
   },
   {
-    id: 'demo-zhou', jobId: 'demo-job-product', name: '周见微', role: '高级产品经理 · 微原数字（虚构）', experience: '5 年经验', education: '硕士 · 管理科学',
+    id: 'demo-zhou', jobId: 'demo-job-product', matchedJobIds: ['demo-job-product'], name: '周见微', role: '高级产品经理 · 微原数字（虚构）', experience: '5 年经验', education: '硕士 · 管理科学',
     screening: 'passed', ruleVersion: 1, source: 'mock', summary: '具备测试规则要求的项目经历线索，等待有效联系前提。', gaps: ['联系授权尚未提供', '项目指标需要核实'],
     artifacts: artifacts('demo-zhou', ['D03', 'D04', 'D05', 'D06', 'D07']), evidence: [{ id: 'demo-zhou-e1', version: 1, title: '虚构材料：项目经历', quote: '参与企业服务产品的需求调研与发布。', location: '虚构简历 · 项目经历段', kind: '自述', source: 'mock' }],
     call: { id: 'demo-call-zhou', state: 'waiting', reason: '缺少有效联系授权；即使初筛达标也不能拨打。', attempts: 0 }, reports: [],
     timeline: [{ title: '模拟初筛达标', detail: '自动关联电话任务，等待联系前提', at }],
   },
   {
-    id: 'demo-shen', jobId: 'demo-job-product', name: '沈知夏', role: '产品经理 · 岸石科技（虚构）', experience: '4 年经验', education: '本科 · 软件工程',
+    id: 'demo-shen', jobId: 'demo-job-product', matchedJobIds: ['demo-job-product'], name: '沈知夏', role: '产品经理 · 岸石科技（虚构）', experience: '4 年经验', education: '本科 · 软件工程',
     screening: 'unknown', ruleVersion: 1, source: 'mock', summary: '材料没有说明个人负责的产品范围，需补充信息，不能认定为不满足。', gaps: ['个人职责边界未知', '完整交付经历未提及'],
     artifacts: artifacts('demo-shen', ['D03', 'D04', 'D05', 'D06']).map(a => a.type === 'D06' ? { ...a, content: '【模拟初筛】信息不足。个人职责与交付经历缺失，需要人工补充证据；缺失不等于不符合。' } : a),
     evidence: [{ id: 'demo-shen-e1', version: 1, title: '缺失信息', quote: '原始虚构材料未提及个人职责范围。', location: '虚构简历 · 职责段缺失', kind: '未知', source: 'mock' }], reports: [], timeline: [{ title: '等待材料补充', detail: '未建立电话任务 · 未生成推荐报告', at }],
   },
   {
-    id: 'demo-xu', jobId: 'demo-job-design', name: '许以宁', role: '视觉设计师 · 白榆创意（虚构）', experience: '3 年经验', education: '本科 · 视觉传达',
+    id: 'demo-xu', jobId: 'demo-job-design', matchedJobIds: ['demo-job-design'], name: '许以宁', role: '视觉设计师 · 白榆创意（虚构）', experience: '3 年经验', education: '本科 · 视觉传达',
     screening: 'rejected', ruleVersion: 1, source: 'mock', summary: '虚构材料明确说明仅负责品牌视觉，无企业软件设计经历。此为预置分支样例。', gaps: [],
     artifacts: artifacts('demo-xu', ['D03', 'D06']).map(a => a.type === 'D06' ? { ...a, content: '【模拟初筛】暂不推荐。虚构材料明确写明仅从事品牌视觉；这是预置分支，不是实际模型判定。' } : a), evidence: [{ id: 'demo-xu-e1', version: 1, title: '虚构材料：工作范围', quote: '工作范围仅包括品牌视觉与平面设计。', location: '虚构简历 · 工作范围', kind: '自述', source: 'mock' }], reports: [], timeline: [{ title: '模拟初筛暂不推荐', detail: '保留初筛依据，不建电话任务与 D10', at }],
   },
   {
-    id: 'demo-tang', jobId: 'demo-job-product', name: '唐亦舟', role: '产品负责人 · 青序软件（虚构）', experience: '7 年经验', education: '本科 · 计算机科学',
+    id: 'demo-tang', jobId: 'demo-job-product', matchedJobIds: ['demo-job-product'], name: '唐亦舟', role: '产品负责人 · 青序软件（虚构）', experience: '7 年经验', education: '本科 · 计算机科学',
     screening: 'passed', ruleVersion: 1, source: 'mock', summary: '用于验证通话停止请求的界面状态，无真实语音链路。', gaps: ['实际维度覆盖尚未确认'],
     artifacts: artifacts('demo-tang', ['D03', 'D06', 'D07']), evidence: [{ id: 'demo-tang-e1', version: 1, title: '虚构项目材料', quote: '负责企业产品规划。', location: '虚构简历 · 项目段', kind: '自述', source: 'mock' }], reports: [],
     call: { id: 'demo-call-tang', state: 'active', reason: '前端模拟状态；可请求停止，等待手动模拟结束确认。', attempts: 1 }, timeline: [{ title: '载入模拟通话中状态', detail: '仅验证停止请求交互，无真实通话', at }],
   },
   {
-    id: 'demo-gu', jobId: 'demo-job-product', name: '顾清和', role: '产品经理 · 原点系统（虚构）', experience: '5 年经验', education: '本科 · 工业工程',
+    id: 'demo-gu', jobId: 'demo-job-product', matchedJobIds: ['demo-job-product'], name: '顾清和', role: '产品经理 · 原点系统（虚构）', experience: '5 年经验', education: '本科 · 工业工程',
     screening: 'passed', ruleVersion: 1, source: 'mock', summary: '用于验证外部结果不明的阻断状态，不能直接重拨。', gaps: ['外部请求结果待核对'], artifacts: artifacts('demo-gu', ['D03', 'D06', 'D07']), evidence: [], reports: [],
     call: { id: 'demo-call-gu', state: 'unknown', reason: '模拟请求超时；必须由服务端核对服务商状态，当前禁止重拨。', attempts: 1 }, timeline: [{ title: '模拟外部结果不明', detail: '等待核对，不创建第二次拨打', at }],
   },

@@ -165,3 +165,7 @@ A03 新增 Pi 模式，使用 Node.js 24 安装 backend/agents/a03 依赖并升�
 搜索接口按用户决定先做可配置适配，不等待厂商选择；模型保留现有封装。研究接入方式和归一化 HTTP 请求／响应见 [search-adapter.md](search-adapter.md)。先升级到 `0002_bounded_research`，再配置服务端提供者与允许来源，并发布 bounded-research v1 规则；unavailable v1 的历史规则保持禁用。当前研究测试只使用 mock 适配器与 HTTP MockTransport，不证明真实供应商、主体核实或专业质量已通过。
 
 API-24 的 A 本地验证包含搜索次数并发预留、部分预算耗尽停止、未知结果保留额度和已知响应复用；金额结算与 B 外呼预算仍待接入。API-26 的 A 验证包含原文件限制后拒绝通过关联、工作台计数、批次展示、重导入和 worker 缓存恢复材料。67 项 PostgreSQL 测试的完整边界见交付说明，包含 HTTP MockTransport 驱动的模型／搜索标准协议全链；不能据此认定真实供应商、全表 B/F 及线上目标已完成。
+
+## 人才分类入口接入
+
+新上传入口不再要求先选岗位。先 `POST /talent-imports`，保存逐份 talent_id/task_id，以 `/talents` 和 `/tasks/{id}` 恢复提取进度；失败、未知和无岗位均留库。岗位配置与确认方向后发布正式规则，服务端按方向关联，前端从岗位 applications 列表读取 matched 状态。需要深入处理时携带当前关联 revision、reason 和稳定幂等 key 调用 start-screening。网络失败先复用同 key 查询，不能因未收到响应再次启动。分类修订保存新版本；无关的待处理关系退出当前列表，已开始的研究不重新触发。验收必须验证：后端人才不因前端岗位被拒绝、全栈多关联、无岗位入库、新岗位补关联、重复上传、跨所有者隔离、暂停阻断、修订与刷新恢复、外部结果未知不重试。详见 [职能分流说明](../talent-routing.md)。

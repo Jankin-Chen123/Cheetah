@@ -10,6 +10,7 @@ from typing import Annotated, Any, Literal
 from pydantic import AnyUrl, AwareDatetime, BaseModel, ConfigDict, Field, RootModel
 
 from app.modules.intake.a03_contracts import ResearchObject, ResearchReport
+from app.modules.intake.directions import DirectionAssignment, DirectionId
 from app.modules.intake.form_contracts import (
     DocumentMetadata,
     JobForm,
@@ -233,7 +234,7 @@ class TaskAccepted(BaseModel):
         extra="allow",
     )
     task_id: Annotated[str, Field(max_length=128, min_length=1)]
-    resource_type: Literal["job", "batch", "application", "call", "report", "task"]
+    resource_type: Literal["job", "batch", "application", "call", "report", "task", "talent"]
     resource_id: Annotated[str, Field(max_length=128, min_length=1)]
     poll_after_ms: Annotated[int, Field(ge=1000)]
 
@@ -328,6 +329,7 @@ class Task(BaseModel):
         "interview_standard",
         "screening_standard",
         "resume_parse",
+        "talent_parse",
         "research",
         "screening",
         "interview_outline",
@@ -426,6 +428,7 @@ class Job(BaseModel):
     owner_id: Annotated[str, Field(max_length=128, min_length=1)]
     revision: Annotated[int, Field(ge=1)]
     title: Annotated[str, Field(max_length=100, min_length=1)]
+    routing_directions: list[DirectionId] = Field(default_factory=list)
     company: Annotated[str, Field(max_length=100, min_length=1)]
     location: Location | None
     salary: Salary | None
@@ -596,11 +599,14 @@ class ApplicationSummary(BaseModel):
     )
     id: Annotated[str, Field(max_length=128, min_length=1)]
     candidate_id: Annotated[str, Field(max_length=128, min_length=1)]
+    talent_id: str | None = None
+    routing: dict[str, Any] = Field(default_factory=dict)
     job_id: Annotated[str, Field(max_length=128, min_length=1)]
     workflow_id: Annotated[str, Field(max_length=128, min_length=1)]
     revision: Annotated[int, Field(ge=1)]
     candidate: CandidateProfile
     stage: Literal[
+        "matched",
         "intake",
         "research",
         "screening",
@@ -643,11 +649,14 @@ class Application(BaseModel):
     )
     id: Annotated[str, Field(max_length=128, min_length=1)]
     candidate_id: Annotated[str, Field(max_length=128, min_length=1)]
+    talent_id: str | None = None
+    routing: dict[str, Any] = Field(default_factory=dict)
     job_id: Annotated[str, Field(max_length=128, min_length=1)]
     workflow_id: Annotated[str, Field(max_length=128, min_length=1)]
     revision: Annotated[int, Field(ge=1)]
     candidate: CandidateProfile
     stage: Literal[
+        "matched",
         "intake",
         "research",
         "screening",
@@ -785,6 +794,11 @@ class D02Content(BaseModel):
     confirmation_status: Literal["draft", "needs_information", "confirmed"]
 
 
+class TalentProfileRef(BaseModel):
+    talent_id: str
+    version: int = Field(ge=1)
+
+
 class D03Content(BaseModel):
     model_config = ConfigDict(
         extra="allow",
@@ -798,6 +812,8 @@ class D03Content(BaseModel):
     research_objects: list[ResearchObject] = Field(default_factory=list)
     resume_form: ResumeForm | None = None
     document_metadata: DocumentMetadata | None = None
+    direction_assignments: list[DirectionAssignment] = Field(default_factory=list)
+    talent_profile_ref: TalentProfileRef | None = None
 
 
 class D04Content(BaseModel):

@@ -106,6 +106,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/applications/{application_id}/start-screening": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Screening */
+        post: operations["start_screening_api_v1_applications__application_id__start_screening_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/applications/{application_id}/timeline": {
         parameters: {
             query?: never;
@@ -483,6 +500,125 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/talent-directions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Directions */
+        get: operations["directions_api_v1_talent_directions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/talent-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Talents */
+        post: operations["import_talents_api_v1_talent_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/talents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Talents */
+        get: operations["list_talents_api_v1_talents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/talents/{talent_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Talent */
+        get: operations["read_talent_api_v1_talents__talent_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/talents/{talent_id}/directions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Classify Talent */
+        patch: operations["classify_talent_api_v1_talents__talent_id__directions_patch"];
+        trace?: never;
+    };
+    "/api/v1/talents/{talent_id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Talent File */
+        get: operations["read_talent_file_api_v1_talents__talent_id__file_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/talents/{talent_id}/route": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rematch Talent */
+        post: operations["rematch_talent_api_v1_talents__talent_id__route_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tasks/{task_id}": {
         parameters: {
             query?: never;
@@ -633,6 +769,10 @@ export interface components {
             report_summary: components["schemas"]["ReportSummary"] | null;
             /** Revision */
             revision: number;
+            /** Routing */
+            routing?: {
+                [key: string]: unknown;
+            };
             rule_pack_ref: components["schemas"]["RulePackRef-Output"];
             /**
              * Screening Result
@@ -643,9 +783,11 @@ export interface components {
              * Stage
              * @enum {string}
              */
-            stage: "intake" | "research" | "screening" | "outreach" | "extraction" | "evaluation" | "recommendation" | "finished";
+            stage: "matched" | "intake" | "research" | "screening" | "outreach" | "extraction" | "evaluation" | "recommendation" | "finished";
             /** Summary */
             summary: string | null;
+            /** Talent Id */
+            talent_id?: string | null;
             /**
              * Updated At
              * Format: date-time
@@ -702,6 +844,10 @@ export interface components {
             report_summary: components["schemas"]["ReportSummary"] | null;
             /** Revision */
             revision: number;
+            /** Routing */
+            routing?: {
+                [key: string]: unknown;
+            };
             rule_pack_ref: components["schemas"]["RulePackRef-Output"];
             /**
              * Screening Result
@@ -712,9 +858,11 @@ export interface components {
              * Stage
              * @enum {string}
              */
-            stage: "intake" | "research" | "screening" | "outreach" | "extraction" | "evaluation" | "recommendation" | "finished";
+            stage: "matched" | "intake" | "research" | "screening" | "outreach" | "extraction" | "evaluation" | "recommendation" | "finished";
             /** Summary */
             summary: string | null;
+            /** Talent Id */
+            talent_id?: string | null;
             /**
              * Updated At
              * Format: date-time
@@ -1036,6 +1184,15 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** ClassifyTalentInput */
+        ClassifyTalentInput: {
+            /** Directions */
+            directions: components["schemas"]["DirectionAssignment"][];
+            /** Expected Revision */
+            expected_revision: number;
+            /** Reason */
+            reason: string;
+        };
         /** ConditionResult */
         ConditionResult: {
             /** Condition Id */
@@ -1136,6 +1293,8 @@ export interface components {
             location?: string | null;
             /** Material Text */
             material_text: string;
+            /** Routing Directions */
+            routing_directions?: ("frontend" | "backend" | "fullstack" | "mobile" | "data" | "ai" | "devops" | "qa" | "product" | "design" | "sales" | "marketing" | "operations" | "finance" | "hr" | "legal" | "supply_chain" | "hardware")[] | null;
             /** Salary */
             salary?: string | null;
             /** Title */
@@ -1308,6 +1467,8 @@ export interface components {
         D03Content: {
             /** Claims */
             claims: components["schemas"]["Claim"][];
+            /** Direction Assignments */
+            direction_assignments?: components["schemas"]["DirectionAssignment"][];
             document_metadata?: components["schemas"]["DocumentMetadata"] | null;
             /** Education */
             education: components["schemas"]["Claim"][];
@@ -1321,6 +1482,7 @@ export interface components {
             resume_form?: components["schemas"]["ResumeForm"] | null;
             /** Skills */
             skills: string[];
+            talent_profile_ref?: components["schemas"]["TalentProfileRef"] | null;
         } & {
             [key: string]: unknown;
         };
@@ -1795,6 +1957,40 @@ export interface components {
             /** Score */
             score?: number | null;
         };
+        /** DirectionAssignment */
+        DirectionAssignment: {
+            /**
+             * Direction Id
+             * @enum {string}
+             */
+            direction_id: "frontend" | "backend" | "fullstack" | "mobile" | "data" | "ai" | "devops" | "qa" | "product" | "design" | "sales" | "marketing" | "operations" | "finance" | "hr" | "legal" | "supply_chain" | "hardware";
+            /**
+             * Level
+             * @enum {string}
+             */
+            level: "primary" | "secondary";
+            /** Quote */
+            quote: string;
+            /** Reason */
+            reason: string;
+        };
+        /** DirectionCatalog */
+        DirectionCatalog: {
+            /** Items */
+            items: components["schemas"]["DirectionOption"][];
+            /** Version */
+            version: number;
+        };
+        /** DirectionOption */
+        DirectionOption: {
+            /**
+             * Id
+             * @enum {string}
+             */
+            id: "frontend" | "backend" | "fullstack" | "mobile" | "data" | "ai" | "devops" | "qa" | "product" | "design" | "sales" | "marketing" | "operations" | "finance" | "hr" | "legal" | "supply_chain" | "hardware";
+            /** Label */
+            label: string;
+        };
         /** DisplayName */
         DisplayName: string;
         /** DocumentMetadata */
@@ -2093,6 +2289,8 @@ export interface components {
             published_rule_pack_ref: components["schemas"]["RulePackRef-Output"] | null;
             /** Revision */
             revision: number;
+            /** Routing Directions */
+            routing_directions?: ("frontend" | "backend" | "fullstack" | "mobile" | "data" | "ai" | "devops" | "qa" | "product" | "design" | "sales" | "marketing" | "operations" | "finance" | "hr" | "legal" | "supply_chain" | "hardware")[];
             /**
              * Rule Status
              * @enum {string}
@@ -2342,6 +2540,11 @@ export interface components {
         };
         /** Remaining */
         Remaining: string;
+        /** RematchInput */
+        RematchInput: {
+            /** Expected Revision */
+            expected_revision: number;
+        };
         /** ReplacesItemId */
         ReplacesItemId: string;
         /** ReportField */
@@ -2526,6 +2729,47 @@ export interface components {
              * @constant
              */
             template_version: "A04-1.1";
+        };
+        /** ResumeProfile */
+        ResumeProfile: {
+            /**
+             * Direction Assignments
+             * @description Classify occupational directions from actual responsibilities and skills in context. Allow multiple directions, distinguish primary/secondary, quote the resume exactly. Do not infer frontend from management-backend UI terminology or incidental tools. Empty means unclassified, never rejected. This is routing, not qualification scoring.
+             */
+            direction_assignments?: components["schemas"]["DirectionAssignment"][];
+            /**
+             * Facts
+             * @description Use canonical keys name, current_role, years_experience, education, skills, employer, employment_period, project and project_period when present. Preserve unknown/conflict rather than guessing. Include other predicate fields only with exact quotes.
+             */
+            facts: {
+                [key: string]: components["schemas"]["Fact"];
+            };
+            /**
+             * Research Objects
+             * @description Extract EVERY stated company, project, award, paper, patent, copyright, open-source work and certification. One object per record, stable unique object_id, original name/period and exact quotes. Company: description, industry, products, location, role, contribution, metrics, website. Project: company, goal, complexity, outcomes, role, contribution, metrics, link. Professional: official_name, organizer, year, platform, identifier, authors, ownership, status, link, contribution. Preserve explicit author_identifier, orcid, contributor_handle, certificate_number or author_url when supplied; never infer them from a name. Do not infer personal contribution from team results or invent absent types.
+             */
+            research_objects?: components["schemas"]["ResumeResearchObject"][];
+            resume_form?: components["schemas"]["ResumeForm"] | null;
+            /** Unknown Fields */
+            unknown_fields?: string[];
+        };
+        /** ResumeResearchObject */
+        ResumeResearchObject: {
+            /** Facts */
+            facts?: {
+                [key: string]: components["schemas"]["Fact"];
+            };
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "company" | "project" | "award" | "paper" | "patent" | "software_copyright" | "open_source" | "certification" | "professional_work" | "other_achievement";
+            name: components["schemas"]["Fact"];
+            /** Object Id */
+            object_id: string;
+            /** Parent Object Id */
+            parent_object_id?: string | null;
+            period?: components["schemas"]["Fact"] | null;
         };
         /** RetryInput */
         RetryInput: {
@@ -2899,6 +3143,145 @@ export interface components {
         };
         /** StartMs */
         StartMs: number;
+        /** TalentDetail */
+        TalentDetail: {
+            /** Applications */
+            applications: components["schemas"]["TalentLink"][];
+            /** Classification Source */
+            classification_source: ("model" | "mock" | "manual") | null;
+            /**
+             * Classification State
+             * @enum {string}
+             */
+            classification_state: "processing" | "classified" | "unclassified" | "failed" | "reconciling";
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Directions */
+            directions: components["schemas"]["DirectionAssignment"][];
+            /** Error Code */
+            error_code: string | null;
+            /**
+             * Execution Mode
+             * @enum {string}
+             */
+            execution_mode: "live" | "mock";
+            /** Filename */
+            filename: string;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            profile: components["schemas"]["ResumeProfile"] | null;
+            /** Profile Version */
+            profile_version: number | null;
+            /** Revision */
+            revision: number;
+            /** Task Id */
+            task_id: string;
+            /** Task Status */
+            task_status: string;
+        };
+        /** TalentLink */
+        TalentLink: {
+            /** Application Id */
+            application_id: string;
+            /** Direction Ids */
+            direction_ids: ("frontend" | "backend" | "fullstack" | "mobile" | "data" | "ai" | "devops" | "qa" | "product" | "design" | "sales" | "marketing" | "operations" | "finance" | "hr" | "legal" | "supply_chain" | "hardware")[];
+            /** Job Id */
+            job_id: string;
+            /** Job Title */
+            job_title: string;
+            /** Profile Version */
+            profile_version: number;
+            /** Screening Result */
+            screening_result: string;
+            /** Stage */
+            stage: string;
+        };
+        /** TalentPage */
+        TalentPage: {
+            /** Items */
+            items: components["schemas"]["TalentView"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
+        };
+        /** TalentProfileRef */
+        TalentProfileRef: {
+            /** Talent Id */
+            talent_id: string;
+            /** Version */
+            version: number;
+        };
+        /** TalentReceipt */
+        TalentReceipt: {
+            /** Items */
+            items: components["schemas"]["TalentReceiptItem"][];
+        };
+        /** TalentReceiptItem */
+        TalentReceiptItem: {
+            /** Client Item Id */
+            client_item_id: string;
+            /**
+             * Disposition
+             * @enum {string}
+             */
+            disposition: "accepted" | "duplicate" | "invalid";
+            /** Error Code */
+            error_code?: string | null;
+            /** Name */
+            name: string;
+            /** Talent Id */
+            talent_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+        };
+        /** TalentView */
+        TalentView: {
+            /** Applications */
+            applications: components["schemas"]["TalentLink"][];
+            /** Classification Source */
+            classification_source: ("model" | "mock" | "manual") | null;
+            /**
+             * Classification State
+             * @enum {string}
+             */
+            classification_state: "processing" | "classified" | "unclassified" | "failed" | "reconciling";
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Directions */
+            directions: components["schemas"]["DirectionAssignment"][];
+            /** Error Code */
+            error_code: string | null;
+            /**
+             * Execution Mode
+             * @enum {string}
+             */
+            execution_mode: "live" | "mock";
+            /** Filename */
+            filename: string;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Profile Version */
+            profile_version: number | null;
+            /** Revision */
+            revision: number;
+            /** Task Id */
+            task_id: string;
+            /** Task Status */
+            task_status: string;
+        };
         /** Task */
         Task: {
             /** Allowed Actions */
@@ -2924,7 +3307,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "batch" | "job_analysis" | "interview_standard" | "screening_standard" | "resume_parse" | "research" | "screening" | "interview_outline" | "interview_extract" | "evaluation" | "recommendation" | "recompute" | "call_reconcile" | "call_stop";
+            kind: "batch" | "job_analysis" | "interview_standard" | "screening_standard" | "resume_parse" | "talent_parse" | "research" | "screening" | "interview_outline" | "interview_extract" | "evaluation" | "recommendation" | "recompute" | "call_reconcile" | "call_stop";
             poll_after_ms: components["schemas"]["PollAfterMs"] | null;
             reason: components["schemas"]["Reason"] | null;
             /** Resource Id */
@@ -2958,7 +3341,7 @@ export interface components {
              * Resource Type
              * @enum {string}
              */
-            resource_type: "job" | "batch" | "application" | "call" | "report" | "task";
+            resource_type: "job" | "batch" | "application" | "call" | "report" | "task" | "talent";
             /** Task Id */
             task_id: string;
         } & {
@@ -3053,6 +3436,8 @@ export interface components {
         UpdateJobInput: {
             /** Expected Revision */
             expected_revision: number;
+            /** Routing Directions */
+            routing_directions?: ("frontend" | "backend" | "fullstack" | "mobile" | "data" | "ai" | "devops" | "qa" | "product" | "design" | "sales" | "marketing" | "operations" | "finance" | "hr" | "legal" | "supply_chain" | "hardware")[] | null;
             /** Status */
             status?: ("active" | "paused" | "archived") | null;
             /** Title */
@@ -3787,6 +4172,128 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ScreeningReviewResult"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    start_screening_api_v1_applications__application_id__start_screening_post: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: string;
+                "X-CSRF-Token": string;
+                "Idempotency-Key": string;
+            };
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetryInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    /** @description 新岗位详情或持久化任务查询地址；幂等重放保持相同地址 */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskAccepted"];
                 };
             };
             /** @description 稳定错误码；不回显敏感输入或第三方异常 */
@@ -6524,6 +7031,834 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RulePack"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    directions_api_v1_talent_directions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectionCatalog"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    import_talents_api_v1_talent_imports_post: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: string;
+                "X-CSRF-Token": string;
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * Execution Mode
+                     * @default live
+                     * @enum {string}
+                     */
+                    execution_mode?: "live" | "mock";
+                    /** Items */
+                    items: {
+                        /** Client Item Id */
+                        client_item_id: string;
+                        /** Name */
+                        name: string;
+                        /** Text */
+                        text: string;
+                    }[];
+                };
+                "multipart/form-data": {
+                    files: string[];
+                    /** @description JSON manifest with items and execution_mode */
+                    manifest: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    /** @description 新岗位详情或持久化任务查询地址；幂等重放保持相同地址 */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TalentReceipt"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    list_talents_api_v1_talents_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TalentPage"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    read_talent_api_v1_talents__talent_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                talent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TalentDetail"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    classify_talent_api_v1_talents__talent_id__directions_patch: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: string;
+                "X-CSRF-Token": string;
+            };
+            path: {
+                talent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClassifyTalentInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TalentDetail"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    read_talent_file_api_v1_talents__talent_id__file_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                talent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    rematch_talent_api_v1_talents__talent_id__route_post: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: string;
+                "X-CSRF-Token": string;
+                "Idempotency-Key": string;
+            };
+            path: {
+                talent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RematchInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TalentDetail"];
                 };
             };
             /** @description 稳定错误码；不回显敏感输入或第三方异常 */

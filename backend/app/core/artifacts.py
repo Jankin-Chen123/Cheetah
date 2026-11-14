@@ -12,6 +12,7 @@ from app.core.models import (
     IntakeJob,
     RulePack,
     StoredFile,
+    Talent,
     aware,
     new_id,
 )
@@ -47,6 +48,17 @@ def get_application(
 
 
 def require_application_file(db: Session, application: Application) -> StoredFile:
+    if application.talent_id:
+        talent = db.get(Talent, application.talent_id)
+        job = db.get(IntakeJob, application.job_id)
+        if (
+            talent is None
+            or talent.status != "active"
+            or talent.organization_id != application.organization_id
+            or job is None
+            or talent.owner_id != job.owner_id
+        ):
+            raise not_found()
     file = db.get(StoredFile, application.file_id)
     if (
         file is None
@@ -60,7 +72,23 @@ def require_application_file(db: Session, application: Application) -> StoredFil
 
 
 def visible_application_file():
-    return exists(
+    from sqlalchemy import or_
+
+    return or_(
+        Application.talent_id.is_(None),
+        exists(
+            select(Talent.id).where(
+                Talent.id == Application.talent_id,
+                Talent.status == "active",
+                Talent.organization_id == Application.organization_id,
+                exists(
+                    select(IntakeJob.id).where(
+                        IntakeJob.id == Application.job_id, IntakeJob.owner_id == Talent.owner_id
+                    )
+                ),
+            )
+        ),
+    ) & exists(
         select(StoredFile.id).where(
             StoredFile.id == Application.file_id,
             StoredFile.application_id == Application.id,

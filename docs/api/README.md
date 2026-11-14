@@ -318,3 +318,7 @@ A 已使用其中的稳定业务码；B 专用业务码仍为规划。当前未�
 新增研究规则引用 `pi-research`, version 1。D03Content.research_objects 按实际声明数量保存公司、项目、比赛／奖项、论文、专利、软著、开源和认证；每字段有原文、状态、证据引用和来源。D04Content.report 可空，Pi 模式下为完整类型化研究报告，旧 bounded-research 的 report 为 null。运行时 OpenAPI、完整草案和前端生成类型同步维护。更正支持 `/research_objects/{已有object_id}/name`、`/period`、`/facts/{已有字段}`，仍拒绝越权和任意 JSON 写入。
 
 Pi 模式的 E1 经过实际来源正文、精确摘录、日期和身份线索检查；E3 保留推断依据，E2 不被覆盖，无法支持的发现降为 U。当前 A05 判定函数仍使用 D03 谓词，不能将带有 D04 引用误称为已做模型综合匹配。真实提供者与专业准确性未验收，详见 A03 文档。
+
+## 人才库独立入库与职能分流（2026-11-14）
+
+新增 `/talent-imports`、`/talents`、`/talent-directions`、分类修订与显式 `/applications/{id}/start-screening`。岗位创建/更新增加 `routing_directions`；发布或修改方向后关联库中相关人才。新增 `talent_parse` 任务、`talent` 资源、`matched` 阶段。未匹配不是拒绝，未知不丢弃。全部仍执行通用会话、对象权限、CSRF、幂等与版本约定。具体字段和旧岗位批次兼容边界见 [人才入库与职能分流](../talent-routing.md)，实际 OpenAPI 和虚构样例已同步。

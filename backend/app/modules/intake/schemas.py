@@ -3,6 +3,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.core.contracts import ArtifactRef, EvidenceRef, RulePackRef
+from app.modules.intake.directions import DirectionAssignment, DirectionId
 from app.modules.intake.form_contracts import Anchors, JobForm, ResumeForm, ScreeningRubric
 
 
@@ -16,12 +17,14 @@ class CreateJobInput(Input):
     location: str | None = Field(default=None, max_length=100)
     salary: str | None = Field(default=None, max_length=100)
     material_text: str = Field(min_length=1, max_length=30000)
+    routing_directions: list[DirectionId] | None = Field(default=None, max_length=18)
 
 
 class UpdateJobInput(Input):
     expected_revision: int = Field(ge=1)
     title: str | None = Field(default=None, min_length=1, max_length=100)
     status: Literal["active", "paused", "archived"] | None = None
+    routing_directions: list[DirectionId] | None = Field(default=None, max_length=18)
 
 
 class AnalyzeJobInput(Input):
@@ -156,6 +159,16 @@ class ResumeResearchObject(Input):
 
 
 class ResumeProfile(Input):
+    direction_assignments: list[DirectionAssignment] = Field(
+        default_factory=list,
+        max_length=18,
+        description=(
+            "Classify occupational directions from actual responsibilities and skills in context. "
+            "Allow multiple directions, distinguish primary/secondary, quote the resume exactly. "
+            "Do not infer frontend from management-backend UI terminology or incidental tools. "
+            "Empty means unclassified, never rejected. This is routing, not qualification scoring."
+        ),
+    )
     facts: dict[str, Fact] = Field(
         max_length=100,
         description=(

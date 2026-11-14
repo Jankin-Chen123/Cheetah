@@ -54,6 +54,18 @@ def execute(
         from app.core.models import ResumeBatch
 
         saved = record.response
+        if saved.get("resource_type") == "talent" or request.url.path.startswith(
+            "/api/v1/talents/"
+        ):
+            from app.modules.intake.talents import get_talent
+
+            get_talent(db, user, saved.get("resource_id") or saved["id"])
+        if request.url.path == "/api/v1/talent-imports":
+            from app.modules.intake.talents import get_talent
+
+            for item in saved.get("items", []):
+                if item.get("talent_id"):
+                    get_talent(db, user, item["talent_id"])
         if saved.get("resource_type") == "application":
             get_application(db, user, saved["resource_id"])
         elif saved.get("resource_type") == "job":
