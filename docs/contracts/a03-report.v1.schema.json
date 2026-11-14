@@ -1,0 +1,640 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "ArtifactRef": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "minLength": 1,
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "version"
+      ],
+      "title": "ArtifactRef",
+      "type": "object"
+    },
+    "Citation": {
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        },
+        "quote": {
+          "maxLength": 3000,
+          "minLength": 1,
+          "title": "Quote",
+          "type": "string"
+        },
+        "source_date": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Date"
+        }
+      },
+      "required": [
+        "source_id",
+        "quote"
+      ],
+      "title": "Citation",
+      "type": "object"
+    },
+    "EvidenceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_id": {
+          "minLength": 1,
+          "title": "Evidence Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "version"
+      ],
+      "title": "EvidenceRef",
+      "type": "object"
+    },
+    "Goal": {
+      "additionalProperties": false,
+      "properties": {
+        "object_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Object Id",
+          "type": "string"
+        },
+        "field": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Field",
+          "type": "string"
+        },
+        "question": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        },
+        "priority": {
+          "default": "normal",
+          "enum": [
+            "high",
+            "normal",
+            "low"
+          ],
+          "title": "Priority",
+          "type": "string"
+        },
+        "rationale": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        }
+      },
+      "required": [
+        "object_id",
+        "field",
+        "question",
+        "rationale"
+      ],
+      "title": "Goal",
+      "type": "object"
+    },
+    "Identity": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "confirmed",
+            "uncertain",
+            "unmatched"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "rationale": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "citations": {
+          "items": {
+            "$ref": "#/$defs/Citation"
+          },
+          "maxItems": 8,
+          "title": "Citations",
+          "type": "array"
+        },
+        "a04_anchor_fields": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10,
+          "title": "A04 Anchor Fields",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status",
+        "rationale"
+      ],
+      "title": "Identity",
+      "type": "object"
+    },
+    "ObjectReport": {
+      "properties": {
+        "object_id": {
+          "title": "Object Id",
+          "type": "string"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "original_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Original Name"
+        },
+        "original_period": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Original Period"
+        },
+        "original_information": {
+          "$ref": "#/$defs/ResearchObject"
+        },
+        "identity": {
+          "$ref": "#/$defs/Identity"
+        },
+        "state": {
+          "enum": [
+            "completed",
+            "needs_verification",
+            "not_executed"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "fields": {
+          "items": {
+            "$ref": "#/$defs/ReportField"
+          },
+          "title": "Fields",
+          "type": "array"
+        },
+        "gaps": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Gaps",
+          "type": "array"
+        },
+        "verification_questions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Verification Questions",
+          "type": "array"
+        },
+        "stop_reason": {
+          "title": "Stop Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "object_id",
+        "kind",
+        "original_name",
+        "original_period",
+        "original_information",
+        "identity",
+        "state",
+        "fields",
+        "gaps",
+        "verification_questions",
+        "stop_reason"
+      ],
+      "title": "ObjectReport",
+      "type": "object"
+    },
+    "ReportField": {
+      "properties": {
+        "field": {
+          "title": "Field",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "a04_information": {
+          "items": {
+            "$ref": "#/$defs/ResearchFact"
+          },
+          "title": "A04 Information",
+          "type": "array"
+        },
+        "public_information": {
+          "items": {
+            "$ref": "#/$defs/ReportFinding"
+          },
+          "title": "Public Information",
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "supported",
+            "analysis",
+            "unknown",
+            "conflict",
+            "self_report_only"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "field",
+        "label",
+        "a04_information",
+        "public_information",
+        "status"
+      ],
+      "title": "ReportField",
+      "type": "object"
+    },
+    "ReportFinding": {
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Field",
+          "type": "string"
+        },
+        "category": {
+          "enum": [
+            "E1",
+            "E3",
+            "U"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "citations": {
+          "items": {
+            "$ref": "#/$defs/Citation"
+          },
+          "maxItems": 8,
+          "title": "Citations",
+          "type": "array"
+        },
+        "a04_fields": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10,
+          "title": "A04 Fields",
+          "type": "array"
+        },
+        "applicable_period": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Applicable Period"
+        },
+        "historical_applicability": {
+          "default": "unknown",
+          "enum": [
+            "confirmed",
+            "current_only",
+            "unknown"
+          ],
+          "title": "Historical Applicability",
+          "type": "string"
+        },
+        "conflict_with_a04": {
+          "default": false,
+          "title": "Conflict With A04",
+          "type": "boolean"
+        },
+        "personal_identity_fields": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 5,
+          "title": "Personal Identity Fields",
+          "type": "array"
+        },
+        "evidence_refs": {
+          "items": {
+            "$ref": "#/$defs/EvidenceRef"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "validation_notes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Validation Notes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "field",
+        "category",
+        "text"
+      ],
+      "title": "ReportFinding",
+      "type": "object"
+    },
+    "ResearchFact": {
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        },
+        "quote": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Quote"
+        },
+        "status": {
+          "enum": [
+            "stated",
+            "unknown",
+            "conflict"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "evidence_refs": {
+          "items": {
+            "$ref": "#/$defs/EvidenceRef"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "source_type": {
+          "default": "resume",
+          "enum": [
+            "resume",
+            "manual_revision"
+          ],
+          "title": "Source Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "status"
+      ],
+      "title": "ResearchFact",
+      "type": "object"
+    },
+    "ResearchObject": {
+      "properties": {
+        "object_id": {
+          "title": "Object Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "company",
+            "project",
+            "award",
+            "paper",
+            "patent",
+            "software_copyright",
+            "open_source",
+            "certification"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "$ref": "#/$defs/ResearchFact"
+        },
+        "period": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ResearchFact"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "parent_object_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Object Id"
+        },
+        "facts": {
+          "additionalProperties": {
+            "$ref": "#/$defs/ResearchFact"
+          },
+          "title": "Facts",
+          "type": "object"
+        }
+      },
+      "required": [
+        "object_id",
+        "kind",
+        "name"
+      ],
+      "title": "ResearchObject",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "report_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Report Version",
+      "type": "string"
+    },
+    "candidate_id": {
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "application_id": {
+      "title": "Application Id",
+      "type": "string"
+    },
+    "job_id": {
+      "title": "Job Id",
+      "type": "string"
+    },
+    "d03_ref": {
+      "$ref": "#/$defs/ArtifactRef"
+    },
+    "d01_ref": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ArtifactRef"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "enum": [
+        "completed",
+        "partial",
+        "needs_verification",
+        "not_executed",
+        "tool_failed"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "objects": {
+      "items": {
+        "$ref": "#/$defs/ObjectReport"
+      },
+      "title": "Objects",
+      "type": "array"
+    },
+    "summary": {
+      "title": "Summary",
+      "type": "string"
+    },
+    "gaps": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Gaps",
+      "type": "array"
+    },
+    "verification_questions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Verification Questions",
+      "type": "array"
+    },
+    "sources": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Sources",
+      "type": "array"
+    },
+    "goals": {
+      "items": {
+        "$ref": "#/$defs/Goal"
+      },
+      "title": "Goals",
+      "type": "array"
+    },
+    "execution": {
+      "additionalProperties": true,
+      "title": "Execution",
+      "type": "object"
+    },
+    "stop_reason": {
+      "title": "Stop Reason",
+      "type": "string"
+    }
+  },
+  "required": [
+    "candidate_id",
+    "application_id",
+    "job_id",
+    "d03_ref",
+    "d01_ref",
+    "status",
+    "objects",
+    "summary",
+    "gaps",
+    "verification_questions",
+    "sources",
+    "goals",
+    "execution",
+    "stop_reason"
+  ],
+  "title": "ResearchReport",
+  "type": "object"
+}

@@ -2,7 +2,7 @@
 
 更新时间：2026-11-13。统一前缀：`/api/v1`。面向前端 F、后端 A 与后端 B。
 
-**这是一份待实现、待三方冻结的接口设计草案，不是业务已经完成的证明。** 已实现的 HTTP 端点只有两个健康检查；当前前端仅请求存活检查，其余页面使用本地虚构数据。本文不修改现有 `screening.passed` 公共事件模型，也不把前端本地类型视为后端已接受的合同。
+**完整设计稿仍包含未实现项；A 的本地可联调版本已经实现。** 具体状态与限制见 [后端 A 交付说明](../backend-a-delivery.md)，机器可读的实际运行接口为 [openapi.implemented.v1.json](openapi.implemented.v1.json)。前端页面仍是演示，B 的电话与报告尚未接入；不能把本地测试等同真实模型、联网研究、真实电话或线上验收。
 
 ## 文档入口与优先级
 
@@ -12,9 +12,11 @@
 | [models.md](models.md) | 对象关系、字段语义、状态迁移、来源与前端映射 |
 | [integration-guide.md](integration-guide.md) | 接入顺序、异常处理、验收场景与未冻结项 |
 | [examples.json](examples.json) | 全部为虚构的联调数据，包含成功、处理中、失败、信息不足、拒绝、待审核等场景 |
+| [search-adapter.md](search-adapter.md) | 可配置搜索适配、归一化 HTTP 协议、次数预算与实际验证边界 |
+| [A03 Pi Agent](../a03-pi-agent.md) | Pi 研究循环、完整 D03 对象、D04 范本、插件与工具合同、配置和限制 |
 | [A/B 事件合同](../contracts/README.md) | 已存在的内部交接模型及 Schema，不是浏览器调用接口 |
 
-当前运行行为以实际后端源代码为准；现有 A/B 事件以 `backend/app/core/contracts.py` 为唯一模型入口。待实现 HTTP 接口以本目录的 OpenAPI 和文字语义共同评审，冻结后实现到 Pydantic/OpenAPI；出现冲突先修正文档，不能各自采用不同解释。OpenAPI 的 `x-implementation-status` 区分 `implemented`、`planned` 和 `integration-draft`；服务运行时 `/openapi.json` 目前不会包含这些规划业务端点。
+当前运行行为以实际后端源代码为准；现有 A/B 事件以 `backend/app/core/contracts.py` 为唯一模型入口。待实现 HTTP 接口以本目录的 OpenAPI 和文字语义共同评审，冻结后实现到 Pydantic/OpenAPI；出现冲突先修正文档，不能各自采用不同解释。OpenAPI 的 `x-implementation-status` 区分 `implemented`、`planned` 和 `integration-draft`；服务运行时 `/openapi.json` 仅包含实际已注册的 A 与健康检查端点；`openapi.implemented.v1.json` 从同一应用生成，完整设计稿保留 B 的 planned/integration-draft。
 
 ## 1. 通用协议
 
@@ -27,7 +29,7 @@
 - 所有已发布规则、产物和报告内容引用都带版本；不得用“最新”替代历史任务输入。成功响应直接返回资源，不额外套 `{data: ...}`；异步命令例外返回 `TaskAccepted`。
 - 业务响应、文件及报告默认 `Cache-Control: no-store`。正常响应包含 `X-Request-ID`；异步接受不等于业务成功。
 
-### 1.2 登录、会话与对象权限（待实现）
+### 1.2 登录、会话与对象权限（A 已实现本地版本）
 
 采用同源 HttpOnly 会话 Cookie `cheetah_session`，生产使用 `Secure; SameSite=Lax; Path=/`，退出时失效。前端使用 `credentials: 'same-origin'`，不将会话令牌写进浏览器存储。响应模型不返回密码、Cookie 值或第三方密钥。
 
@@ -35,7 +37,7 @@
 
 机构从会话取值，业务写请求不接受浏览器指定 `organization_id`。每次读写、后台执行、历史版本、证据和附件都重新校验岗位及对象归属。未登录返回 401；已登录但无操作权限返回 403；跨机构或不可见对象统一 404，避免泄露其存在。`permissions` 和 `allowed_actions` 只辅助前端展示，不能替代后端验证。
 
-现有 CORS 仅允许 `Content-Type/Authorization` 且未开启带 Cookie 的跨域会话。本方案默认同源；若将来改变为跨域，A 必须一并配置明确来源、凭据、CSRF、幂等和导出请求头，不能把当前配置描述为已支持。
+当前 CORS 允许 Content-Type、Authorization、X-CSRF-Token 和 Idempotency-Key，未开启带 Cookie 的跨域会话。本方案默认同源；若将来改变为跨域，A 必须一并配置明确来源、凭据、CSRF、幂等和导出请求头，不能把当前配置描述为已支持。
 
 ### 1.3 分页、搜索与排序
 
@@ -80,7 +82,7 @@ PATCH 使用期望 revision，响应丢失后先 GET 核对，不能自动重放
 
 ### 1.6 来源与模拟隔离
 
-HTTP 统一 `source_mode: live | mock | manual`，与现有事件合同一致。前端现有 `real` 必须在接入层映射为 `live`。`source_modes` 分材料、模型、研究与电话记录；未执行阶段用 `null`，不默认 `live`。**现有 `screening.passed` 事件的四项来源均为非空枚举，HTTP 的可空读模型不能原样塞进事件。** 达标交接发生在电话之前，而现有事件仍要求非空 `phone`，这一语义缺口需 A/B 冻结：明确执行模式与已发生来源的区别，或单独升级事件模型。本轮不擅自改已实现 Schema，也不将未拨电话自动补成 `live`；真实链路接入前必须解决此项。现有 fixture 的 `phone=mock` 仍仅表示测试样例，不能证明发生了通话。
+HTTP 统一 `source_mode: live | mock | manual`，与现有事件合同一致。前端现有 `real` 必须在接入层映射为 `live`。`source_modes` 分材料、模型、研究与电话记录；未执行阶段用 `null`，不默认 `live`。**旧 1.0 `screening.passed` 事件的四项来源均为非空枚举，HTTP 的可空读模型不能原样塞进事件。** 达标交接发生在电话之前，而现有事件仍要求非空 `phone`，这一语义缺口需 A/B 冻结：明确执行模式与已发生来源的区别，或单独升级事件模型。本轮不擅自改已实现 Schema，也不将未拨电话自动补成 `live`；A 已通过新增 1.1 合同解决该语义：phone 为 null，另列计划执行模式；B 仍须接入 1.1 并重新检查联系前提，见合同说明。现有 fixture 的 `phone=mock` 仍仅表示测试样例，不能证明发生了通话。
 
 产物另含 `inherited_source_modes`，下游真实模型或人工修改不会清除上游 `mock`。请求不能自行指定 `source_mode=live` 来获得可信标记；模型／电话真实模式由服务端配置和调用记录决定。`execution_mode` 只用于受权限保护的 live/mock 执行选择，mock 结果及其下游始终保持模拟。`fixture_only=true` 的样例不准进入真实执行路径，测试规则不准驱动真实拨号。
 
@@ -125,11 +127,11 @@ HTTP 统一 `source_mode: live | mock | manual`，与现有事件合同一致。
 | 502/503 | `UPSTREAM_UNAVAILABLE` / `DEPENDENCY_NOT_READY` | 保留已有产物，显示稳定失败原因 |
 | 500 | `INTERNAL_ERROR` | 展示 request ID，后台核对；不回显敏感异常 |
 
-以上业务码为规划。当前框架 404 为 `HTTP_404`，422 为 `VALIDATION_ERROR`，`/health/ready` 的 503 使用自身状态对象而非 Error；接入时须兼容这一实际差异。已有代码尚未实现统一未知异常 500 包装，A 后续补充。
+A 已使用其中的稳定业务码；B 专用业务码仍为规划。当前未知路径的框架 404 为 `HTTP_404`，422 为 `VALIDATION_ERROR`，`/health/ready` 的 503 使用自身状态对象而非 Error；接入时须兼容这一实际差异。A 已统一包装未知异常 500 和数据库暂不可用 503，并阻止原始异常值进入响应或默认请求错误日志。
 
 ## 3. 接口清单
 
-下表路径省略 `/api/v1`。除注明已实现外均待开发。A 公共基础统一鉴权、任务、证据与迁移；B 通过公共模型写入后半段产物，前端始终只连一个后端。
+下表路径省略 `/api/v1`。这是完整设计清单；A 的实际路径、受支持字段及验证见独立运行快照和交付说明，B 仍待开发。A 公共基础统一鉴权、任务、证据与迁移；B 通过公共模型写入后半段产物，前端始终只连一个后端。
 
 ### 3.1 基础、登录与工作台
 
@@ -280,10 +282,32 @@ HTTP 统一 `source_mode: live | mock | manual`，与现有事件合同一致。
 
 更正只能操作服务端允许的结构化事实路径，不是任意 JSON 写库接口。字段补充不得借简历、网页或转写文本改变系统提示、权限、规则、工具配置或拨号许可。更正返回新引用、失效产物、受阻任务与已导出记录；没有自动重拨、补发或召回的隐含副作用。岗位原始业务材料的新版本上传以及完整数据删除／生命周期管理后续单独评审，不在该候选人更正接口里混做。
 
-## 4. 本轮核对范围
+## 4. 原接口设计轮次核对范围（2026-11-13，历史记录）
 
 本文与当前前端视图、PRD、首日计划、A/B 事件模型和健康检查源代码交叉核对。新增的聚合、规则历史、全局候选人、精确产物读取、报告修订及更正接口是为补齐现有页面或业务边界提出的草案扩展；不代表后端已同意冻结或实现。
 
 只编写文档、OpenAPI 和虚构样例，不修改运行中服务、真实数据、外部账号或拨打线路。后续实现应把安全状态与并发校验纳入集成测试，具体清单见 [integration-guide.md](integration-guide.md)。
 
 本轮已完成的文档检查：49 项操作与文字清单一一对应，115 个 Schema、36 组独立虚构样例、559 个本地引用和文档相对链接均通过校验；OpenAPI 通过官方 3.1 元 Schema 校验。通过当前 FastAPI 测试客户端核对 health 200、ready 503、使用模拟数据库探测的 ready 200，以及未实现业务路由的 404 响应形状。没有执行真实数据库／模型／搜索／电话／部署验收，不能将这些文档检查视为业务接口已可用。
+
+## A 本地实现补充（2026-11-14）
+
+实际请求／响应模型是 `backend/app/core/http_models.py`、`modules/intake/schemas.py`，实际 OpenAPI 与前端 `src/api/generated.ts` 同步。当前工程补充了以下可审核字段，未放宽原有业务边界：
+
+- `ScreeningCondition.predicate` 支持 field、equals/contains/gte、expected。草案可为空，发布必须完整。contains 未命中或带否定含义时保留 unknown；证据种类不足也不判负面。
+- 文本批次与 multipart manifest 可带 `execution_mode`，缺省 live；mock 需要服务端显式允许，测试规则不能进入 live。
+- `Task.kind=batch` 是批次汇总任务，不提供通用重试；应修正／重试具体失败项。批次计数按每份材料当前替换版本计算，旧失败项仍留库并由 replaces_item_id 追溯。
+- 更正目前支持 `D03` 的 `/facts/{白名单字段}`，每项 value 为 `{value,status,quote}`。D08 与 B 的更正 handler 尚未接入；未实现的目标不能返回伪成功。重算仅支持按顺序 research、screening，并校验当前关联的 RulePackRef。
+- 工程预算限制模型调用数、Token 与搜索次数；Task.budget 的 model_calls/model_tokens/search_calls 各含 limit/reserved/used。尚无真实价格／账单核对，金额字段保持 null。研究未执行、电话未执行的阶段来源为 null。B 摘要尚未接入，工作台附 `outreach_summary_connected=false`，当前零计数不代表已验证电话能力。
+
+`openapi.v1.json` 保留完整设计目标和规划状态；不可将其中所有端点一并视为已实现。现有演示与接口样例仍仅为虚构数据，实际验证矩阵见交付说明。
+
+`ScreeningCondition.required_evidence` 保持人工可读证据要求；新增 `evidence_sources` 单独声明程序核验来源（resume/manual_revision/public_web）。二者不可混用；发布时需与 predicate 一并完整确认。面试维度也必须有明确证据要求。Job 补充可空 d01_ref/d02_ref，供发布时读取精确版本。
+
+搜索默认 disabled，可配置标准 HTTP 适配器或在受信服务端注册厂商适配器；当前没有绑定或验收真实供应商。规则引用 unavailable v1 禁用搜索，bounded-research v1 允许固定公司／项目计划。D04 保存部分收集结果及来源陈述差异，摘要均为 U／待核实，不自动满足 public_web 条件。外部结果不明保留预算且禁止再次提交，已知响应可复用恢复；详见研究适配器文档。Session.capabilities 的 model_configured/search_configured 只表示配置，不能当作供应商就绪。
+
+创建岗位及异步接受响应提供 Location；幂等重放保持相同查询地址。产物 input_refs 统一为 `{kind,id,version}`，受限原始文件同样阻止通过候选人、聚合、重复导入和 worker 缓存绕过。
+
+新增研究规则引用 `pi-research`, version 1。D03Content.research_objects 按实际声明数量保存公司、项目、比赛／奖项、论文、专利、软著、开源和认证；每字段有原文、状态、证据引用和来源。D04Content.report 可空，Pi 模式下为完整类型化研究报告，旧 bounded-research 的 report 为 null。运行时 OpenAPI、完整草案和前端生成类型同步维护。更正支持 `/research_objects/{已有object_id}/name`、`/period`、`/facts/{已有字段}`，仍拒绝越权和任意 JSON 写入。
+
+Pi 模式的 E1 经过实际来源正文、精确摘录、日期和身份线索检查；E3 保留推断依据，E2 不被覆盖，无法支持的发现降为 U。当前 A05 判定函数仍使用 D03 谓词，不能将带有 D04 引用误称为已做模型综合匹配。真实提供者与专业准确性未验收，详见 A03 文档。

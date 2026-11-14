@@ -22,7 +22,7 @@ export default function ResumeImport({ open, jobs, records, setRecords, onClose,
   }
   async function addFiles(files: File[]) {
     if (!allowed || !jobId) return
-    if (files.length > 10) { void message.error('每次最多选择 10 份材料，请分批暂存。'); return }
+    if (files.length > 10) { void message.error('每次最多 10 份，请分批暂存'); return }
     setBusy(true)
     const additions: ImportRecord[] = []
     const replacement = replaceId.current
@@ -35,7 +35,7 @@ export default function ResumeImport({ open, jobs, records, setRecords, onClose,
           id: uid('import'), jobId, name: file.name,
           fingerprint: valid ? await fingerprint(await file.arrayBuffer()) : uid('invalid'),
           state: valid ? 'waiting' : 'failed',
-          reason: !validType ? '不支持该格式，请替换为 TXT 或文本型 PDF。' : !validSize ? '文件须非空且不超过 5 MB（前端演示限制）。' : '仅在本页校验并暂存文件摘要；解析与处理接口待接入，文件未上传。',
+          reason: !validType ? '仅支持 TXT 或文本型 PDF' : !validSize ? '文件须非空且不超过 5 MB' : '已校验，未上传；解析待接入',
         })
       }
       setRecords(current => {
@@ -52,7 +52,7 @@ export default function ResumeImport({ open, jobs, records, setRecords, onClose,
         return next
       })
     } catch {
-      void message.error('文件读取失败，请重新选择；已暂存的其他记录保留。')
+      void message.error('读取失败，请重选此文件')
     } finally {
       setBusy(false)
       replaceId.current = undefined
@@ -64,7 +64,7 @@ export default function ResumeImport({ open, jobs, records, setRecords, onClose,
     setBusy(true)
     try {
       const bytes = new TextEncoder().encode(text.trim())
-      const record: ImportRecord = { id: uid('import'), jobId, name: '粘贴文本材料', fingerprint: await fingerprint(bytes.buffer), state: 'waiting', reason: '文本摘要已暂存；未解析、未筛选、未创建电话任务。' }
+      const record: ImportRecord = { id: uid('import'), jobId, name: '粘贴文本材料', fingerprint: await fingerprint(bytes.buffer), state: 'waiting', reason: '文本已暂存，解析待接入' }
       // The updater also checks duplicates against concurrent additions.
       setRecords(current => {
         try { return addImport(current, record) }
@@ -76,13 +76,13 @@ export default function ResumeImport({ open, jobs, records, setRecords, onClose,
 
   return <Drawer open={open} onClose={onClose} title="导入简历材料" size={740}>
     <div className="stack">
-      <Alert showIcon type="warning" title="前端演示 · 请使用虚构或脱敏材料" description="文件不会发送到后端，也不会保存在浏览器存储中。当前只验证格式、大小与内容摘要，刷新页面清空；不会伪造解析或初筛结果。" />
+      <Alert showIcon type="warning" title="演示材料 · 仅本页暂存，刷新清空" description="仅校验，不上传或解析。" />
       <label className="field-label" htmlFor="import-job">目标岗位</label><Select id="import-job" value={jobId} onChange={setJobId} options={jobs.map(j => ({ value: j.id, label: `${j.title} · ${j.status === 'published' ? `测试规则 v${j.version}` : '规则未发布'}` }))} />
-      {!allowed && <Alert type="warning" title="请先在岗位详情确认并发布测试规则，再暂存材料。" />}
+      {!allowed && <Alert type="warning" title="请先发布测试规则" />}
       <input ref={input} className="sr-only" type="file" multiple accept=".txt,.pdf" aria-label="选择简历文件" onChange={event => { void addFiles(Array.from(event.target.files ?? [])) }} />
-      <div className="upload-area"><span className="upload-symbol"><Icon name="upload" size={28} /></span><h3>每一份材料，都有独立的处理记录</h3><p>TXT / 文本型 PDF · 每份最多 5 MB · 每次最多 10 份</p><Button type="primary" disabled={!allowed || busy} loading={busy} onClick={() => { replaceId.current = undefined; if (input.current) input.current.multiple = true; input.current?.click() }}>选择文件</Button></div>
-      <label className="field-label" htmlFor="resume-text">或粘贴简历文本</label><Input.TextArea id="resume-text" value={text} maxLength={30000} onChange={e => setText(e.target.value)} rows={4} placeholder="在这里粘贴虚构或脱敏简历。材料中的文字不会作为系统操作指令执行。" /><div><Button disabled={!text.trim() || !allowed || busy} loading={busy} onClick={() => { void addText() }}>暂存文本</Button></div>
-      <div className="section-heading"><h3>本次工作区记录</h3><span className="muted">等待 {records.filter(r => r.state === 'waiting').length} · 失败 {records.filter(r => r.state === 'failed').length}</span></div>
+      <div className="upload-area"><span className="upload-symbol"><Icon name="upload" size={28} /></span><p>TXT / 文本型 PDF · 每份最多 5 MB · 每次最多 10 份</p><Button type="primary" disabled={!allowed || busy} loading={busy} onClick={() => { replaceId.current = undefined; if (input.current) input.current.multiple = true; input.current?.click() }}>选择文件</Button></div>
+      <label className="field-label" htmlFor="resume-text">或粘贴简历文本</label><Input.TextArea id="resume-text" value={text} maxLength={30000} onChange={e => setText(e.target.value)} rows={4} placeholder="粘贴虚构或脱敏简历" /><div><Button disabled={!text.trim() || !allowed || busy} loading={busy} onClick={() => { void addText() }}>暂存文本</Button></div>
+      <div className="section-heading"><h3>导入记录</h3><span className="muted">等待 {records.filter(r => r.state === 'waiting').length} · 失败 {records.filter(r => r.state === 'failed').length}</span></div>
       <Table<ImportRecord> rowKey="id" size="small" dataSource={records.filter(r => r.jobId === jobId)} pagination={false} locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="尚未暂存材料" /> }} columns={[
         { title: '材料', dataIndex: 'name', render: (name, record) => <div className="import-name"><strong>{name}</strong><p>{record.reason}</p></div> },
         { title: '状态', width: 90, render: (_, r) => <Tag color={r.state === 'failed' ? 'red' : 'orange'}>{r.state === 'failed' ? '校验失败' : '待接入'}</Tag> },

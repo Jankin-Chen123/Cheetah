@@ -1,13 +1,14 @@
 from alembic import context
 
+from app.core import models  # noqa: F401 -- register the shared metadata for migrations
 from app.core.config import get_settings
 from app.core.database import Base, get_engine
 
-settings = get_settings()
-if settings.database_url is None:
-    raise RuntimeError("CHEETA_DATABASE_URL must be configured for migrations")
-
 target_metadata = Base.metadata
+provided_connection = context.config.attributes.get("connection")
+settings = get_settings()
+if provided_connection is None and settings.database_url is None:
+    raise RuntimeError("CHEETA_DATABASE_URL must be configured for migrations")
 
 if context.is_offline_mode():
     context.configure(
@@ -16,6 +17,10 @@ if context.is_offline_mode():
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
+    with context.begin_transaction():
+        context.run_migrations()
+elif provided_connection is not None:
+    context.configure(connection=provided_connection, target_metadata=target_metadata)
     with context.begin_transaction():
         context.run_migrations()
 else:

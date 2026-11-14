@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Fact": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        },
+        "quote": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Quote"
+        },
+        "status": {
+          "enum": [
+            "stated",
+            "unknown",
+            "conflict"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "status"
+      ],
+      "title": "Fact",
+      "type": "object"
+    },
+    "ResumeResearchObject": {
+      "additionalProperties": false,
+      "properties": {
+        "object_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Object Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "company",
+            "project",
+            "award",
+            "paper",
+            "patent",
+            "software_copyright",
+            "open_source",
+            "certification"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "$ref": "#/$defs/Fact"
+        },
+        "period": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Fact"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "parent_object_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Object Id"
+        },
+        "facts": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Fact"
+          },
+          "maxProperties": 30,
+          "title": "Facts",
+          "type": "object"
+        }
+      },
+      "required": [
+        "object_id",
+        "kind",
+        "name"
+      ],
+      "title": "ResumeResearchObject",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "facts": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Fact"
+      },
+      "description": "Use canonical keys name, current_role, years_experience, education, skills, employer, employment_period, project and project_period when present. Preserve unknown/conflict rather than guessing. Include other predicate fields only with exact quotes.",
+      "maxProperties": 100,
+      "title": "Facts",
+      "type": "object"
+    },
+    "unknown_fields": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 100,
+      "title": "Unknown Fields",
+      "type": "array"
+    },
+    "research_objects": {
+      "description": "Extract EVERY stated company, project, award, paper, patent, copyright, open-source work and certification. One object per record, stable unique object_id, original name/period and exact quotes. Company: description, industry, products, location, role, contribution, metrics, website. Project: company, goal, complexity, outcomes, role, contribution, metrics, link. Professional: official_name, organizer, year, platform, identifier, authors, ownership, status, link, contribution. Preserve explicit author_identifier, orcid, contributor_handle, certificate_number or author_url when supplied; never infer them from a name. Do not infer personal contribution from team results or invent absent types.",
+      "items": {
+        "$ref": "#/$defs/ResumeResearchObject"
+      },
+      "maxItems": 100,
+      "title": "Research Objects",
+      "type": "array"
+    }
+  },
+  "required": [
+    "facts"
+  ],
+  "title": "ResumeProfile",
+  "type": "object"
+}

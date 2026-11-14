@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "SearchAssertion": {
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "enum": [
+            "registered_name",
+            "business",
+            "founded_year",
+            "project_description"
+          ],
+          "title": "Field",
+          "type": "string"
+        },
+        "value": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Value",
+          "type": "string"
+        },
+        "quote": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Quote",
+          "type": "string"
+        }
+      },
+      "required": [
+        "field",
+        "value",
+        "quote"
+      ],
+      "title": "SearchAssertion",
+      "type": "object"
+    },
+    "SearchHit": {
+      "additionalProperties": false,
+      "properties": {
+        "url": {
+          "maxLength": 3000,
+          "minLength": 1,
+          "title": "Url",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 300,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "snippet": {
+          "maxLength": 6000,
+          "minLength": 1,
+          "title": "Snippet",
+          "type": "string"
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Published At"
+        },
+        "assertions": {
+          "items": {
+            "$ref": "#/$defs/SearchAssertion"
+          },
+          "maxItems": 10,
+          "title": "Assertions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "url",
+        "title",
+        "snippet"
+      ],
+      "title": "SearchHit",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "results": {
+      "items": {
+        "$ref": "#/$defs/SearchHit"
+      },
+      "maxItems": 5,
+      "title": "Results",
+      "type": "array"
+    }
+  },
+  "required": [
+    "results"
+  ],
+  "title": "SearchResult",
+  "type": "object"
+}

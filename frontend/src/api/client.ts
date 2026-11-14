@@ -1,10 +1,8 @@
+import type { components } from './generated'
+
 const baseUrl = (import.meta.env.VITE_API_BASE_URL || '/api/v1').replace(/\/$/, '')
 
-export interface HealthResponse {
-  status: 'ok'
-  service: 'cheeta-api'
-  stage: 'initialization'
-}
+export type HealthResponse = components['schemas']['Health']
 
 export async function fetchHealth(signal: AbortSignal): Promise<HealthResponse> {
   const timeout = AbortSignal.timeout(8000)

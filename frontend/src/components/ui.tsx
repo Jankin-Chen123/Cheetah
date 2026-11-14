@@ -32,8 +32,8 @@ export function SourceTag({ source, inherited = false }: { source: SourceMode; i
 export function ScreeningTag({ value }: { value: Screening }) {
   return <Tag className="status-tag" color={{ pending: 'default', passed: 'green', unknown: 'orange', rejected: 'default' }[value]}><span className={`status-dot ${value}`} />{screeningLabels[value]}</Tag>
 }
-export function PageHeading({ eyebrow, title, description, actions }: { eyebrow: string; title: string; description: string; actions?: ReactNode }) {
-  return <div className="page-heading"><div><p className="eyebrow">{eyebrow}</p><h1>{title}</h1><p className="page-description">{description}</p></div><div className="heading-actions">{actions}</div></div>
+export function PageHeading({ title, description, actions }: { title: string; description?: string; actions?: ReactNode }) {
+  return <div className="page-heading"><div><h1>{title}</h1>{description && <p className="page-description">{description}</p>}</div><div className="heading-actions">{actions}</div></div>
 }
 export function Person({ name, detail, index = 0 }: { name: string; detail: string; index?: number }) {
   return <div className="person"><span className={`person-avatar tone-${index % 4}`}>{name.slice(-2)}</span><div><strong>{name}</strong><span>{detail}</span></div></div>

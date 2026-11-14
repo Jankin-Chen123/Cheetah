@@ -226,3 +226,23 @@ Delivery 为 id/report_id/report_version/channel=markdown_download/status=export
 | `reportMarkdown` 本地拼接 | 服务端 export 流 | 后端再次校验，不能相信浏览器传全文或 approved=true |
 
 接入时后端返回新增字段前端应容忍，未知枚举以“待支持状态”显示并禁用危险操作；写请求应拒绝未声明字段，避免浏览器伪造 source_mode、审核人或机构。F 需新增实际 API DTO 与转换函数，不能直接覆盖本地演示对象再宣称完成联调。
+
+## A 实现与设计稿的对齐记录（2026-11-14）
+
+A 已将响应对齐到上述字段：BatchItem.state、互斥批次桶、CandidateProfile、Artifact structured_content/content_markdown、Reason 和 Provenance.source_modes。实际结构从 Python 导出到 `openapi.implemented.v1.json`。D01—D06 各自经过对应 Pydantic 内容模型校验；扩展 `facts` 保留字段值、精确原文、状态、证据引用和来源种类，供确定性初筛与受限更正使用。
+
+初筛规则新增可空 predicate（发布时必填）。Task.kind 新增 batch 汇总类型；其资源为 batch，不允许将批次失败转换为通用重试。单份替换保留旧行；列表／计数默认按替换链末端统计，原始行仍通过 replaces_item_id 留痕。
+
+1.1 交接事件区分计划电话模式与实际阶段来源；旧 1.0 保持不变。A 的 D04 无检索提供者时仍保存有效的“未执行说明”，status=valid 仅表示记录未失效，不能解释为研究已完成。材料中的公司信息与个人自述不等同公开核实事实。
+
+D03 更正只接受 `/facts/{白名单字段}`，value 为带 status 与 quote 的结构，不能更正规则、系统权限或工具配置；新证据采用原证据 ID 的新版本并失效旧证据。D03—D10 受影响旧版本、待交接事件与内部任务同事务阻断，后续重算显式触发。B 后半段的任务停止、已交付记录定位与报告审批仍待 B 集成，不能由 A 的空列表推断已经验收。
+
+`ScreeningCondition.required_evidence` 保持人工可读证据要求；新增 `evidence_sources` 单独声明程序核验来源（resume/manual_revision/public_web）。二者不可混用；发布时需与 predicate 一并完整确认。面试维度也必须有明确证据要求。Job 补充可空 d01_ref/d02_ref，供发布时读取精确版本。
+
+Task.budget 增加可空 model_calls/model_tokens/search_calls，每项为 `{limit,reserved,used}` 的次数／Token 计数，金额字段保持 null。Session.capabilities 补充 model_configured/search_configured/voice_configured；配置标志不是供应商可用性验收。
+
+D03Content 增加 research_objects。每项含 object_id、kind、name、period、parent_object_id、facts，事实值保留 quote/status/evidence_refs/source_type。name/period 也是事实对象，未知时不造确定值。D04Content 增加可空 report，结构见 [A03 report Schema](../contracts/a03-report.v1.schema.json)：系统 ID、精确版本、逐对象原始信息与身份、并列字段、来源引文、目标、缺口、事实核实问题、资源与停止原因。Pi 执行依赖受控工具合同，不新增浏览器工具执行接口。
+
+D04 由可配置适配器执行固定计划，详见 [研究适配器](search-adapter.md)。配置与已发布规则允许时可保存 partial 结果；未执行时阶段来源为 null。扩展字段包括 declared_subjects（含逐主体 execution_state）、fields、sources（含 declared_subject、published_at、subject_identity、historical_applicability）、source_assertions 和 rejected_source_count。摘要 Evidence 带 public_url/source_date，全部为 U／待核实，不自动确认主体、任职历史或个人贡献；public_web 来源要求仍不满足。
+
+共享产物写入器校验上游归属和有效性、自动继承来源，将输入引用保存为 `{kind,id,version}`。D01/D03 包含原始材料引用；姓名更正同步搜索标签但不改变身份 ID。原文件受限时，关联读取、列表／计数、批次展示和 worker 缓存均受限，重导入不能恢复旧受限材料。

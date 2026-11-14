@@ -31,7 +31,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "implemented",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -70,7 +70,8 @@
             }
           }
         },
-        "security": []
+        "security": [],
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/health/ready": {
@@ -82,7 +83,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "implemented",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -161,7 +162,8 @@
             }
           }
         },
-        "security": []
+        "security": [],
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/auth/login": {
@@ -173,7 +175,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -396,7 +398,8 @@
               }
             }
           }
-        }
+        },
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/auth/me": {
@@ -408,7 +411,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -605,7 +608,8 @@
           {
             "sessionAuth": []
           }
-        ]
+        ],
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/auth/logout": {
@@ -617,7 +621,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "204": {
             "description": "成功",
@@ -825,7 +829,8 @@
               "minLength": 1
             }
           }
-        ]
+        ],
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/workspace/summary": {
@@ -837,7 +842,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -1017,7 +1022,8 @@
               ]
             }
           }
-        ]
+        ],
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/todos": {
@@ -1029,7 +1035,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -1262,7 +1268,8 @@
               ]
             }
           }
-        ]
+        ],
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/jobs": {
@@ -1274,7 +1281,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -1517,7 +1524,8 @@
               ]
             }
           }
-        ]
+        ],
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       },
       "post": {
         "operationId": "createJob",
@@ -1527,7 +1535,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "201": {
             "description": "成功",
@@ -1832,7 +1840,8 @@
               }
             }
           }
-        }
+        },
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/jobs/{job_id}": {
@@ -1844,7 +1853,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -2065,7 +2074,8 @@
               "maxLength": 128
             }
           }
-        ]
+        ],
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       },
       "patch": {
         "operationId": "updateJob",
@@ -2075,7 +2085,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -2356,7 +2366,8 @@
               }
             }
           }
-        }
+        },
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/jobs/{job_id}/analyze": {
@@ -2368,7 +2379,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "202": {
             "description": "成功",
@@ -2691,7 +2702,8 @@
               }
             }
           }
-        }
+        },
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/jobs/{job_id}/rules/draft": {
@@ -2703,7 +2715,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -2879,7 +2891,8 @@
               "maxLength": 128
             }
           }
-        ]
+        ],
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       },
       "patch": {
         "operationId": "saveRuleDraft",
@@ -2889,7 +2902,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -3182,7 +3195,8 @@
               }
             }
           }
-        }
+        },
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/jobs/{job_id}/rules/publish": {
@@ -3194,7 +3208,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "201": {
             "description": "成功",
@@ -3543,7 +3557,8 @@
               }
             }
           }
-        }
+        },
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/jobs/{job_id}/rules/versions": {
@@ -3555,7 +3570,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -3754,7 +3769,8 @@
               "maxLength": 128
             }
           }
-        ]
+        ],
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/jobs/{job_id}/rules/versions/{version}": {
@@ -3766,7 +3782,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -4024,7 +4040,8 @@
               "minimum": 1
             }
           }
-        ]
+        ],
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/jobs/{job_id}/resume-batches": {
@@ -4036,7 +4053,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "202": {
             "description": "成功",
@@ -4426,7 +4443,8 @@
               }
             }
           }
-        }
+        },
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/batches/{batch_id}": {
@@ -4438,7 +4456,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -4614,7 +4632,8 @@
               "maxLength": 128
             }
           }
-        ]
+        ],
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/batches/{batch_id}/items": {
@@ -4626,7 +4645,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -4825,7 +4844,8 @@
               "maxLength": 128
             }
           }
-        ]
+        ],
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/batches/{batch_id}/items/{item_id}/replace": {
@@ -4837,7 +4857,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "201": {
             "description": "成功",
@@ -5160,7 +5180,8 @@
               }
             }
           }
-        }
+        },
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/applications": {
@@ -5172,7 +5193,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -5412,7 +5433,8 @@
               "maxLength": 128
             }
           }
-        ]
+        ],
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/jobs/{job_id}/applications": {
@@ -5424,7 +5446,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -5664,7 +5686,8 @@
               "maxLength": 128
             }
           }
-        ]
+        ],
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/applications/{application_id}": {
@@ -5676,7 +5699,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -6114,7 +6137,8 @@
               "maxLength": 128
             }
           }
-        ]
+        ],
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/applications/{application_id}/timeline": {
@@ -6126,7 +6150,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -6325,7 +6349,8 @@
               "maxLength": 128
             }
           }
-        ]
+        ],
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/applications/{application_id}/artifacts": {
@@ -6337,7 +6362,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -6571,7 +6596,8 @@
               "maxLength": 128
             }
           }
-        ]
+        ],
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/artifacts/{artifact_id}": {
@@ -6583,7 +6609,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -6849,7 +6875,8 @@
               "maxLength": 128
             }
           }
-        ]
+        ],
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/evidence/{evidence_id}": {
@@ -6861,7 +6888,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -7087,7 +7114,8 @@
               "maxLength": 128
             }
           }
-        ]
+        ],
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/files/{file_id}": {
@@ -7099,7 +7127,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -7292,7 +7320,8 @@
               "maxLength": 128
             }
           }
-        ]
+        ],
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/tasks/{task_id}": {
@@ -7304,7 +7333,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "200": {
             "description": "成功",
@@ -7579,7 +7608,8 @@
               "maxLength": 128
             }
           }
-        ]
+        ],
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/tasks/{task_id}/retry": {
@@ -7591,7 +7621,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "202": {
             "description": "成功",
@@ -7888,7 +7918,8 @@
               }
             }
           }
-        }
+        },
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/applications/{application_id}/contact-authorization": {
@@ -12247,7 +12278,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "201": {
             "description": "成功",
@@ -12507,7 +12538,8 @@
               }
             }
           }
-        }
+        },
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/applications/{application_id}/corrections": {
@@ -12519,7 +12551,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "201": {
             "description": "成功",
@@ -12798,7 +12830,8 @@
               }
             }
           }
-        }
+        },
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     },
     "/applications/{application_id}/recompute": {
@@ -12810,7 +12843,7 @@
           "A"
         ],
         "x-owner": "A",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented-local",
         "responses": {
           "202": {
             "description": "成功",
@@ -13107,7 +13140,8 @@
               }
             }
           }
-        }
+        },
+        "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
     }
   },
@@ -13521,19 +13555,38 @@
         "additionalProperties": true
       },
       "Capabilities": {
-        "type": "object",
+        "additionalProperties": true,
         "properties": {
-          "modules": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "mock_execution_allowed": {
-            "type": "boolean"
-          },
           "import_limits": {
             "$ref": "#/components/schemas/ImportLimits"
+          },
+          "mock_execution_allowed": {
+            "title": "Mock Execution Allowed",
+            "type": "boolean"
+          },
+          "model_configured": {
+            "default": false,
+            "description": "仅表示配置，未证明供应商可用",
+            "title": "Model Configured",
+            "type": "boolean"
+          },
+          "modules": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Modules",
+            "type": "array"
+          },
+          "search_configured": {
+            "default": false,
+            "description": "仅表示选择了搜索适配器，未证明供应商可用",
+            "title": "Search Configured",
+            "type": "boolean"
+          },
+          "voice_configured": {
+            "default": false,
+            "title": "Voice Configured",
+            "type": "boolean"
           }
         },
         "required": [
@@ -13541,7 +13594,8 @@
           "mock_execution_allowed",
           "import_limits"
         ],
-        "additionalProperties": true
+        "title": "Capabilities",
+        "type": "object"
       },
       "Session": {
         "type": "object",
@@ -13875,13 +13929,66 @@
         "additionalProperties": true
       },
       "Budget": {
-        "type": "object",
+        "additionalProperties": true,
         "properties": {
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "estimated": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Estimated"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "limit": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^\\d+(\\.\\d+)?$"
+                "$ref": "#/components/schemas/Limit"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "model_calls": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BudgetCounters"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "model_tokens": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BudgetCounters"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reconciliation_status": {
+            "enum": [
+              "not_required",
+              "pending",
+              "confirmed",
+              "unknown"
+            ],
+            "title": "Reconciliation Status",
+            "type": "string"
+          },
+          "remaining": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Remaining"
               },
               {
                 "type": "null"
@@ -13891,8 +13998,17 @@
           "reserved": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^\\d+(\\.\\d+)?$"
+                "$ref": "#/components/schemas/Reserved"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "search_calls": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BudgetCounters"
               },
               {
                 "type": "null"
@@ -13902,46 +14018,11 @@
           "settled": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^\\d+(\\.\\d+)?$"
+                "$ref": "#/components/schemas/Settled"
               },
               {
                 "type": "null"
               }
-            ]
-          },
-          "estimated": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^\\d+(\\.\\d+)?$"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "remaining": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^\\d+(\\.\\d+)?$"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "currency": {
-            "type": "string"
-          },
-          "reconciliation_status": {
-            "type": "string",
-            "enum": [
-              "not_required",
-              "pending",
-              "confirmed",
-              "unknown"
             ]
           }
         },
@@ -13954,7 +14035,8 @@
           "currency",
           "reconciliation_status"
         ],
-        "additionalProperties": true
+        "title": "Budget",
+        "type": "object"
       },
       "Task": {
         "type": "object",
@@ -13967,6 +14049,7 @@
           "kind": {
             "type": "string",
             "enum": [
+              "batch",
               "job_analysis",
               "resume_parse",
               "research",
@@ -14162,6 +14245,31 @@
               "reject",
               "manual_review"
             ]
+          },
+          "predicate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScreeningPredicate"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A 的初筛执行字段；草案可空，发布时必填。"
+          },
+          "evidence_sources": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "resume",
+                "manual_revision",
+                "public_web"
+              ]
+            },
+            "maxItems": 3,
+            "default": [],
+            "description": "程序核验的证据来源类型；required_evidence 继续保留人工可读要求，发布时二者均须确认。"
           }
         },
         "required": [
@@ -14620,6 +14728,28 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "d01_ref": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ArtifactRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "d02_ref": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ArtifactRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           }
         },
         "required": [
@@ -15109,6 +15239,14 @@
             },
             "minItems": 1,
             "maxItems": 10
+          },
+          "execution_mode": {
+            "type": "string",
+            "enum": [
+              "live",
+              "mock"
+            ],
+            "default": "live"
           }
         },
         "required": [
@@ -15142,6 +15280,14 @@
             },
             "minItems": 1,
             "maxItems": 10
+          },
+          "execution_mode": {
+            "type": "string",
+            "enum": [
+              "live",
+              "mock"
+            ],
+            "default": "live"
           }
         },
         "required": [
@@ -16137,40 +16283,52 @@
         "additionalProperties": true
       },
       "D03Content": {
-        "type": "object",
+        "additionalProperties": true,
         "properties": {
+          "claims": {
+            "items": {
+              "$ref": "#/components/schemas/Claim"
+            },
+            "title": "Claims",
+            "type": "array"
+          },
+          "education": {
+            "items": {
+              "$ref": "#/components/schemas/Claim"
+            },
+            "title": "Education",
+            "type": "array"
+          },
+          "employment": {
+            "items": {
+              "$ref": "#/components/schemas/Claim"
+            },
+            "title": "Employment",
+            "type": "array"
+          },
           "profile": {
             "$ref": "#/components/schemas/CandidateProfile"
           },
-          "employment": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Claim"
-            }
-          },
           "projects": {
-            "type": "array",
             "items": {
               "$ref": "#/components/schemas/Claim"
-            }
+            },
+            "title": "Projects",
+            "type": "array"
+          },
+          "research_objects": {
+            "items": {
+              "$ref": "#/components/schemas/ResearchObject"
+            },
+            "title": "Research Objects",
+            "type": "array"
           },
           "skills": {
-            "type": "array",
             "items": {
               "type": "string"
-            }
-          },
-          "education": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Claim"
-            }
-          },
-          "claims": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Claim"
-            }
+            },
+            "title": "Skills",
+            "type": "array"
           }
         },
         "required": [
@@ -16181,37 +16339,52 @@
           "education",
           "claims"
         ],
-        "additionalProperties": true
+        "title": "D03Content",
+        "type": "object"
       },
       "D04Content": {
-        "type": "object",
+        "additionalProperties": true,
         "properties": {
-          "subjects": {
-            "type": "array",
+          "conflicts": {
             "items": {
               "type": "string"
-            }
+            },
+            "title": "Conflicts",
+            "type": "array"
           },
           "findings": {
-            "type": "array",
             "items": {
               "$ref": "#/components/schemas/Claim"
-            }
-          },
-          "conflicts": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+            },
+            "title": "Findings",
+            "type": "array"
           },
           "gaps": {
-            "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "title": "Gaps",
+            "type": "array"
+          },
+          "report": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResearchReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "stop_reason": {
             "$ref": "#/components/schemas/Reason"
+          },
+          "subjects": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Subjects",
+            "type": "array"
           },
           "usage": {
             "$ref": "#/components/schemas/Usage"
@@ -16225,7 +16398,8 @@
           "stop_reason",
           "usage"
         ],
-        "additionalProperties": true
+        "title": "D04Content",
+        "type": "object"
       },
       "D05Content": {
         "type": "object",
@@ -20343,6 +20517,722 @@
           "page_size"
         ],
         "additionalProperties": true
+      },
+      "ScreeningPredicate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "field",
+          "operator",
+          "expected"
+        ],
+        "properties": {
+          "field": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$"
+          },
+          "operator": {
+            "type": "string",
+            "enum": [
+              "equals",
+              "contains",
+              "gte"
+            ]
+          },
+          "expected": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        }
+      },
+      "BudgetCounters": {
+        "properties": {
+          "limit": {
+            "minimum": 0.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "reserved": {
+            "minimum": 0.0,
+            "title": "Reserved",
+            "type": "integer"
+          },
+          "used": {
+            "minimum": 0.0,
+            "title": "Used",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "limit",
+          "reserved",
+          "used"
+        ],
+        "title": "BudgetCounters",
+        "type": "object"
+      },
+      "Estimated": {
+        "pattern": "^\\d+(\\.\\d+)?$",
+        "title": "Estimated",
+        "type": "string"
+      },
+      "Limit": {
+        "pattern": "^\\d+(\\.\\d+)?$",
+        "title": "Limit",
+        "type": "string"
+      },
+      "Remaining": {
+        "pattern": "^\\d+(\\.\\d+)?$",
+        "title": "Remaining",
+        "type": "string"
+      },
+      "Reserved": {
+        "pattern": "^\\d+(\\.\\d+)?$",
+        "title": "Reserved",
+        "type": "string"
+      },
+      "Settled": {
+        "pattern": "^\\d+(\\.\\d+)?$",
+        "title": "Settled",
+        "type": "string"
+      },
+      "ResearchObject": {
+        "properties": {
+          "facts": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ResearchFact"
+            },
+            "title": "Facts",
+            "type": "object"
+          },
+          "kind": {
+            "enum": [
+              "company",
+              "project",
+              "award",
+              "paper",
+              "patent",
+              "software_copyright",
+              "open_source",
+              "certification"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/ResearchFact"
+          },
+          "object_id": {
+            "title": "Object Id",
+            "type": "string"
+          },
+          "parent_object_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Object Id"
+          },
+          "period": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResearchFact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "object_id",
+          "kind",
+          "name"
+        ],
+        "title": "ResearchObject",
+        "type": "object"
+      },
+      "ResearchFact": {
+        "properties": {
+          "evidence_refs": {
+            "items": {
+              "$ref": "#/components/schemas/app__core__contracts__EvidenceRef"
+            },
+            "title": "Evidence Refs",
+            "type": "array"
+          },
+          "quote": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quote"
+          },
+          "source_type": {
+            "default": "resume",
+            "enum": [
+              "resume",
+              "manual_revision"
+            ],
+            "title": "Source Type",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "stated",
+              "unknown",
+              "conflict"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "value",
+          "status"
+        ],
+        "title": "ResearchFact",
+        "type": "object"
+      },
+      "app__core__contracts__EvidenceRef": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence_id": {
+            "minLength": 1,
+            "title": "Evidence Id",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "evidence_id",
+          "version"
+        ],
+        "title": "EvidenceRef",
+        "type": "object"
+      },
+      "ResearchReport": {
+        "properties": {
+          "application_id": {
+            "title": "Application Id",
+            "type": "string"
+          },
+          "candidate_id": {
+            "title": "Candidate Id",
+            "type": "string"
+          },
+          "d01_ref": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/app__core__contracts__ArtifactRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "d03_ref": {
+            "$ref": "#/components/schemas/app__core__contracts__ArtifactRef"
+          },
+          "execution": {
+            "additionalProperties": true,
+            "title": "Execution",
+            "type": "object"
+          },
+          "gaps": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Gaps",
+            "type": "array"
+          },
+          "goals": {
+            "items": {
+              "$ref": "#/components/schemas/Goal"
+            },
+            "title": "Goals",
+            "type": "array"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "objects": {
+            "items": {
+              "$ref": "#/components/schemas/ObjectReport"
+            },
+            "title": "Objects",
+            "type": "array"
+          },
+          "report_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Report Version",
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "completed",
+              "partial",
+              "needs_verification",
+              "not_executed",
+              "tool_failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "stop_reason": {
+            "title": "Stop Reason",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "verification_questions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Verification Questions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "candidate_id",
+          "application_id",
+          "job_id",
+          "d03_ref",
+          "d01_ref",
+          "status",
+          "objects",
+          "summary",
+          "gaps",
+          "verification_questions",
+          "sources",
+          "goals",
+          "execution",
+          "stop_reason"
+        ],
+        "title": "ResearchReport",
+        "type": "object"
+      },
+      "app__core__contracts__ArtifactRef": {
+        "additionalProperties": false,
+        "properties": {
+          "artifact_id": {
+            "minLength": 1,
+            "title": "Artifact Id",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "artifact_id",
+          "version"
+        ],
+        "title": "ArtifactRef",
+        "type": "object"
+      },
+      "Goal": {
+        "additionalProperties": false,
+        "properties": {
+          "field": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Field",
+            "type": "string"
+          },
+          "object_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Object Id",
+            "type": "string"
+          },
+          "priority": {
+            "default": "normal",
+            "enum": [
+              "high",
+              "normal",
+              "low"
+            ],
+            "title": "Priority",
+            "type": "string"
+          },
+          "question": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Question",
+            "type": "string"
+          },
+          "rationale": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object_id",
+          "field",
+          "question",
+          "rationale"
+        ],
+        "title": "Goal",
+        "type": "object"
+      },
+      "ObjectReport": {
+        "properties": {
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/ReportField"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "gaps": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Gaps",
+            "type": "array"
+          },
+          "identity": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "object_id": {
+            "title": "Object Id",
+            "type": "string"
+          },
+          "original_information": {
+            "$ref": "#/components/schemas/ResearchObject"
+          },
+          "original_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Name"
+          },
+          "original_period": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Period"
+          },
+          "state": {
+            "enum": [
+              "completed",
+              "needs_verification",
+              "not_executed"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "stop_reason": {
+            "title": "Stop Reason",
+            "type": "string"
+          },
+          "verification_questions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Verification Questions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "object_id",
+          "kind",
+          "original_name",
+          "original_period",
+          "original_information",
+          "identity",
+          "state",
+          "fields",
+          "gaps",
+          "verification_questions",
+          "stop_reason"
+        ],
+        "title": "ObjectReport",
+        "type": "object"
+      },
+      "ReportField": {
+        "properties": {
+          "a04_information": {
+            "items": {
+              "$ref": "#/components/schemas/ResearchFact"
+            },
+            "title": "A04 Information",
+            "type": "array"
+          },
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "public_information": {
+            "items": {
+              "$ref": "#/components/schemas/ReportFinding"
+            },
+            "title": "Public Information",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "supported",
+              "analysis",
+              "unknown",
+              "conflict",
+              "self_report_only"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "label",
+          "a04_information",
+          "public_information",
+          "status"
+        ],
+        "title": "ReportField",
+        "type": "object"
+      },
+      "ReportFinding": {
+        "additionalProperties": false,
+        "properties": {
+          "a04_fields": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "title": "A04 Fields",
+            "type": "array"
+          },
+          "applicable_period": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applicable Period"
+          },
+          "category": {
+            "enum": [
+              "E1",
+              "E3",
+              "U"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "maxItems": 8,
+            "title": "Citations",
+            "type": "array"
+          },
+          "conflict_with_a04": {
+            "default": false,
+            "title": "Conflict With A04",
+            "type": "boolean"
+          },
+          "evidence_refs": {
+            "items": {
+              "$ref": "#/components/schemas/app__core__contracts__EvidenceRef"
+            },
+            "title": "Evidence Refs",
+            "type": "array"
+          },
+          "field": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Field",
+            "type": "string"
+          },
+          "historical_applicability": {
+            "default": "unknown",
+            "enum": [
+              "confirmed",
+              "current_only",
+              "unknown"
+            ],
+            "title": "Historical Applicability",
+            "type": "string"
+          },
+          "personal_identity_fields": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "title": "Personal Identity Fields",
+            "type": "array"
+          },
+          "text": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "validation_notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Validation Notes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "field",
+          "category",
+          "text"
+        ],
+        "title": "ReportFinding",
+        "type": "object"
+      },
+      "Citation": {
+        "additionalProperties": false,
+        "properties": {
+          "quote": {
+            "maxLength": 3000,
+            "minLength": 1,
+            "title": "Quote",
+            "type": "string"
+          },
+          "source_date": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Date"
+          },
+          "source_id": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Source Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "quote"
+        ],
+        "title": "Citation",
+        "type": "object"
+      },
+      "Identity": {
+        "additionalProperties": false,
+        "properties": {
+          "a04_anchor_fields": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "title": "A04 Anchor Fields",
+            "type": "array"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "maxItems": 8,
+            "title": "Citations",
+            "type": "array"
+          },
+          "rationale": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "confirmed",
+              "uncertain",
+              "unmatched"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "rationale"
+        ],
+        "title": "Identity",
+        "type": "object"
       }
     },
     "securitySchemes": {

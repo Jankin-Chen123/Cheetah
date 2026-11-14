@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "enum": [
+        "company-research",
+        "professional-achievements",
+        "evidence-quality",
+        "report-handoff"
+      ],
+      "title": "Name",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "title": "LoadSkill",
+  "type": "object"
+}
