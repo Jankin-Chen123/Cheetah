@@ -1,4 +1,5 @@
 export interface CandidateSession {
+  spoken_prompt: string | null
   revision: number
   status: string
   stop_status: string

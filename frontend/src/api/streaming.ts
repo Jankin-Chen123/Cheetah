@@ -2,7 +2,7 @@ import { captureMicrophone, type MicrophoneCapture } from './microphone'
 
 export function openCandidateStream(caseId: string, token: string, revision: number,
   onDelta: (text: string) => void, onComplete: (text: string, taskId: string) => void,
-  onError: (message: string) => void) {
+  onError: (message: string) => void, automatic = false) {
   const url = new URL(`/api/v1/candidate/calls/${encodeURIComponent(caseId)}/stream`, window.location.href)
   url.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   const socket = new WebSocket(url)
@@ -10,6 +10,7 @@ export function openCandidateStream(caseId: string, token: string, revision: num
   let cancelled = false
   let completed = false
   let finishing = false
+  let muted = false
   async function finish() {
     if (finishing || cancelled) return
     finishing = true
@@ -28,8 +29,8 @@ export function openCandidateStream(caseId: string, token: string, revision: num
           if (socket.bufferedAmount > 65536) { onError('网络发送积压，已停止采集，请核对状态。'); cancel() }
           else socket.send(frame)
         }
-      }, () => void finish()).then(capture => {
-        if (cancelled || finishing) void capture.cancel(); else microphone = capture
+      }, () => void finish(), automatic).then(capture => {
+        if (cancelled || finishing) void capture.cancel(); else { microphone = capture; microphone.setMuted(muted) }
       }).catch((reason: Error) => { onError(reason.message); cancel() })
     } else if (message.type === 'transcript_delta') onDelta(message.text ?? '')
     else if (message.type === 'transcript_completed') {
@@ -41,5 +42,5 @@ export function openCandidateStream(caseId: string, token: string, revision: num
     void microphone?.cancel(); microphone = null
     if (!cancelled && !completed) onError('实时连接中断，请刷新恢复已完成转写。')
   }
-  return { finish, cancel }
+  return { finish, cancel, setMuted: (value: boolean) => { muted = value; microphone?.setMuted(value) } }
 }

@@ -66,7 +66,7 @@ def synthesize_question(settings: Settings, text: str):
             event = socket.recv(timeout=min(15, max(0.1, deadline - time.monotonic())))
             if isinstance(event, bytes):
                 size += len(event)
-                if size > 24000 * 2 * 30:
+                if size > 24000 * 2 * 120:
                     raise RuntimeError("TTS_OUTPUT_LIMIT")
                 chunks.append(event)
                 continue

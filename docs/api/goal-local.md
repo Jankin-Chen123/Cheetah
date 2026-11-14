@@ -54,3 +54,15 @@ TTS现行官方接入纠偏（2026-11-14）：https://help.aliyun.com/zh/model-s
 POST /candidate/calls/{id}/speech接受expected_revision，Bearer/Origin/前置确认后只朗读服务端current_question；同版本缓存ModelStep音频，不允许候选人提交任意朗读文本。返回pcm_base64/sample_rate/model/source_mode，停止或版本改变拒绝迟到结果；执行中或失败不得直接重发。专用TTS原业务空间实际短句合成及ASR回读一致已验证，候选人HTTP播放仍待。
 
 候选人WebSocket：/api/v1/candidate/calls/{id}/stream，Origin白名单，首条JSON token/expected_revision（10秒内），ready后发送16kHz单声道S16LE二进制帧，每帧最多32768字节、总10秒；文本finish提交。回传transcript_delta、transcript_completed(text/transcription_task_id)，异常通用error并保留需核对任务；GET候选人当前版本可恢复完成草稿。真实模型经Vite代理已验证，浏览器采集仍待验收。
+# 2026-11-14 自动网页语音通话增量
+
+候选人 `/candidate` 改为通话房间，点击一次接通并授权麦克风后自动播报、流式转写、停顿提交、等待持久化 worker 追问并继续播报。字幕辅助查看，不要求逐轮录音、上传、保存。静音只控制采集，挂断立即释放本地音频并向服务端提交停止。当前是轮流说话，尚不支持在 AI 播报时语音打断；可随时点击挂断。
+
+- `GET /candidate/calls/{id}` 新增 `spoken_prompt: string|null`：服务端根据意愿/材料确认阶段生成开场白、材料说明或当前面试题；停止后返回结束文案。该字段不是模型生成结果。
+- `POST /candidate/calls/{id}/speech` 保留 `{expected_revision}`；现在允许意愿及材料确认阶段播报服务端 `spoken_prompt`，仍使用真实专用 TTS、任务防重、预算及版本复核，停止后禁止合成。
+- WebSocket `/candidate/calls/{id}/stream` 允许意愿确认阶段使用；Origin、邀请、版本、停止、预算、唯一转写任务仍校验。PCM 上限由 10 秒增加至 120 秒（3,840,000 字节），输入超时125秒、总超时150秒。旧分段 HTTP 转写接口仍限制10秒。
+- `POST /candidate/calls/{id}` 新增 `action:"voice"`，必须提交当前版本、已完成的同任务转写 ID，以及与原转写完全一致的 `statement`。服务端判断明确意愿：肯定进入材料说明，再肯定才确认材料并进入面试；否定结束；含糊再次确认。语音来源保留 ASR 任务引用。意愿判断采用保守规则，不宣称通用语义模型。
+- 正式回答自动保存并在同事务登记追问任务；证据标记 `submission_mode:automatic_voice`、`candidate_confirmed:false`，不能把自动转写称为候选人逐字人工确认。原手动确认接口兼容保留。
+- 页面约1.5秒静音判定交棒；单轮最长2分钟。断线后只恢复已持久化完成转写；结果不明暂停并要求核对，不自动重发音频。浏览器刷新需再次点击恢复通话，遵循浏览器音频授权。
+
+隔离测试覆盖意愿模糊/同意/拒绝、未确认不泄露正式问题、前置阶段流式转写、同版本重放409、自动回答证据来源、追问单任务和挂断。浏览器麦克风端到端验收仍待实际操作，不以单元测试替代。

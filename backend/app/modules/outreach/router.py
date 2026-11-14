@@ -66,7 +66,8 @@ async def candidate_audio_stream(socket: WebSocket, case_id: str):
                 or case.status in {"ended", "cancelled"}
             ):
                 raise ValueError("INTERVIEW_INPUT_CHANGED")
-            require_preflight(case)
+            if case.session_data.get("preflight", {}).get("confirmed"):
+                require_preflight(case)
             if case.session_data.get("decision_status") == "pending":
                 raise ValueError("DECISION_PENDING")
             task, created = register_step(session, case.id, "transcription", case.revision)
@@ -828,7 +829,10 @@ def candidate_view(case):
     material = briefing_snapshot(case)
     digest = hashlib.sha256(json.dumps(material, sort_keys=True).encode()).hexdigest()
     material.pop("upstream_refs", None)
+    from app.modules.outreach.conversation import spoken_prompt
+
     return {
+        "spoken_prompt": spoken_prompt(case),
         "revision": case.revision,
         "status": case.status,
         "stop_status": case.stop_status,
@@ -877,7 +881,7 @@ def candidate_session(case_id: str, request: Request):
 class CandidateAction(BaseModel):
     model_config = ConfigDict(extra="forbid")
     expected_revision: int = Field(ge=1)
-    action: Literal["interest", "confirm", "answer", "stop"]
+    action: Literal["interest", "confirm", "answer", "stop", "voice"]
     statement: str = Field(min_length=1, max_length=10000)
     interested: bool | None = None
     material_sha256: str | None = Field(default=None, max_length=64)
@@ -908,8 +912,11 @@ def candidate_speech(case_id: str, data: RevisionInput, request: Request):
                 raise ValueError("VERSION_CONFLICT")
             if case.status in {"ended", "cancelled"} or case.stop_status != "none":
                 raise ValueError("INTERVIEW_STOPPED")
-            require_preflight(case)
-            question = (case.session_data.get("current_question") or {}).get("question")
+            from app.modules.outreach.conversation import spoken_prompt
+
+            if case.session_data.get("preflight", {}).get("confirmed"):
+                require_preflight(case)
+            question = spoken_prompt(case)
             if not question or case.session_data.get("decision_status") == "pending":
                 raise ValueError("QUESTION_NOT_READY")
             task, created = register_step(session, case.id, "speech", case.revision)
@@ -1046,6 +1053,50 @@ def candidate_action(case_id: str, data: CandidateAction, request: Request):
                 raise ValueError("VERSION_CONFLICT")
             if case.status in {"ended", "cancelled"} or case.stop_status != "none":
                 raise ValueError("INTERVIEW_STOPPED")
+            voice_transcription = None
+            if data.action == "voice":
+                from app.modules.outreach.conversation import consent
+                from app.modules.outreach.interview import termination_reason
+
+                voice_transcription = session.get(ModelStep, data.transcription_task_id or "")
+                if (
+                    voice_transcription is None
+                    or voice_transcription.case_id != case.id
+                    or voice_transcription.step != "transcription"
+                    or voice_transcription.status != "completed"
+                    or voice_transcription.input_revision != case.revision
+                    or voice_transcription.detail.get("result", {}).get("text") != data.statement
+                ):
+                    raise ValueError("TRANSCRIPTION_REFERENCE_INVALID")
+                state = case.session_data.get("preflight", {})
+                case.session_data = {**case.session_data, "voice_clarification": None}
+                if termination_reason(data.statement, 0, 0) == "candidate_requested_stop":
+                    data.action = "stop"
+                elif not state.get("confirmed"):
+                    choice = consent(data.statement)
+                    if choice is None:
+                        case.session_data = {
+                            **case.session_data,
+                            "voice_clarification": True,
+                            "voice_clarification_transcription_id": voice_transcription.id,
+                        }
+                        case.revision += 1
+                        return Response(
+                            content=json.dumps(candidate_view(case)),
+                            media_type="application/json",
+                            headers={"Cache-Control": "no-store"},
+                        )
+                    if not choice:
+                        record_interest(case, False, data.statement)
+                        data.action = "stop"
+                    elif not state.get("interested"):
+                        data.action = "interest"
+                        data.interested = True
+                    else:
+                        data.action = "confirm"
+                        data.material_sha256 = candidate_view(case)["material_sha256"]
+                else:
+                    data.action = "answer"
             if data.action == "stop":
                 if case.session_data.get("attempts"):
                     case.stop_status = "requested"
@@ -1083,12 +1134,18 @@ def candidate_action(case_id: str, data: CandidateAction, request: Request):
                     original = transcription.detail["result"]
                     answers[-1] = {
                         **answers[-1],
+                        "source_mode": original["source_mode"]
+                        if voice_transcription
+                        else answers[-1].get("source_mode", "manual"),
                         "audio_transcription": {
                             "task_id": transcription.id,
                             "text": original["text"],
                             "model": original["model"],
                             "source_mode": original["source_mode"],
-                            "candidate_confirmed": True,
+                            "candidate_confirmed": voice_transcription is None,
+                            "submission_mode": "automatic_voice"
+                            if voice_transcription
+                            else "manual_confirmation",
                             "edited": original["text"] != data.statement,
                         },
                     }
@@ -1103,6 +1160,16 @@ def candidate_action(case_id: str, data: CandidateAction, request: Request):
                             "actor_id": "candidate_invitation",
                             "organization_id": case.organization_id,
                         }
+            if voice_transcription:
+                state = case.session_data.get("preflight", {})
+                case.session_data = {
+                    **case.session_data,
+                    "preflight": {
+                        **state,
+                        "voice_transcription_task_id": voice_transcription.id,
+                        "source_mode": voice_transcription.detail["result"]["source_mode"],
+                    },
+                }
         except ValueError as error:
             raise HTTPException(409, detail=str(error)) from None
         return Response(

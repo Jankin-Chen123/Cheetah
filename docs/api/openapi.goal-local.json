@@ -1952,7 +1952,8 @@
               "interest",
               "confirm",
               "answer",
-              "stop"
+              "stop",
+              "voice"
             ],
             "title": "Action"
           },

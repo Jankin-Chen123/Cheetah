@@ -2,9 +2,10 @@
 export interface MicrophoneCapture {
   finish: () => Promise<Uint8Array>
   cancel: () => Promise<void>
+  setMuted: (muted: boolean) => void
 }
 
-export async function captureMicrophone(onFrame?: (pcm: Uint8Array) => void, onLimit?: () => void): Promise<MicrophoneCapture> {
+export async function captureMicrophone(onFrame?: (pcm: Uint8Array) => void, onLimit?: () => void, automatic = false): Promise<MicrophoneCapture> {
   if (!navigator.mediaDevices?.getUserMedia) throw new Error('当前浏览器无法访问麦克风，请使用 HTTPS 或本机地址。')
   const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true }, video: false })
   let context: AudioContext
@@ -18,13 +19,24 @@ export async function captureMicrophone(onFrame?: (pcm: Uint8Array) => void, onL
   const source = context.createMediaStreamSource(stream)
   // Bounded fallback for browsers without a bundled AudioWorklet module.
   const processor = context.createScriptProcessor(4096, 1, 1)
+  const maxSeconds = automatic ? 120 : 10
+  let muted = false
+  let voiced = false
+  let silence = 0
+  let voiceSamples = 0
+  let ending = false
   let samples = 0
   let closed = false
   processor.onaudioprocess = event => {
-    if (closed || samples >= context.sampleRate * 10) return
+    if (closed || muted || ending || samples >= context.sampleRate * maxSeconds) return
     const input = event.inputBuffer.getChannelData(0)
-    const chunk = input.slice(0, Math.min(input.length, context.sampleRate * 10 - samples))
+    const chunk = input.slice(0, Math.min(input.length, context.sampleRate * maxSeconds - samples))
     chunks.push(chunk); samples += chunk.length
+    if (automatic) {
+      const rms = Math.sqrt(chunk.reduce((sum, value) => sum + value * value, 0) / chunk.length)
+      if (rms > 0.018) { voiceSamples += chunk.length; voiced = voiceSamples > context.sampleRate * 0.25; silence = 0 }
+      else if (voiced) silence += chunk.length
+    }
     if (onFrame) {
       const bytes = new Uint8Array(chunk.length * 2)
       const view = new DataView(bytes.buffer)
@@ -33,6 +45,10 @@ export async function captureMicrophone(onFrame?: (pcm: Uint8Array) => void, onL
         view.setInt16(index * 2, Math.round(value * (value < 0 ? 32768 : 32767)), true)
       })
       onFrame(bytes)
+    }
+    if (automatic && voiced && silence > context.sampleRate * 1.5) {
+      ending = true
+      onLimit?.()
     }
   }
   source.connect(processor); processor.connect(context.destination)
@@ -43,8 +59,9 @@ export async function captureMicrophone(onFrame?: (pcm: Uint8Array) => void, onL
     stream.getTracks().forEach(track => track.stop())
     await context.close()
   }
-  const timeout = setTimeout(() => { void close().then(() => onLimit?.()) }, 10000)
+  const timeout = setTimeout(() => { void close().then(() => onLimit?.()) }, maxSeconds * 1000)
   return {
+    setMuted: (value: boolean) => { muted = value; stream.getAudioTracks().forEach(track => { track.enabled = !value }) },
     cancel: async () => { clearTimeout(timeout); await close(); chunks.length = 0 },
     finish: async () => {
       clearTimeout(timeout); await close()
