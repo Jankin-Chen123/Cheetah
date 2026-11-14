@@ -1,6 +1,16 @@
 # 接入步骤与联调验收
 
+初筛 V2 接入补充：岗位分析主任务等待 A02/A05 岗位建议步骤完成，可沿 `continuation_task_id` 定位失败步骤；完成后仍须人工确认发布。采用 `a05-evidence` 时展示七维证据评分、`coverage` 和 `contribution`，`total=null` 显示待核实。D05/D06 的 Markdown 为同一份合并报告。文件接口新增 DOCX 文本读取；扫描图片、旧版 Word 与不可读文件明确失败或部分完成。[执行和模板约定](../intake-agents.md)。
+
 状态：完整设计仍含草案；后端 A 本地实现及逐项证据见 [交付说明](../backend-a-delivery.md)。实际接口见 [运行快照](openapi.implemented.v1.json)。不能因为导入 OpenAPI、页面展示样例或健康检查通过，就宣布已完成真实业务。本文不包含真实号码、密钥、真实材料或外部消息发送授权。
+
+## 账号入口补充（2026-11-14）
+
+官网 `#home`，登录 `#login`，注册 `#register`，账号区 `#app/…`，演示区 `#demo/…`。首次及刷新通过 `/auth/me` 恢复会话；账号区未登录显示登录表单，成功后恢复安全的站内目标。前端不保存密码或 Cookie 值。退出调用 `/auth/logout` 并携带 CSRF；失败不显示退出成功。跨标签聚焦、可见性恢复和每 60 秒检查会话，服务端 401 或到期后卸载账号区。
+
+注册 POST `/auth/register`，Origin 必填，无前置 Cookie、CSRF 或幂等 key。201 自动进入工作空间，409 提示更换账号；403 可能未开放注册，429 等待后重试。注册响应丢失不自动提交，可先尝试登录。每个账号创建独立机构，不能通过请求传入组织或权限。通过 `CHEETA_REGISTRATION_ENABLED=false` 关闭自助注册。按直接连接来源在 10 分钟窗口限流，默认最多 5 次有效格式尝试（包括重复账号），不信任转发请求头；反向代理下会共享额度。
+
+本机 IndexedDB 与列表视图按用户 ID 隔离，演示沿用原演示库；不迁移旧匿名资料到新账号，不清空用户已有资料。账号区不预置虚构候选人；候选人、电话和推荐真实列表仍未接入。验证与限制见 [官网与账号交付](../website-auth.md)。
 
 ## 1. 各方责任与实现顺序
 
@@ -26,9 +36,9 @@ API 公共源在后端 Pydantic 与业务模型；冻结后再生成实际运行
 
 ### 岗位创建和规则发布
 
-1. POST `/jobs`（新幂等 key）创建草案，201 后跳转服务端返回 ID。
+1. POST `/jobs`（新幂等 key）创建草案，`material_text` 必填，`title/company` 可省略或为 null。前端本机工作区另保留 local ID 与 remoteJobId 映射。录音 ASR 与人工版本回写尚待接入，见 [材料创建流程](../job-material-workflow.md)。
 2. POST `/{job_id}/analyze`（新意图、新 key），202 后轮询 task；同时保留岗位原文。
-3. task 完成后 GET job 与 rules/draft，按实际草案 revision 编辑；缺失字段显式呈现，保存文本不等于正式规则完整。
+3. 不以主任务单一状态判断产物齐全；轮询 job 的 d01_ref/d02_ref 与 active_task_ids，沿 continuation_task_id 定位失败。按具体版本读取两份产物；正式规则 GET rules/draft，按实际草案 revision 编辑；缺失字段显式呈现，保存文本不等于正式规则完整。
 4. PATCH rules/draft 带 expected_draft_revision；409 时保留未提交输入，不静默覆盖。
 5. 发布时提交实际 D01/D02 版本、草案 revision、测试标记和确认说明；成功显示 RulePackRef。
 6. 历史候选人依旧引用旧规则；查看版本从 `/rules/versions/{version}`，不能读取当前草案来解释旧结论。

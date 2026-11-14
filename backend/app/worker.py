@@ -15,6 +15,7 @@ from app.core.database import get_engine
 from app.core.errors import DomainError
 from app.core.models import (
     Application,
+    Artifact,
     BatchItem,
     Identity,
     IntakeJob,
@@ -29,13 +30,29 @@ from app.core.models import (
 from app.core.tasks import (
     INTERNAL_KINDS,
     claim,
+    enqueue,
     fence,
     reserve_model,
     resume_known_response,
     settle_model,
 )
 from app.modules.intake import analysis
-from app.modules.intake.schemas import Fact, JobAnalysis, ResumeProfile, RuleContent
+from app.modules.intake.evidence_screening import (
+    finish_screening,
+    model_context,
+    uses_evidence_method,
+)
+from app.modules.intake.form_sources import canonical_resume_facts, resume_objects
+from app.modules.intake.schemas import (
+    ConfigRef,
+    Fact,
+    InterviewStandard,
+    JobAnalysis,
+    ResumeProfile,
+    ResumeResearchObject,
+    RuleContent,
+    ScreeningStandard,
+)
 from app.modules.intake.service import (
     audit,
     check_mode,
@@ -66,6 +83,11 @@ def register_internal_handler(kind: str, handler: Handler):
 
 
 def _context(db: Session, task: Task) -> tuple[IntakeJob, Application | None]:
+    from app.modules.intake.agent_prompts import resource_fingerprint
+
+    expected = task.payload.get("agent_resource_hash")
+    if expected and expected != resource_fingerprint():
+        raise DomainError("AGENT_RESOURCES_CHANGED", "提示词或合同版本已变化，请核对任务输入版本")
     job = db.scalar(select(IntakeJob).where(IntakeJob.id == task.job_id).with_for_update())
     if job is None or job.organization_id != task.organization_id:
         raise DomainError("PRECONDITION_NOT_MET", "任务对象已不可访问")
@@ -86,7 +108,7 @@ def _context(db: Session, task: Task) -> tuple[IntakeJob, Application | None]:
         ):
             raise DomainError("PRECONDITION_NOT_MET", "任务输入已失效")
         require_application_file(db, application)
-    elif task.kind == "job_analysis":
+    elif task.kind in {"job_analysis", "interview_standard", "screening_standard"}:
         if job.draft_revision != task.payload["draft_revision"]:
             raise DomainError("VERSION_CONFLICT", "规则草案已修改，未覆盖人工编辑")
     return job, application
@@ -96,8 +118,19 @@ def _finish_model(
     db: Session, task: Task, job: IntakeJob, application: Application | None, data: dict
 ) -> list[dict]:
     mode = task.payload["execution_mode"]
+    if task.kind == "screening":
+        return finish_screening(db, task, job, application, data)
+    if task.kind in {"interview_standard", "screening_standard"}:
+        return _finish_standard(db, task, job, data)
     if task.kind == "job_analysis":
-        profile = analysis.validate_quotes(JobAnalysis.model_validate(data), job.material_text)
+        profile = analysis.validate_quotes(
+            JobAnalysis.model_validate(data), analysis.job_material(job)
+        )
+        if task.payload.get("agent_spec_version") == 2 and profile.job_form is None:
+            raise ValueError("A01 output is missing its complete standard form")
+        from app.modules.intake.material_job import apply_material_job_labels
+
+        apply_material_job_labels(job, profile)
         for field in ("title", "company", "location", "salary"):
             supplied = job.material_fields.get(field)
             if supplied is None:
@@ -109,6 +142,24 @@ def _finish_model(
                 profile.facts[field] = Fact(
                     value=supplied, status="stated", quote=f"{field}: {supplied}"
                 )
+            if profile.job_form:
+                from app.modules.intake.form_contracts import SourceFact
+
+                label = {
+                    "title": "岗位名称",
+                    "company": "客户企业名称",
+                    "location": "工作地点",
+                    "salary": "转正薪资",
+                }[field]
+                current = profile.job_form.fields[label]
+                if current.status == "stated" and current.value != supplied:
+                    profile.job_form.fields[label] = SourceFact(
+                        status="conflict", note="岗位关联字段与材料陈述不同，待确认"
+                    )
+                elif current.status == "unknown":
+                    profile.job_form.fields[label] = SourceFact(
+                        value=supplied, status="stated", quote=f"{field}: {supplied}"
+                    )
         profile.unknown_fields = sorted(
             key for key, fact in profile.facts.items() if fact.status != "stated"
         )
@@ -121,6 +172,14 @@ def _finish_model(
             inherited=["manual"],
             inputs=task.payload.get("input_refs", []),
         )
+        if task.payload.get("agent_spec_version") == 2:
+            # A01 has no authority to invent interview or screening standards.
+            job.draft = RuleContent().model_dump(mode="json")
+            job.draft_revision += 1
+            job.revision += 1
+            _queue_standard(db, task, job, "interview_standard", [artifact_ref(d01)])
+            audit(db, job, "worker", "job.a01_completed", refs={"task_id": task.id})
+            return [artifact_ref(d01)]
         d02 = save_artifact(
             db,
             job,
@@ -141,10 +200,45 @@ def _finish_model(
     profile = analysis.validate_quotes(
         ResumeProfile.model_validate(data), application.material_text
     )
+    if task.payload.get("agent_spec_version") == 2:
+        if profile.resume_form is None:
+            raise ValueError("A04 output is missing its nine-module standard form")
+        if mode == "live":
+            profile.facts.update(
+                {
+                    key: Fact.model_validate(value)
+                    for key, value in canonical_resume_facts(profile.resume_form).items()
+                }
+            )
+            profile.research_objects = [
+                ResumeResearchObject.model_validate(
+                    {
+                        **item,
+                        "name": {k: v for k, v in item["name"].items() if k != "evidence_refs"},
+                        "period": {k: v for k, v in item["period"].items() if k != "evidence_refs"},
+                        "facts": {
+                            key: {k: v for k, v in value.items() if k != "evidence_refs"}
+                            for key, value in item["facts"].items()
+                        },
+                    }
+                )
+                for item in resume_objects(profile.resume_form)
+            ]
+        if "[[UNREADABLE_" in application.material_text:
+            profile.resume_form.parse_status = "partial"
+            profile.resume_form.limitations.append(
+                "原文件包含尚未识别的页面或嵌入内容，需补充文字材料"
+            )
     artifact = save_profile(
         db,
         job,
-        profile.model_dump(mode="json"),
+        {
+            **profile.model_dump(mode="json"),
+            "unknown_fields": sorted(
+                set(profile.unknown_fields)
+                | {key for key, fact in profile.facts.items() if fact.status != "stated"}
+            ),
+        },
         "D03",
         source=mode,
         application=application,
@@ -159,6 +253,132 @@ def _finish_model(
     application.updated_at = utcnow()
     queue_step(db, job, application, "research", input_refs=[artifact_ref(artifact)])
     return [artifact_ref(artifact)]
+
+
+def _queue_standard(db, parent, job, kind, inputs):
+    from app.modules.intake.agent_prompts import resource_fingerprint
+
+    child = enqueue(
+        db,
+        organization_id=job.organization_id,
+        job_id=job.id,
+        kind=kind,
+        dedup_key=f"job:{job.id}:{job.draft_revision}:{kind}",
+        payload={
+            "draft_revision": job.draft_revision,
+            "execution_mode": parent.payload["execution_mode"],
+            "agent_spec_version": 2,
+            "agent_resource_hash": resource_fingerprint(),
+            "parent_task_id": parent.id,
+            "input_refs": inputs,
+        },
+    )
+    parent.payload = {**parent.payload, "continuation_task_id": child.id}
+
+
+def _finish_standard(db, task, job, data):
+    rules = RuleContent.model_validate(job.draft)
+    if task.kind == "interview_standard":
+        standard = InterviewStandard.model_validate(data)
+        if any(
+            quote not in analysis.job_material(job)
+            for dimension in standard.dimensions
+            for quote in dimension.source_quotes
+        ):
+            raise ValueError("A02 standard lacks original job support")
+        rules.interview_dimensions = standard.dimensions
+        rules.interview_text = "按经确认的岗位专属能力与五档锚点评估；未知保持未评估"
+        artifact = save_artifact(
+            db,
+            job,
+            "D02",
+            {
+                "rules": rules.model_dump(mode="json"),
+                "gaps": standard.gaps,
+                "confirmation_status": "draft" if standard.dimensions else "needs_information",
+            },
+            source=task.payload["execution_mode"],
+            inputs=task.payload["input_refs"],
+        )
+        job.draft = rules.model_dump(mode="json")
+        job.draft_revision += 1
+        _queue_standard(
+            db,
+            task,
+            job,
+            "screening_standard",
+            [*task.payload["input_refs"], artifact_ref(artifact)],
+        )
+        refs = [artifact_ref(artifact)]
+    else:
+        standard = ScreeningStandard.model_validate(data)
+        if standard.rubric and any(
+            quote not in analysis.job_material(job)
+            for dimension in standard.rubric.dimensions
+            for quote in dimension.source_quotes
+        ):
+            raise ValueError("A05 job rule lacks original job support")
+        rules.screening_rubric = standard.rubric
+        rules.screening_text = "七维证据初筛；同岗位固定版本；未知不扣分；三分流须说明证据"
+        rules.method_config_ref = ConfigRef(config_id="a05-evidence", version=1)
+        rules.research_config_ref = ConfigRef(config_id="pi-research", version=1)
+        rules.phone_config_ref = ConfigRef(config_id="disabled", version=1)
+        # Recommendation remains a separate, explicitly reviewed business configuration.
+        job.draft = RuleContent.model_validate(rules.model_dump(mode="json")).model_dump(
+            mode="json"
+        )
+        job.draft_revision += 1
+        refs = task.payload["input_refs"]
+        task.payload = {**task.payload, "gaps": standard.gaps}
+    job.revision += 1
+    job.updated_at = utcnow()
+    audit(db, job, "worker", task.kind + ".completed", refs={"task_id": task.id})
+    return refs
+
+
+def _model_material(db, task, job, application):
+    if task.kind == "screening":
+        return model_context(db, job, application)
+    if task.kind in {"interview_standard", "screening_standard"}:
+        import json
+
+        artifacts = [
+            db.get(Artifact, (ref["artifact_id"], ref["version"]))
+            for ref in task.payload["input_refs"]
+        ]
+        if any(a is None or a.status != "valid" or a.job_id != job.id for a in artifacts):
+            raise DomainError("PRECONDITION_NOT_MET", "岗位建议标准输入已失效")
+        return json.dumps(
+            {
+                "original_job_material": analysis.job_material(job),
+                "job_title": job.title,
+                "artifacts": {a.type: a.content for a in artifacts},
+            },
+            ensure_ascii=False,
+        )
+    return application.material_text if application else analysis.job_material(job)
+
+
+def _complete_model_task(db, task):
+    if task.payload.get("continuation_task_id"):
+        task.status, task.finished_at = "waiting_conditions", None
+    else:
+        task.status, task.finished_at = "completed", utcnow()
+        child = task
+        while child.payload.get("parent_task_id"):
+            parent = db.get(Task, child.payload["parent_task_id"])
+            if not parent or parent.payload.get("continuation_task_id") != child.id:
+                raise DomainError("PRECONDITION_NOT_MET", "岗位任务链关联已失效")
+            if parent.status != "waiting_conditions":
+                raise DomainError("PRECONDITION_NOT_MET", "岗位前置任务状态已变化")
+            refs = parent.result_refs + child.result_refs
+            parent.result_refs = list(
+                {(ref["artifact_id"], ref["version"]): ref for ref in refs}.values()
+            )
+            parent.status, parent.finished_at, parent.error_code = "completed", utcnow(), None
+            parent.revision += 1
+            child = parent
+    task.revision += 1
 
 
 def screen(db: Session, task: Task, job: IntakeJob, application: Application) -> list[dict]:
@@ -234,6 +454,17 @@ def refresh_batches(db: Session, task_id: str):
     task = db.get(Task, task_id)
     if task is None:
         return
+    if task.status == "failed" and task.payload.get("parent_task_id"):
+        child = task
+        while child.payload.get("parent_task_id"):
+            parent = db.get(Task, child.payload["parent_task_id"])
+            if not parent or parent.payload.get("continuation_task_id") != child.id:
+                break
+            if parent.status == "waiting_conditions":
+                parent.status, parent.error_code = "failed", task.error_code
+                parent.finished_at = utcnow()
+                parent.revision += 1
+            child = parent
     if task.kind == "batch":
         batch_ids = [task.payload["batch_id"]]
     elif task.application_id:
@@ -261,7 +492,14 @@ def run_once(settings: Settings, engine: Engine | None = None) -> bool:
         if settings.database_url is None:
             raise DomainError("DEPENDENCY_NOT_READY", "尚未配置数据库", 503)
         engine = get_engine(settings.database_url.get_secret_value())
-    kinds = {"job_analysis", "resume_parse", "research", *INTERNAL_HANDLERS}
+    kinds = {
+        "job_analysis",
+        "interview_standard",
+        "screening_standard",
+        "resume_parse",
+        "research",
+        *INTERNAL_HANDLERS,
+    }
     with Session(engine) as db, db.begin():
         lease = claim(
             db, settings, kinds, on_recovery=lambda session, task: refresh_batches(session, task.id)
@@ -284,19 +522,27 @@ def run_once(settings: Settings, engine: Engine | None = None) -> bool:
             task = fence(db, task_id, token)
             mode = task.payload.get("execution_mode", "live")
             check_mode(settings, mode)
-            if task.kind not in {"job_analysis", "resume_parse"}:
+            evidence_screen = (
+                task.kind == "screening"
+                and application is not None
+                and uses_evidence_method(db.get(RulePack, (job.id, application.rule_version)))
+            )
+            if (
+                task.kind
+                not in {"job_analysis", "interview_standard", "screening_standard", "resume_parse"}
+                and not evidence_screen
+            ):
                 task.result_refs = INTERNAL_HANDLERS[task.kind](db, task, job, application)
                 task.status, task.finished_at = "completed", utcnow()
                 task.revision += 1
                 refresh_batches(db, task.id)
                 return True
-            material = application.material_text if application else job.material_text
+            material = _model_material(db, task, job, application)
             kind = task.kind
             if mode == "mock":
                 data = analysis.mock_analysis(kind, material)
                 task.result_refs = _finish_model(db, task, job, application, data)
-                task.status, task.finished_at = "completed", utcnow()
-                task.revision += 1
+                _complete_model_task(db, task)
                 refresh_batches(db, task.id)
                 return True
             previous_usage = db.get(ModelUsage, task.id)
@@ -308,8 +554,7 @@ def run_once(settings: Settings, engine: Engine | None = None) -> bool:
                 task.result_refs = _finish_model(
                     db, task, job, application, previous_usage.result_payload
                 )
-                task.status, task.finished_at = "completed", utcnow()
-                task.revision += 1
+                _complete_model_task(db, task)
                 refresh_batches(db, task.id)
                 return True
             analysis.model_ready(settings)
@@ -323,6 +568,7 @@ def run_once(settings: Settings, engine: Engine | None = None) -> bool:
             task = db.get(Task, task_id)
             settle_model(db, task, tokens)
             db.get(ModelUsage, task.id).result_payload = data
+            task.payload = {**task.payload, "model_reported_tokens": tokens if tokens > 0 else None}
             resume_known_response(task, settings)
         submitted = False
         with Session(engine) as db, db.begin():
@@ -330,8 +576,7 @@ def run_once(settings: Settings, engine: Engine | None = None) -> bool:
             job, application = _context(db, task)
             task = fence(db, task_id, token)
             task.result_refs = _finish_model(db, task, job, application, data)
-            task.status, task.finished_at = "completed", utcnow()
-            task.revision += 1
+            _complete_model_task(db, task)
             refresh_batches(db, task.id)
     except Exception as exc:
         # Never persist third-party exception text. Unknown external outcomes retain budget.

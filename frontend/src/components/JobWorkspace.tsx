@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { Alert, App, Button, Descriptions, Empty, Form, Input, Modal, Select, Table, Tabs, Tag } from 'antd'
 import type { Candidate, Job, RuleDraft } from '../domain/workspace'
 import { publishRules } from '../domain/workspace'
+import JobDocuments from './JobDocuments'
 import { Icon, PageHeading, Person, ScreeningTag, SourceTag } from './ui'
 
-export default function JobWorkspace({ job, candidates, onUpdate, onCandidate, onImport, onBack }: {
-  job: Job; candidates: Candidate[]; onUpdate: (job: Job) => void; onCandidate: (id: string) => void; onImport: () => void; onBack: () => void;
+export default function JobWorkspace({ job, candidates, onUpdate, onCandidate, onImport, onBack, backLabel = '返回岗位列表', activeTab = 'documents', onTabChange }: {
+  job: Job; candidates: Candidate[]; onUpdate: (job: Job) => void; onCandidate: (id: string) => void; onImport: () => void; onBack: () => void; backLabel?: string; activeTab?: string; onTabChange?: (key: string) => void;
 }) {
   const { message, modal } = App.useApp()
   const [editing, setEditing] = useState(false)
@@ -19,16 +20,17 @@ export default function JobWorkspace({ job, candidates, onUpdate, onCandidate, o
       content: '仅发布本页测试规则，不修改历史版本或触发外呼。',
       okText: '发布测试版本', cancelText: '返回检查',
       onOk: () => {
-        try { onUpdate(publishRules(job, values)); setViewVersion(undefined); setEditing(false); void message.success('测试规则已发布（仅本页）') }
+        try { onUpdate(publishRules(job, values)); setViewVersion(undefined); setEditing(false); void message.success('测试规则已保存到本机') }
         catch (error) { void message.error((error as Error).message); throw error }
       },
     })
   }
   return <>
-    <Button className="back-button" type="text" icon={<Icon name="back" size={16} />} onClick={onBack}>全部岗位</Button>
+    <Button className="back-button" type="text" icon={<Icon name="back" size={16} />} onClick={onBack}>{backLabel}</Button>
     <PageHeading title={job.title} description={`${job.company} · ${job.location || '地点待确认'}`} actions={<><Button icon={<Icon name="file" size={16} />} onClick={() => { form.setFieldsValue(job.draft ?? job.rules); setEditing(true) }}>编辑规则草案</Button><Button type="primary" icon={<Icon name="upload" size={16} />} disabled={job.status !== 'published'} onClick={onImport}>导入简历</Button></>} />
     <div className="job-summary panel"><div><SourceTag source={job.source} /><Tag color={job.status === 'published' ? 'green' : 'orange'}>{job.status === 'published' ? `测试规则 v${job.version} · 已发布` : '规则草稿 · 未发布'}</Tag>{job.draft && <Tag color="orange">有未发布草案</Tag>}</div><span className="muted">岗位标识：{job.id}</span></div>
-    <Tabs className="workspace-tabs" defaultActiveKey="overview" items={[
+    <Tabs className="workspace-tabs" activeKey={activeTab} onChange={onTabChange} items={[
+      { key: 'documents', label: '岗位产物', children: <JobDocuments job={job} onUpdate={onUpdate} /> },
       { key: 'overview', label: '岗位与规则', children: <div className="detail-grid"><div className="stack">
         <section className="panel"><div className="section-heading"><h2>岗位画像</h2><Tag>D01 · {job.source === 'mock' ? '模拟样例' : '人工录入'}</Tag></div><Descriptions column={{ xs: 1, sm: 2 }} items={[
           { key: 'company', label: '招聘企业', children: job.company }, { key: 'location', label: '工作地点', children: job.location || '未知 · 待确认' },

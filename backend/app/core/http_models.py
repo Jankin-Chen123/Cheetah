@@ -10,6 +10,14 @@ from typing import Annotated, Any, Literal
 from pydantic import AnyUrl, AwareDatetime, BaseModel, ConfigDict, Field, RootModel
 
 from app.modules.intake.a03_contracts import ResearchObject, ResearchReport
+from app.modules.intake.form_contracts import (
+    DocumentMetadata,
+    JobForm,
+    ResumeForm,
+    ScoreSummary,
+    ScreeningAssessment,
+    ScreeningRubric,
+)
 from app.modules.intake.schemas import (
     InterviewDimension,
     RecommendationPolicy,
@@ -313,9 +321,12 @@ class Task(BaseModel):
         extra="allow",
     )
     id: Annotated[str, Field(max_length=128, min_length=1)]
+    continuation_task_id: str | None = None
     kind: Literal[
         "batch",
         "job_analysis",
+        "interview_standard",
+        "screening_standard",
         "resume_parse",
         "research",
         "screening",
@@ -762,6 +773,7 @@ class D01Content(BaseModel):
     fields: list[FieldValue]
     unknown_fields: list[str]
     conflicts: list[str]
+    job_form: JobForm | None = None
 
 
 class D02Content(BaseModel):
@@ -784,6 +796,8 @@ class D03Content(BaseModel):
     education: list[Claim]
     claims: list[Claim]
     research_objects: list[ResearchObject] = Field(default_factory=list)
+    resume_form: ResumeForm | None = None
+    document_metadata: DocumentMetadata | None = None
 
 
 class D04Content(BaseModel):
@@ -807,6 +821,9 @@ class D05Content(BaseModel):
     match_signals: list[Claim]
     gaps: list[str]
     verification_questions: list[str]
+    portrait: dict[str, str] | None = None
+    assessment_refs: dict[str, ArtifactRef] = Field(default_factory=dict)
+    form_context: dict[str, str | int | None] = Field(default_factory=dict)
 
 
 class D06Content(BaseModel):
@@ -816,6 +833,9 @@ class D06Content(BaseModel):
     conditions: list[ConditionResult]
     conclusion: Literal["pending", "passed", "unknown", "rejected", "manual_review"]
     override_of_ref: ArtifactRef | None
+    screening_rubric: ScreeningRubric | None = None
+    assessment: ScreeningAssessment | None = None
+    score_summary: ScoreSummary | None = None
 
 
 class D07Content(BaseModel):

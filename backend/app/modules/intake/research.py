@@ -305,8 +305,8 @@ def run_research_task(
             }
         elif task.payload.get("search_configuration_hash") != fingerprint:
             raise DomainError("PRECONDITION_NOT_MET", "搜索执行配置已改变，请核对原任务")
-        if not adapter or not domains or not plan:
-            if adapter and domains and not plan:
+        if not adapter or not plan:
+            if adapter and not plan:
                 reason = "NO_UNAMBIGUOUS_SUBJECT_OR_QUERY_LIMIT"
             task.result_refs = collect_report(
                 db,

@@ -11,7 +11,8 @@ test("installed pi-web-access exposes the pinned MCP search and read contracts w
   const directory = await mkdtemp(join(tmpdir(), "a03-plugin-test-"));
   await writeFile(join(directory, "web-search.json"), JSON.stringify({
     webSearch: { enabled: false }, autoOpenBrowser: false,
-    fetchContent: { redirects: "same-origin", domainPolicy: { allow: ["example.com"] } },
+    fetchContent: { redirects: "same-origin", domainPolicy: { allow: [] } },
+    ssrf: { allowRanges: [], trustEnvProxy: false },
     fetchRouting: { allowRemoteHostedProviders: false },
   }));
   const transport = new StdioClientTransport({
@@ -30,6 +31,9 @@ test("installed pi-web-access exposes the pinned MCP search and read contracts w
     // This is an invalid argument check, so no search, page request or credentials are used.
     const result = await client.callTool({ name: "fetch_content", arguments: { url: 42 } });
     assert.equal(result.isError, true);
+    // Public-web scope leaves the domain allow-list empty; local addresses remain blocked.
+    const privateResult = await client.callTool({ name: "fetch_content", arguments: { url: "http://127.0.0.1/private", mode: "raw" } });
+    assert.equal(privateResult.isError, true);
   } finally {
     await client.close();
     await transport.close();

@@ -191,6 +191,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register */
+        post: operations["register_api_v1_auth_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/batches/{batch_id}": {
         parameters: {
             query?: never;
@@ -555,6 +572,34 @@ export interface components {
             execution_mode: "live" | "mock";
             /** Expected Revision */
             expected_revision: number;
+        };
+        /** Anchors */
+        Anchors: {
+            /**
+             * Excellent
+             * @description 9--10 points
+             */
+            excellent: string;
+            /**
+             * Limited
+             * @description 3--4 points
+             */
+            limited: string;
+            /**
+             * Low
+             * @description 1--2 points, observed mismatch
+             */
+            low: string;
+            /**
+             * Partial
+             * @description 5--6 points
+             */
+            partial: string;
+            /**
+             * Strong
+             * @description 7--8 points
+             */
+            strong: string;
         };
         /** Application */
         Application: {
@@ -1086,7 +1131,7 @@ export interface components {
         /** CreateJobInput */
         CreateJobInput: {
             /** Company */
-            company: string;
+            company?: string | null;
             /** Location */
             location?: string | null;
             /** Material Text */
@@ -1094,7 +1139,7 @@ export interface components {
             /** Salary */
             salary?: string | null;
             /** Title */
-            title: string;
+            title?: string | null;
         };
         /** D01Artifact */
         D01Artifact: {
@@ -1148,6 +1193,7 @@ export interface components {
             conflicts: string[];
             /** Fields */
             fields: components["schemas"]["FieldValue"][];
+            job_form?: components["schemas"]["JobForm"] | null;
             /** Unknown Fields */
             unknown_fields: string[];
         } & {
@@ -1262,6 +1308,7 @@ export interface components {
         D03Content: {
             /** Claims */
             claims: components["schemas"]["Claim"][];
+            document_metadata?: components["schemas"]["DocumentMetadata"] | null;
             /** Education */
             education: components["schemas"]["Claim"][];
             /** Employment */
@@ -1271,6 +1318,7 @@ export interface components {
             projects: components["schemas"]["Claim"][];
             /** Research Objects */
             research_objects?: components["schemas"]["ResearchObject"][];
+            resume_form?: components["schemas"]["ResumeForm"] | null;
             /** Skills */
             skills: string[];
         } & {
@@ -1386,12 +1434,24 @@ export interface components {
         };
         /** D05Content */
         D05Content: {
+            /** Assessment Refs */
+            assessment_refs?: {
+                [key: string]: components["schemas"]["app__core__http_models__ArtifactRef"];
+            };
             /** Experience Context */
             experience_context: string;
+            /** Form Context */
+            form_context?: {
+                [key: string]: string | number | null;
+            };
             /** Gaps */
             gaps: string[];
             /** Match Signals */
             match_signals: components["schemas"]["Claim"][];
+            /** Portrait */
+            portrait?: {
+                [key: string]: string;
+            } | null;
             /** Verification Questions */
             verification_questions: string[];
         } & {
@@ -1445,6 +1505,7 @@ export interface components {
         };
         /** D06Content */
         D06Content: {
+            assessment?: components["schemas"]["ScreeningAssessment"] | null;
             /**
              * Conclusion
              * @enum {string}
@@ -1453,6 +1514,8 @@ export interface components {
             /** Conditions */
             conditions: components["schemas"]["ConditionResult"][];
             override_of_ref: components["schemas"]["app__core__http_models__ArtifactRef"] | null;
+            score_summary?: components["schemas"]["ScoreSummary"] | null;
+            screening_rubric?: components["schemas"]["ScreeningRubric"] | null;
         } & {
             [key: string]: unknown;
         };
@@ -1719,8 +1782,32 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** DimensionScore */
+        DimensionScore: {
+            /** Dimension Id */
+            dimension_id: string;
+            /** Evidence */
+            evidence?: components["schemas"]["EvidenceUse"][];
+            /** Questions */
+            questions?: string[];
+            /** Reason */
+            reason: string;
+            /** Score */
+            score?: number | null;
+        };
         /** DisplayName */
         DisplayName: string;
+        /** DocumentMetadata */
+        DocumentMetadata: {
+            /** Candidate Id */
+            candidate_id: string;
+            /** File Id */
+            file_id: string;
+            /** Filename */
+            filename: string;
+            /** Format */
+            format: string;
+        };
         /** DuplicateOfItemId */
         DuplicateOfItemId: string;
         /** EndMs */
@@ -1807,6 +1894,20 @@ export interface components {
             /** Version */
             version: number;
         };
+        /** EvidenceUse */
+        EvidenceUse: {
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "E1" | "E2" | "E3" | "U";
+            /** Evidence Id */
+            evidence_id: string;
+            /** Purpose */
+            purpose: string;
+            /** Version */
+            version: number;
+        };
         /** ExistingCallId */
         ExistingCallId: string;
         /** Fact */
@@ -1838,6 +1939,15 @@ export interface components {
             file_id: string;
             /** Version */
             version: number;
+        };
+        /** FormRecord */
+        FormRecord: {
+            /** Fields */
+            fields: {
+                [key: string]: components["schemas"]["SourceFact"];
+            };
+            /** Record Id */
+            record_id: string;
         };
         /** Generator */
         Generator: {
@@ -1932,6 +2042,7 @@ export interface components {
         };
         /** InterviewDimension */
         InterviewDimension: {
+            anchors?: components["schemas"]["Anchors"] | null;
             /** Id */
             id: string;
             /** Label */
@@ -1946,6 +2057,8 @@ export interface components {
             required_evidence?: string[];
             /** Rubric */
             rubric: string;
+            /** Source Quotes */
+            source_quotes?: string[];
             /** Weight */
             weight?: number | null;
         };
@@ -2002,6 +2115,29 @@ export interface components {
             updated_at: string;
         } & {
             [key: string]: unknown;
+        };
+        /** JobForm */
+        JobForm: {
+            /**
+             * Fields
+             * @description Exactly these 38 keys: 客户企业名称、客户企业简称、客户所属行业、对接 HR、用人部门、岗位名称、所属部门、直属上级岗位、下属人数、工作时间、试用期薪资、转正薪资、固定薪资与浮动薪资、奖金与绩效、薪资发放周期、浮动薪资与绩效指标挂钩、学历要求、经验要求、技能要求—硬技能、技能要求—软技能、行业经验、项目经验、行为特质、短期工作目标、长期工作目标、核心成果、团队结构、跨部门协作需求、工作挑战、成长机会、目标竞品公司、团队文化、工作地点、工作地点与流动性、文化契合度、加分项、隐性门槛、其他要求
+             */
+            fields: {
+                [key: string]: components["schemas"]["SourceFact"];
+            };
+            /**
+             * Jd
+             * @description Exactly 岗位职责、任职要求、加分条件; only confirmed source statements
+             */
+            jd: {
+                [key: string]: components["schemas"]["SourceFact"][];
+            };
+            /**
+             * Template Version
+             * @default A01-1.5
+             * @constant
+             */
+            template_version: "A01-1.5";
         };
         /** JobId */
         JobId: string;
@@ -2195,6 +2331,15 @@ export interface components {
             /** Target Steps */
             target_steps: ("research" | "screening")[];
         };
+        /** RegisterInput */
+        RegisterInput: {
+            /** Display Name */
+            display_name: string;
+            /** Password */
+            password: string;
+            /** Username */
+            username: string;
+        };
         /** Remaining */
         Remaining: string;
         /** ReplacesItemId */
@@ -2307,7 +2452,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "company" | "project" | "award" | "paper" | "patent" | "software_copyright" | "open_source" | "certification";
+            kind: "company" | "project" | "award" | "paper" | "patent" | "software_copyright" | "open_source" | "certification" | "professional_work" | "other_achievement";
             name: components["schemas"]["ResearchFact"];
             /** Object Id */
             object_id: string;
@@ -2359,6 +2504,29 @@ export interface components {
         };
         /** Reserved */
         Reserved: string;
+        /** ResumeForm */
+        ResumeForm: {
+            /** Limitations */
+            limitations?: string[];
+            /**
+             * Parse Status
+             * @enum {string}
+             */
+            parse_status: "completed" | "partial" | "needs_confirmation";
+            /**
+             * Sections
+             * @description All nine sections with exact per-record fields: {'基本信息': ['候选人姓名', '联系电话', '电子邮箱', '所在城市', '当前任职公司', '当前岗位', '求职意向'], '教育经历': ['学校名称', '学历', '学位', '所学专业', '入学时间', '毕业时间', '学习形式', '其他教育信息'], '工作经历': ['任职公司名称', '所属部门', '岗位名称', '任职开始时间', '任职结束时间', '主要工作职责', '管理职责', '核心工作成果', '量化业绩数据', '公司相关描述'], '项目经历': ['项目名称', '所属公司', '起止时间', '项目背景', '项目目标', '候选人角色', '个人职责', '关键行动', '技术或方法', '项目成果', '量化结果', '项目链接'], '专业技能': ['专业技能', '技术工具', '管理能力描述', '语言能力', '相关证书', '其他专业能力'], '比赛与获奖经历': ['比赛名称', '举办时间', '获得奖项', '所属赛道', '主办机构', '参赛形式', '候选人角色', '相关成果', '证明链接'], '论文与科研成果': ['论文名称', '发表年份', '发表平台', '作者信息', '研究主题', '论文链接', '其他科研成果'], '专利及其他专业成果': ['成果类别', '成果名称', '登记号或编号', '申请/发布/授权时间', '候选人角色', '成果描述', '证明链接'], '信息缺失与异常': ['缺失信息', '歧义或识别错误', '时间冲突', '个人贡献不清晰', '量化口径不完整', '其他待核实问题']}
+             */
+            sections: {
+                [key: string]: components["schemas"]["FormRecord"][];
+            };
+            /**
+             * Template Version
+             * @default A04-1.1
+             * @constant
+             */
+            template_version: "A04-1.1";
+        };
         /** RetryInput */
         RetryInput: {
             /** Expected Revision */
@@ -2386,6 +2554,7 @@ export interface components {
             research_config_ref?: components["schemas"]["ConfigRef"] | null;
             /** Screening Conditions */
             screening_conditions?: components["schemas"]["ScreeningCondition"][];
+            screening_rubric?: components["schemas"]["ScreeningRubric"] | null;
             /**
              * Screening Text
              * @default
@@ -2486,6 +2655,85 @@ export interface components {
             /** Expected Draft Revision */
             expected_draft_revision: number;
         };
+        /** ScoreSummary */
+        ScoreSummary: {
+            /** Contribution */
+            contribution: number;
+            /** Coverage */
+            coverage: number;
+            /** Rows */
+            rows: components["schemas"]["ScoredDimension"][];
+            /** Total */
+            total?: number | null;
+            /**
+             * Weight Total
+             * @constant
+             */
+            weight_total: 100;
+        };
+        /** ScoredDimension */
+        ScoredDimension: {
+            /** Dimension Id */
+            dimension_id: string;
+            /** Evidence */
+            evidence?: components["schemas"]["EvidenceUse"][];
+            /** Interview Dimension Ids */
+            interview_dimension_ids: string[];
+            /** Label */
+            label: string;
+            /** Questions */
+            questions?: string[];
+            /** Reason */
+            reason: string;
+            /** Requirement */
+            requirement: string;
+            /** Score */
+            score?: number | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "not_applicable" | "not_evaluated" | "evaluated";
+            /** Weight */
+            weight: number;
+            /** Weighted Score */
+            weighted_score: number | null;
+        };
+        /** ScreeningAssessment */
+        ScreeningAssessment: {
+            /** Core Evidence Sufficient */
+            core_evidence_sufficient: boolean;
+            essential_qualification_failure?: components["schemas"]["EvidenceUse"] | null;
+            /** Failed Qualification */
+            failed_qualification?: string | null;
+            /**
+             * Handoff
+             * @description Each: dimension_id, fact, clue, priority (high/normal/low). Factual handoff, not scripts.
+             */
+            handoff?: {
+                [key: string]: string;
+            }[];
+            /**
+             * Portrait
+             * @description Exactly: 教育和相关年限、主要工作经历与职责、专业技能与工作方法、行业及业务场景、项目及个人贡献、比赛论文等专业成果、岗位相关优势/迁移能力、已证实差距/信息缺口
+             */
+            portrait: {
+                [key: string]: string;
+            };
+            /**
+             * Proposed Result
+             * @enum {string}
+             */
+            proposed_result: "passed" | "manual_review" | "rejected";
+            /** Reasons */
+            reasons: string[];
+            /** Scores */
+            scores: components["schemas"]["DimensionScore"][];
+            /** Significant Mismatch Dimensions */
+            significant_mismatch_dimensions?: string[];
+            /** Unresolved Core Conflicts */
+            unresolved_core_conflicts?: string[];
+        };
         /** ScreeningCondition */
         ScreeningCondition: {
             /** Evidence Sources */
@@ -2509,6 +2757,30 @@ export interface components {
              * @constant
              */
             unknown_action: "needs_information";
+        };
+        /** ScreeningDimension */
+        ScreeningDimension: {
+            /** Adjustment Reason */
+            adjustment_reason?: string | null;
+            anchors: components["schemas"]["Anchors"];
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /**
+             * Id
+             * @enum {string}
+             */
+            id: "responsibilities" | "skills" | "education_experience" | "recent_relevance" | "industry_context" | "projects_preferences" | "salary";
+            /** Interview Dimension Ids */
+            interview_dimension_ids?: string[];
+            /** Requirement */
+            requirement: string;
+            /** Source Quotes */
+            source_quotes?: string[];
+            /** Weight */
+            weight: number;
         };
         /** ScreeningReviewInput */
         ScreeningReviewInput: {
@@ -2545,6 +2817,32 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** ScreeningRubric */
+        ScreeningRubric: {
+            /** Dimensions */
+            dimensions: components["schemas"]["ScreeningDimension"][];
+            /**
+             * Method
+             * @default a05-evidence-v2.1
+             * @constant
+             */
+            method: "a05-evidence-v2.1";
+            /**
+             * Necessary Qualifications
+             * @description Confirmed indispensable professional licenses only; never age, gender, reputation or ordinary experience preferences
+             */
+            necessary_qualifications?: string[];
+            /**
+             * Routing Policy
+             * @description Job-level criteria for core evidence, mismatches and review. No invented universal cutoff.
+             */
+            routing_policy: string;
+            /**
+             * Score Tiebreaker
+             * @description Explain evidence-based choice within each two-point band
+             */
+            score_tiebreaker: string;
+        };
         /** SearchCount */
         SearchCount: number;
         /** Session */
@@ -2566,6 +2864,25 @@ export interface components {
         };
         /** Settled */
         Settled: string;
+        /** SourceFact */
+        SourceFact: {
+            /** Evidence Refs */
+            evidence_refs?: {
+                [key: string]: unknown;
+            }[];
+            /** Note */
+            note?: string | null;
+            /** Quote */
+            quote?: string | null;
+            /**
+             * Status
+             * @default unknown
+             * @enum {string}
+             */
+            status: "stated" | "unknown" | "conflict";
+            /** Value */
+            value?: string | null;
+        };
         /**
          * SourceMode
          * @enum {string}
@@ -2589,6 +2906,8 @@ export interface components {
             /** Attempt Count */
             attempt_count: number;
             budget: components["schemas"]["Budget"];
+            /** Continuation Task Id */
+            continuation_task_id?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -2605,7 +2924,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "batch" | "job_analysis" | "resume_parse" | "research" | "screening" | "interview_outline" | "interview_extract" | "evaluation" | "recommendation" | "recompute" | "call_reconcile" | "call_stop";
+            kind: "batch" | "job_analysis" | "interview_standard" | "screening_standard" | "resume_parse" | "research" | "screening" | "interview_outline" | "interview_extract" | "evaluation" | "recommendation" | "recompute" | "call_reconcile" | "call_stop";
             poll_after_ms: components["schemas"]["PollAfterMs"] | null;
             reason: components["schemas"]["Reason"] | null;
             /** Resource Id */
@@ -4029,6 +4348,122 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    register_api_v1_auth_register_post: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };

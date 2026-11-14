@@ -478,7 +478,9 @@
             "patent",
             "software_copyright",
             "open_source",
-            "certification"
+            "certification",
+            "professional_work",
+            "other_achievement"
           ],
           "title": "Kind",
           "type": "string"

@@ -9,6 +9,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.models import Artifact, Budget, ModelUsage, OutboxEvent, SearchUsage
+from app.modules.intake.form_contracts import RESUME_FIELDS, FormRecord
+from app.modules.intake.form_sources import empty_job_form, empty_resume_form
 from app.modules.intake.service import validate_handoff
 
 
@@ -33,7 +35,12 @@ def test_model_and_search_http_protocols_complete_intake_without_mock_parser(
         if request.url.host == "model.fixture.invalid":
             assert request.headers["Authorization"] == "Bearer fixture-model-key"
             material = json.loads(body["messages"][1]["content"])["untrusted_material"]
-            if "需要工作经验" in material:
+            system = body["messages"][0]["content"]
+            if '"title": "InterviewStandard"' in system:
+                result = {"dimensions": [], "gaps": ["仅验证协议，标准由测试显式确认"]}
+            elif '"title": "ScreeningStandard"' in system:
+                result = {"rubric": None, "gaps": ["仅验证协议，初筛规则由测试显式确认"]}
+            elif "需要工作经验" in material:
                 result = {
                     "facts": {
                         "location": {
@@ -43,6 +50,7 @@ def test_model_and_search_http_protocols_complete_intake_without_mock_parser(
                         }
                     },
                     "rules": {},
+                    "job_form": empty_job_form().model_dump(mode="json"),
                 }
             else:
                 result = {
@@ -69,6 +77,20 @@ def test_model_and_search_http_protocols_complete_intake_without_mock_parser(
                         },
                     }
                 }
+                form = empty_resume_form()
+                form.sections["基本信息"][0].fields["候选人姓名"] = result["facts"]["name"]
+                form.sections["基本信息"][0].fields["当前任职公司"] = result["facts"]["employer"]
+                form.sections["工作经历"] = [
+                    FormRecord(
+                        record_id="company_1", fields={key: {} for key in RESUME_FIELDS["工作经历"]}
+                    )
+                ]
+                form.sections["工作经历"][0].fields["任职公司名称"] = result["facts"]["employer"]
+                form.sections["工作经历"][0].fields["任职开始时间"] = result["facts"][
+                    "employment_period"
+                ]
+                # Revalidate fixture assignments just as a remote JSON response is validated.
+                result["resume_form"] = form.model_dump(mode="json", warnings=False)
             return httpx.Response(
                 200,
                 json={
@@ -134,13 +156,13 @@ def test_model_and_search_http_protocols_complete_intake_without_mock_parser(
         "research": "live",
         "phone": None,
     }
-    assert len(calls) == 3 and len({request_id for _, request_id in calls}) == 3
+    assert len(calls) == 5 and len({request_id for _, request_id in calls}) == 5
     with Session(engine) as db:
         budget = db.get(Budget, job_id)
         assert (budget.used, budget.reserved, budget.tokens_used, budget.tokens_reserved) == (
-            2,
+            4,
             0,
-            300,
+            600,
             0,
         )
         assert (budget.searches_used, budget.searches_reserved) == (1, 0)

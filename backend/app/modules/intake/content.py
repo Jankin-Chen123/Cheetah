@@ -114,7 +114,9 @@ def validate_content(kind: str, value: dict) -> dict:
             experience_context="简历陈述尚未独立核实",
             match_signals=claims,
             gaps=content.get("research_gaps", []),
-            verification_questions=["请核实个人贡献及简历陈述"],
+            verification_questions=content.get(
+                "verification_questions", ["请核实个人贡献及简历陈述"]
+            ),
         )
     elif kind == "D06":
         mapping = {"met": "satisfied", "mismatch": "not_satisfied", "unknown": "unknown"}

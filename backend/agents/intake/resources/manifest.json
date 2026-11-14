@@ -1,0 +1,47 @@
+{
+  "A01": {
+    "source": "A01_岗位画像与招聘JD一体化Agent系统提示词_V1.5.md",
+    "resource": "a01-source.md",
+    "sha256": "263af1969f4432993e0aa1711ec9d178ec539eff3398ec1d8e094ebd4a16cfc9",
+    "template": {
+      "source": "A01、岗位画像标准表单.docx",
+      "sha256": "2c7371f212811b5bf79e89486cd47cd87a4aef6953b031f7882f8c7f072590af"
+    }
+  },
+  "A02": {
+    "source": "A02_岗位面试评估表Agent系统提示词_V1.0.md",
+    "resource": "a02-source.md",
+    "sha256": "967e10c267bbe3ccb78e4027eec80025f09e8eb8c5a85293de9f71e3d29c9fad",
+    "template": {
+      "source": "A02、岗位面试评估表_V1.2.docx",
+      "sha256": "7fb93a298f3711df2953a5d037e45c2b845f060bf73dd217be4c01f735068a4b"
+    }
+  },
+  "A03": {
+    "source": "A03_候选人背景信息检索Agent系统提示词.md",
+    "resource": "a03-source.md",
+    "sha256": "2ba112c22cee1f722d01f371897c5eb088694ee994c0ce377acb6150c3efd6e1",
+    "template": {
+      "source": "A03_候选人背景信息与专业成果研究报告_V1.0.docx",
+      "sha256": "c142d6e8483756102953c329dd5914d80474f3dec92fde3710601fd94ef05425"
+    }
+  },
+  "A04": {
+    "source": "A04_候选人简历结构化信息提取Agent系统提示词_V1.1.md",
+    "resource": "a04-source.md",
+    "sha256": "ed721eb669b524e4b99c4eaca49561e065788f0882b51b87a8fa4c2f253a7198",
+    "template": {
+      "source": "A04_候选人简历结构化信息提取_标准表单_V1.0.docx",
+      "sha256": "b831c189befb7a0205f1b3203b848fc0ad7dcead65f08b690005b8f40f2259c4"
+    }
+  },
+  "A05": {
+    "source": "A05、候选人画像与简历初筛评估 AgentV2.1.md",
+    "resource": "a05-source.md",
+    "sha256": "b6aed91cff31d4c48e5b9e132d728e63c4243e81575dabed590ef1bf335ef2b6",
+    "template": {
+      "source": "A05、候选人画像与简历初筛评估表V2.1.docx",
+      "sha256": "ebc95bbb2811a6aa9f2ebba7a35f74b74efb72eb51165f75c0a6d096f7e06670"
+    }
+  }
+}

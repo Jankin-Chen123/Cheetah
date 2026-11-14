@@ -5,6 +5,7 @@
 ## 接入后端前先读
 
 - [前端交付范围](../docs/frontend-delivery.md)：哪些是本地演示，哪些需要替换为真实服务端状态。
+- [从沟通材料创建岗位](../docs/job-material-workflow.md)：D01/D02 表单、录音与文字输入、本机版本、导出、实际调用顺序及后端待接入项。
 - [接口总文档](../docs/api/README.md)、[OpenAPI 草案](../docs/api/openapi.v1.json)：统一路径、请求响应、Cookie／CSRF、错误、分页、幂等和版本校验。
 - [数据模型与映射](../docs/api/models.md)：建立 API 类型与视图转换层，核对 `real/live`、岗位关联 ID、规则版本、停止状态及报告审批状态，不能直接把演示模型当作 HTTP 请求体。
 - [接入与验收指引](../docs/api/integration-guide.md)、[虚构样例](../docs/api/examples.json)：依次替换页面调用、处理轮询／离页／会话失效和下载错误。接口仍为草案，接入前与当前后端实现对齐，失败时不能自动用样例冒充成功。

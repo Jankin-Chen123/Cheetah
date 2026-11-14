@@ -6,10 +6,11 @@ from app.modules.intake.a03_contracts import FIELDS, ResearchReport
 from app.modules.intake.a03_state import unknown_identity
 
 ALIASES = {
-    "identity": ["name", "period", "company", "official_name", "identifier"],
+    "identity": ["name", "period", "end_period", "company", "official_name", "identifier", "link"],
     "contribution": ["role", "contribution", "metrics"],
     "ownership": ["authors", "role", "ownership", "contribution"],
-    "historical_context": ["period"],
+    "historical_context": ["period", "end_period"],
+    "status": ["status", "description", "year"],
 }
 CORE_FIELDS = {
     "company": {"industry", "products"},
@@ -20,6 +21,8 @@ CORE_FIELDS = {
     "software_copyright": {"status"},
     "open_source": {"status"},
     "certification": {"organizer", "status"},
+    "professional_work": {"status", "ownership"},
+    "other_achievement": {"status"},
 }
 
 

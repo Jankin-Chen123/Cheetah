@@ -37,7 +37,11 @@ Version = Annotated[int, Query(ge=1)]
 def create_job(body: CreateJobInput, request: Request, db: Db, user: User):
     def action():
         job = IntakeJob(
-            **body.model_dump(),
+            **{
+                **body.model_dump(),
+                "title": body.title or "待识别岗位",
+                "company": body.company or "待识别企业",
+            },
             material_fields={
                 field: getattr(body, field) for field in ("title", "company", "location", "salary")
             },
@@ -128,6 +132,8 @@ def analyze_job(job_id: str, body: AnalyzeJobInput, request: Request, db: Db, us
         check_mode(request.app.state.settings, body.execution_mode)
         if job.status != "active":
             raise DomainError("PRECONDITION_NOT_MET", "岗位未启用")
+        from app.modules.intake.agent_prompts import resource_fingerprint
+
         task = enqueue(
             db,
             organization_id=user.organization_id,
@@ -136,6 +142,8 @@ def analyze_job(job_id: str, body: AnalyzeJobInput, request: Request, db: Db, us
             dedup_key=f"job:{job.id}:{job.draft_revision}:analysis",
             payload={
                 "draft_revision": job.draft_revision,
+                "agent_spec_version": 2,
+                "agent_resource_hash": resource_fingerprint(),
                 "execution_mode": body.execution_mode,
                 "input_refs": [{"kind": "material", "id": job.id, "version": 1}],
             },

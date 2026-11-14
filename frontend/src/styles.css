@@ -52,3 +52,42 @@ main { max-width: 1580px; margin: auto; padding: 33px 38px 28px; outline: none; 
 @media (max-width: 1000px) { .sidebar { width: 78px; padding-inline: 11px; }.main-shell { margin-left: 78px; }.brand { padding: 0; margin-bottom: 35px; justify-content: center; }.brand > .brand-word, .workspace-label, .nav-label, .nav-item > span, .sidebar-note, .profile > div, .profile .ant-btn { display: none; }.nav-item { justify-content: center; padding: 15px; }.sidebar-bottom { margin-top: auto; }.profile { justify-content: center; }.metric-grid { gap: 12px; }.metric-card { padding: 14px; }.metric-card > p { min-height: 39px; gap: 8px; }.metric-card > p svg { display: none; }.journey-steps { grid-template-columns: repeat(2, 1fr); row-gap: 20px; }.journey-steps > button:nth-child(2) { border-right: 0; }.dashboard-grid { grid-template-columns: minmax(0, 1fr); }.focus-card { display: none; }.detail-grid { grid-template-columns: minmax(0, 1fr); }.detail-grid > aside.stack { display: grid; grid-template-columns: 1fr 1fr; }.candidate-meta { grid-template-columns: repeat(2, 1fr); }.live-layout { width: 100%; max-width: 420px; margin: 32px auto; }.live-intro { display: none; } }
 @media (max-width: 640px) { .sidebar { position: fixed; top: auto; bottom: 0; width: 100%; height: 65px; border-right: 0; border-top: 1px solid #e5ebdf; padding: 5px 7px; background: #fffffff5; }.sidebar .brand, .sidebar-bottom { display: none; }.sidebar nav { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; width: 100%; }.nav-item { flex-direction: column; gap: 4px; padding: 7px 1px; font-size: 9px; border-radius: 6px; }.nav-item > span:not(.nav-count) { display: block; }.nav-item .nav-count { display: none; }.main-shell { margin-left: 0; padding-bottom: 65px; }.topbar { height: 55px; padding: 0 18px; }.breadcrumb { font-size: 10px; gap: 9px; }.breadcrumb > span:last-child:not(:first-child) { display: none; }.topbar-right { gap: 8px; }.service-state { font-size: 10px; }.topbar-divider, .demo-chip { display: none; }.demo-banner { padding: 7px 18px; font-size: 10px; gap: 8px; }.demo-banner > span { align-items: flex-start; gap: 6px; line-height: 1.7; }.demo-banner > span svg { flex-shrink: 0; margin-top: 2px; }.demo-banner .ant-btn { flex-shrink: 0; font-size: 10px; padding-inline: 0; }main { padding: 24px 18px 0; }.page-heading { margin-bottom: 23px; gap: 18px; }h1 { font-size: 23px; letter-spacing: -.7px; }.eyebrow { font-size: 8px; letter-spacing: 1.7px; margin-bottom: 10px; }.page-description { font-size: 11px; line-height: 1.9; }.heading-actions { width: 100%; gap: 8px; }.heading-actions .ant-btn { flex: 1; font-size: 11px; }.metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; margin-bottom: 18px; }.metric-card { padding: 14px 14px 10px; border-radius: 8px; }.metric-card > div { font-size: 11px; }.metric-icon { width: 27px; height: 27px; }.metric-icon svg { width: 16px; }.metric-card > strong { font-size: 29px; margin: 6px 0 11px; }.metric-card > p { font-size: 10px; min-height: 37px; padding-top: 8px; }.panel { padding: 18px; border-radius: 8px; }.journey { margin-bottom: 18px; }.journey-steps { gap: 20px 10px; }.journey-steps h3 { font-size: 11px; }.journey-steps p { font-size: 9px; }.journey-icon { width: 29px; height: 34px; }.journey-icon svg { width: 16px; }.section-heading { gap: 10px; margin-bottom: 18px; }.section-heading h2 { font-size: 14px; }.section-heading > div > p { font-size: 10px; }.section-heading .subtle-tag { display: none; }.section-heading > .muted { font-size: 10px; }.dashboard-grid { margin-bottom: 18px; }.todo-list > button { gap: 9px; padding-block: 17px; }.todo-list strong { font-size: 11px; }.todo-list div span { font-size: 10px; }.todo-list > button .ant-tag { font-size: 9px; margin-inline-end: 0; }.todo-list > button > svg { display: none; }.todo-icon { width: 29px; height: 33px; }.page-footer { font-size: 9px; line-height: 1.8; padding-block: 21px; }.page-footer > span:last-child { display: none; }.jobs-grid { grid-template-columns: 1fr; }.filter-bar { flex-wrap: wrap; gap: 9px; }.filter-bar > .ant-input-affix-wrapper { max-width: none; flex-basis: 100%; }.filter-bar > .ant-select { flex: 1; min-width: 130px; }.job-summary { flex-direction: column; align-items: flex-start; }.detail-grid > aside.stack { display: flex; }.workspace-tabs .ant-tabs-tab { font-size: 11px; }.workspace-tabs .ant-tabs-tab + .ant-tabs-tab { margin-inline-start: 20px; }.candidate-meta { padding: 17px; gap: 19px; font-size: 11px; }.artifact-card { padding: 11px; }.artifact-card strong { font-size: 11px; }.artifact-card > span { font-size: 10px; line-height: 1.7; display: block; }.form-grid { grid-template-columns: 1fr; }.form-grid .ant-form-item { margin-bottom: 17px; }.modal-actions { flex-wrap: wrap; }.modal-actions > .ant-btn { font-size: 11px; }.ant-drawer-body { padding: 20px !important; }.report-document h2 { font-size: 21px; }.skip-link:focus { left: 15px; }.live-layout { width: 100%; max-width: 420px; margin: 32px auto; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
+.document-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px; }
+.document-toolbar h2 { margin: 0; }
+.job-form-section { min-width: 0; }
+.job-form-scroll { overflow-x: auto; margin-block: 12px; }
+.job-form-table { width: 100%; min-width: 480px; table-layout: fixed; border-collapse: collapse; font-size: 12px; line-height: 1.9; color: #344738; }
+.job-form-table th, .job-form-table td { border: 1px solid #dce3d8; padding: 13px 15px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.job-form-table td > span { white-space: pre-wrap; }
+.job-form-table thead th { background: #eaf0e5; font-weight: 600; }
+.job-form-table .form-group th { background: #f3f6ee; font-weight: 600; }
+.interview-form-table { min-width: 1080px; }
+.document-panel, .document-panel > .ant-space, .stack { min-width: 0; }
+.document-panel .ant-input { font-size: 12px; }
+.intake-label { margin-bottom: 0; }
+.job-form-section h3 { margin-block: 16px 0; }
+audio { width: 100%; max-width: 560px; }
+.candidate-row-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.candidate-row-actions .ant-btn { padding-inline: 10px; font-size: 11px; }
+.candidate-cards { display: none; }
+.candidate-focused-content { max-width: 1040px; }
+.report-review-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.focused-artifact .section-heading { flex-wrap: wrap; }
+.focused-unknowns { margin-top: 24px; }
+.focused-secondary > summary, .inline-evidence > summary { cursor: pointer; color: #5b715d; font-size: 12px; }
+.focused-secondary[open] > summary, .inline-evidence[open] > summary { margin-bottom: 18px; }
+.inline-evidence { border-top: 1px solid #edf0ec; padding-top: 16px; margin-top: 22px; }
+.inline-evidence > div { margin-block: 16px; }
+.inline-evidence blockquote { margin: 10px 0; padding-left: 15px; border-left: 2px solid #cedaca; font-size: 12px; line-height: 1.9; }
+.call-reason { margin-block: 20px; }
+@media (max-width: 640px) { .candidate-focused-content .section-heading > .ant-space { flex-wrap: wrap; }.report-review-actions { flex-direction: column; align-items: stretch; } }
+@media (max-width: 1100px) {
+  .candidate-table-desktop { display: none; }
+  .candidate-cards { display: flex; flex-direction: column; gap: 18px; }
+  .candidate-mobile-card { padding: 16px 0; border-bottom: 1px solid #edf0ec; }
+  .candidate-card-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .candidate-mobile-card > p { margin: 16px 0; }
+  .candidate-mobile-card .candidate-row-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+  .candidate-mobile-card .candidate-row-actions .ant-btn { padding-inline: 3px; font-size: 11px; }
+  .candidate-card-heading .person { min-width: 0; }
+}

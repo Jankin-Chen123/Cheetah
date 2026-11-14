@@ -223,10 +223,13 @@ def findings(source_id):
     }
 
 
+@pytest.mark.parametrize("scope", ["allowlist", "public_web"])
 def test_actual_pi_loop_observes_results_refines_query_and_delivers_five_section_report(
-    api, runtime, monkeypatch
+    api, runtime, monkeypatch, scope
 ):
     job_id, app_id, adapter = setup_agent(api, runtime, monkeypatch)
+    if scope == "public_web":
+        runtime[0].search_allowed_domains = []
     source_ids = []
 
     def decide(number, body):

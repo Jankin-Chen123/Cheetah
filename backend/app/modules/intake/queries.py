@@ -231,6 +231,19 @@ def retry_task(task_id: str, body: RetryInput, request: Request, db: Db, user: U
             if application.generation != task.payload["generation"]:
                 raise DomainError("PRECONDITION_NOT_MET", "任务输入已经失效")
         task.status, task.error_code, task.finished_at = "queued", None, None
+        child = task
+        while child.payload.get("parent_task_id"):
+            parent = db.get(Task, child.payload["parent_task_id"])
+            if not parent or parent.payload.get("continuation_task_id") != child.id:
+                raise DomainError("PRECONDITION_NOT_MET", "岗位任务链已失效")
+            if parent.status == "failed":
+                parent.status, parent.error_code, parent.finished_at = (
+                    "waiting_conditions",
+                    None,
+                    None,
+                )
+                parent.revision += 1
+            child = parent
         task.revision += 1
         audit(
             db,

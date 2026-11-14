@@ -20,6 +20,7 @@ COPY --from=a03 /agent/node_modules ./agents/a03/node_modules
 COPY agents/a03/src ./agents/a03/src
 COPY agents/a03/resources ./agents/a03/resources
 COPY agents/a03/package-lock.json ./agents/a03/package-lock.json
+COPY agents/intake/resources ./agents/intake/resources
 RUN uv sync --locked --no-dev
 RUN useradd --create-home --uid 10001 cheeta
 USER cheeta

@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Anchors": {
+      "additionalProperties": false,
+      "properties": {
+        "low": {
+          "description": "1--2 points, observed mismatch",
+          "maxLength": 2000,
+          "minLength": 5,
+          "title": "Low",
+          "type": "string"
+        },
+        "limited": {
+          "description": "3--4 points",
+          "maxLength": 2000,
+          "minLength": 5,
+          "title": "Limited",
+          "type": "string"
+        },
+        "partial": {
+          "description": "5--6 points",
+          "maxLength": 2000,
+          "minLength": 5,
+          "title": "Partial",
+          "type": "string"
+        },
+        "strong": {
+          "description": "7--8 points",
+          "maxLength": 2000,
+          "minLength": 5,
+          "title": "Strong",
+          "type": "string"
+        },
+        "excellent": {
+          "description": "9--10 points",
+          "maxLength": 2000,
+          "minLength": 5,
+          "title": "Excellent",
+          "type": "string"
+        }
+      },
+      "required": [
+        "low",
+        "limited",
+        "partial",
+        "strong",
+        "excellent"
+      ],
+      "title": "Anchors",
+      "type": "object"
+    },
+    "InterviewDimension": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "rubric": {
+          "maxLength": 3000,
+          "minLength": 1,
+          "title": "Rubric",
+          "type": "string"
+        },
+        "weight": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weight"
+        },
+        "required_evidence": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10,
+          "title": "Required Evidence",
+          "type": "array"
+        },
+        "missing_action": {
+          "const": "not_evaluated",
+          "default": "not_evaluated",
+          "title": "Missing Action",
+          "type": "string"
+        },
+        "anchors": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Anchors"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "source_quotes": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Source Quotes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "rubric"
+      ],
+      "title": "InterviewDimension",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "dimensions": {
+      "items": {
+        "$ref": "#/$defs/InterviewDimension"
+      },
+      "maxItems": 100,
+      "title": "Dimensions",
+      "type": "array"
+    },
+    "gaps": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 100,
+      "title": "Gaps",
+      "type": "array"
+    }
+  },
+  "required": [
+    "dimensions"
+  ],
+  "title": "InterviewStandard",
+  "type": "object"
+}

@@ -27,19 +27,27 @@ class Settings(BaseSettings):
     ]
     session_hours: int = Field(default=8, ge=1, le=24)
     login_attempt_limit: int = Field(default=10, ge=3, le=100)
+    registration_enabled: bool = True
+    registration_attempt_limit: int = Field(default=5, ge=1, le=100)
     idempotency_hours: int = Field(default=24, ge=24, le=168)
     allow_mock: bool = False
     model_endpoint: str | None = None
     model_api_key: SecretStr | None = None
     model_name: str | None = None
     model_timeout_seconds: int = Field(default=30, ge=1, le=90)
-    model_max_output_tokens: int = Field(default=4000, ge=100, le=8000)
+    model_max_output_tokens: int = Field(default=16000, ge=100, le=64000)
     job_model_call_limit: int = Field(default=30, ge=1, le=1000)
     job_model_token_limit: int = Field(default=300000, ge=1)
     search_provider: str = Field(default="disabled", pattern=r"^[a-z][a-z0-9_]{0,39}$")
     search_endpoint: str | None = None
     search_api_key: SecretStr | None = None
-    search_allowed_domains: list[str] = Field(default_factory=list, max_length=30)
+    search_allowed_domains: list[str] = Field(
+        default_factory=list,
+        max_length=30,
+        description=(
+            "Empty means all public websites; a nonempty list optionally limits source domains"
+        ),
+    )
     search_timeout_seconds: int = Field(default=20, ge=1, le=30)
     search_result_limit: int = Field(default=5, ge=1, le=5)
     research_query_limit: int = Field(default=2, ge=0, le=2)
@@ -47,6 +55,7 @@ class Settings(BaseSettings):
     a03_web_backend: Literal["disabled", "normalized", "pi_web_access"] = "disabled"
     a03_plugin_provider: str = "brave"
     a03_plugin_api_key: SecretStr | None = None
+    a03_plugin_base_url: str | None = None
     a03_fetch_endpoint: str | None = None
     a03_node_binary: str = "node"
     a03_max_turns: int = Field(default=16, ge=1, le=40)

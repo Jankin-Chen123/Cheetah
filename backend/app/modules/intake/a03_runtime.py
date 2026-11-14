@@ -35,6 +35,11 @@ from app.core.tasks import fence, resume_known_response
 from app.integrations.a03_model import invoke_research_model
 from app.integrations.search import allowed_domains, get_search_adapter, public_source_url
 from app.modules.intake.a03_contracts import FIELDS, TOOL_MODELS
+from app.modules.intake.a03_plugin import (
+    plugin_configuration,
+    read_deepseek_source,
+    validate_provider_query,
+)
 from app.modules.intake.a03_report import build_report
 from app.modules.intake.a03_state import (
     RECOMMENDATION,
@@ -71,7 +76,9 @@ def resources() -> tuple[str, dict[str, str], str]:
         )
     }
     system = (RESOURCE_DIR / "system-v1.md").read_text(encoding="utf-8")
-    source = (RESOURCE_DIR / "a03-source-v1.md").read_text(encoding="utf-8")
+    from app.modules.intake.agent_prompts import source_prompt
+
+    source = source_prompt("A03")
     digest = fingerprint(
         {
             "system": system,
@@ -117,6 +124,7 @@ class ResearchHost:
             "model_endpoint": settings.model_endpoint,
             "model_name": settings.model_name,
             "plugin_provider": settings.a03_plugin_provider,
+            "plugin_base_url": settings.a03_plugin_base_url,
             "domains": self.domains,
             "turns": settings.a03_max_turns,
             "searches": settings.a03_max_searches,
@@ -168,7 +176,7 @@ class ResearchHost:
                 run.state = {**run.state, "stop_reason": "mock_input_not_sent_to_live_research"}
             elif not run.state["objects"]:
                 run.state = {**run.state, "stop_reason": "no_declared_objects"}
-            elif settings.a03_web_backend == "disabled" or not self.domains:
+            elif settings.a03_web_backend == "disabled":
                 run.state = {**run.state, "stop_reason": "research_provider_unavailable"}
             elif (
                 not settings.model_endpoint or not settings.model_name or not settings.model_api_key
@@ -193,7 +201,11 @@ class ResearchHost:
                 "d03_ref": artifact_ref(d03),
                 "job_context": {"fields": d01.content.get("fields", [])} if d01 else {},
                 "limits": {
-                    k: config[k] for k in ("turns", "searches", "pages", "per_object", "seconds")
+                    **{
+                        k: config[k]
+                        for k in ("turns", "searches", "pages", "per_object", "seconds")
+                    },
+                    "query_characters": 128 if settings.a03_plugin_provider == "deepseek" else 500,
                 },
                 "research_fields": FIELDS,
             }
@@ -389,6 +401,7 @@ class ResearchHost:
                 raise DomainError("A03_RETRIEVAL_LIMIT", "研究检索次数达到上限", 429)
             if kind == "search":
                 validate_search(state, parsed)
+                validate_provider_query(self.settings, parsed.query, self.domains)
                 if self.count(db, kind, parsed.object_id) >= self.settings.a03_per_object_searches:
                     return {
                         "error": "OBJECT_SEARCH_LIMIT",
@@ -424,7 +437,12 @@ class ResearchHost:
                 payload["url"] = source["url"]
             record, _ = self.action(db, call_id, kind, payload)
             task.external_state = "submitted"
-        if self.settings.a03_web_backend == "pi_web_access":
+        native_page = (
+            self.settings.a03_web_backend == "pi_web_access"
+            and self.settings.a03_plugin_provider == "deepseek"
+            and kind == "page"
+        )
+        if self.settings.a03_web_backend == "pi_web_access" and not native_page:
             command = (
                 {
                     "name": "web_search",
@@ -441,7 +459,11 @@ class ResearchHost:
             )
             return {"plugin": command}
         try:
-            if kind == "search":
+            if native_page:
+                result = read_deepseek_source(
+                    self.settings, payload["url"], f"{self.task_id}:{call_id}", self.domains
+                )
+            elif kind == "search":
                 adapter = get_search_adapter(self.settings)
                 if adapter is None:
                     raise DomainError("DEPENDENCY_NOT_READY", "搜索适配器未配置", 503)
@@ -568,20 +590,7 @@ class ResearchHost:
 def drive_pi(host: ResearchHost, state, messages, public_input):
     with tempfile.TemporaryDirectory(prefix="cheetah-a03-") as directory:
         if host.settings.a03_web_backend == "pi_web_access":
-            provider = host.settings.a03_plugin_provider
-            if provider not in {"brave", "tavily", "exa"}:
-                raise DomainError("DEPENDENCY_NOT_READY", "搜索插件提供者尚未集成验证", 503)
-            config = {
-                "provider": provider,
-                provider + "ApiKey": host.settings.a03_plugin_api_key.get_secret_value(),
-                "webSearch": {"allowedProviders": [provider]},
-                "autoOpenBrowser": False,
-                "fetchRouting": {"allowRemoteHostedProviders": False},
-                "fetchContent": {
-                    "redirects": "same-origin",
-                    "domainPolicy": {"allow": host.domains, "deny": []},
-                },
-            }
+            config = plugin_configuration(host.settings, host.domains)
             Path(directory, "web-search.json").write_text(json.dumps(config), encoding="utf-8")
         definitions = [
             {

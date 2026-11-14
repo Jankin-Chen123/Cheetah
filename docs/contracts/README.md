@@ -1,5 +1,7 @@
 # A/B 交接合同
 
+初筛完整表单的合同另见 `a01-job-form.v2.schema.json`、`a02-interview-standard.v2.schema.json`、`a04-resume-form.v2.schema.json` 和 `a05-*.v2.schema.json`，由 `backend/scripts/export_intake_schema.py` 生成。[初筛 Agent V2](../intake-agents.md) 说明字段来源、评分、模板差异和恢复边界。本次保留 1.1 交接事件的外层结构，B 仍按具体产物版本读取 D01—D06。
+
 当前 A 已执行 D01—D06 并事务登记 outbox，事件消费和真实电话属于尚未接入的 B。A 新产出的事件为 1.1；旧 1.0 模型与样例保留兼容，不能将其非空 phone 字段解释为电话已发生。
 
 浏览器与统一 API 的 HTTP 字段、状态、错误码及对接流程见 [前后端接口文档](../api/README.md)，机器可读设计稿见 [OpenAPI 3.1 草案](../api/openapi.v1.json)。HTTP 草案与这里已存在的内部事件合同分别管理；后者仍以 Python 模型为唯一维护入口，不能把 HTTP 读模型直接替换事件载荷。

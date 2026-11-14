@@ -233,11 +233,36 @@ def provenance(source: str, inherited: list[str] | None = None, stages: dict | N
     }
 
 
+def input_artifact(db: Session, artifact: Artifact, kind: str) -> Artifact | None:
+    pending, seen = [artifact], set()
+    while pending and len(seen) < 100:
+        current = pending.pop(0)
+        key = (current.artifact_id, current.version)
+        if key in seen:
+            continue
+        seen.add(key)
+        if current.type == kind:
+            return current
+        for ref in current.input_refs:
+            if ref.get("kind") != "artifact":
+                continue
+            item = db.get(Artifact, (ref["id"], ref["version"]))
+            if item and item.job_id == artifact.job_id and item.status != "restricted":
+                pending.append(item)
+    return None
+
+
 def artifact_view(db: Session, artifact: Artifact) -> dict:
     import json
 
     from app.core.http_models import Artifact as ArtifactDTO
     from app.modules.intake.a03_report import render_report
+    from app.modules.intake.form_reports import (
+        render_interview,
+        render_job,
+        render_resume,
+        render_screening,
+    )
 
     application = db.get(Application, artifact.application_id) if artifact.application_id else None
     rule = (
@@ -262,6 +287,46 @@ def artifact_view(db: Session, artifact: Artifact) -> dict:
         if rule
         else None
     )
+    markdown = None
+    if artifact.type == "D01" and artifact.content.get("job_form"):
+        markdown = render_job(artifact.content)
+    elif artifact.type == "D02":
+        d01 = input_artifact(db, artifact, "D01")
+        context = (
+            {
+                key: value.get("value")
+                for key, value in (d01.content.get("job_form") or {}).get("fields", {}).items()
+            }
+            if d01
+            else {}
+        )
+        markdown = render_interview(artifact.content, context)
+    elif artifact.type == "D03" and artifact.content.get("resume_form"):
+        markdown = render_resume(artifact.content)
+    elif artifact.type in {"D05", "D06"}:
+        d05 = input_artifact(db, artifact, "D05")
+        # A D05 view must not pull an unrelated latest report after a correction.
+        d06 = (
+            artifact
+            if artifact.type == "D06"
+            else next(
+                (
+                    item
+                    for item in db.scalars(
+                        select(Artifact)
+                        .where(
+                            Artifact.application_id == artifact.application_id,
+                            Artifact.type == "D06",
+                        )
+                        .order_by(Artifact.version.desc())
+                    )
+                    if input_artifact(db, item, "D05") is artifact
+                ),
+                None,
+            )
+        )
+        if d05 and d06 and d06.content.get("screening_rubric"):
+            markdown = render_screening(d05.content, d06.content)
     payload = {
         **artifact_ref(artifact),
         "type": artifact.type,
@@ -270,7 +335,9 @@ def artifact_view(db: Session, artifact: Artifact) -> dict:
         "application_id": artifact.application_id,
         "structured_content": artifact.content,
         "content_markdown": (
-            render_report(artifact.content["report"])
+            markdown
+            if markdown is not None
+            else render_report(artifact.content["report"])
             if artifact.type == "D04" and artifact.content.get("report")
             else "```json\n" + json.dumps(artifact.content, ensure_ascii=False, indent=2) + "\n```"
         ),
@@ -290,7 +357,11 @@ def artifact_view(db: Session, artifact: Artifact) -> dict:
             if artifact.source_mode == "mock" and artifact.type in {"D01", "D02", "D03"}
             else "manual",
             "model": None,
-            "method_version": "intake-v1",
+            "method_version": "intake-specs-v2"
+            if any(
+                artifact.content.get(key) for key in ("job_form", "resume_form", "screening_rubric")
+            )
+            else "intake-v1",
         },
         "unknowns": artifact.content.get("unknown_fields", artifact.content.get("gaps", [])),
         "validation": {"passed": True, "issues": []},

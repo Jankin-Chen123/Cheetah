@@ -3,6 +3,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.core.contracts import ArtifactRef, EvidenceRef, RulePackRef
+from app.modules.intake.form_contracts import Anchors, JobForm, ResumeForm, ScreeningRubric
 
 
 class Input(BaseModel):
@@ -10,8 +11,8 @@ class Input(BaseModel):
 
 
 class CreateJobInput(Input):
-    title: str = Field(min_length=1, max_length=100)
-    company: str = Field(min_length=1, max_length=100)
+    title: str | None = Field(default=None, min_length=1, max_length=100)
+    company: str | None = Field(default=None, min_length=1, max_length=100)
     location: str | None = Field(default=None, max_length=100)
     salary: str | None = Field(default=None, max_length=100)
     material_text: str = Field(min_length=1, max_length=30000)
@@ -59,6 +60,8 @@ class InterviewDimension(Input):
     weight: float | None = Field(default=None, ge=0, le=1, allow_inf_nan=False)
     required_evidence: list[str] = Field(default_factory=list, max_length=10)
     missing_action: Literal["not_evaluated"] = "not_evaluated"
+    anchors: Anchors | None = None
+    source_quotes: list[str] = Field(default_factory=list, max_length=20)
 
 
 class RecommendationPolicy(Input):
@@ -78,11 +81,12 @@ class RuleContent(Input):
     interview_text: str = Field(default="", max_length=5000)
     recommendation_text: str = Field(default="", max_length=5000)
     screening_conditions: list[ScreeningCondition] = Field(default_factory=list, max_length=30)
-    interview_dimensions: list[InterviewDimension] = Field(default_factory=list, max_length=30)
+    interview_dimensions: list[InterviewDimension] = Field(default_factory=list)
     recommendation_policy: RecommendationPolicy | None = None
     research_config_ref: ConfigRef | None = None
     phone_config_ref: ConfigRef | None = None
     method_config_ref: ConfigRef | None = None
+    screening_rubric: ScreeningRubric | None = None
 
 
 class SaveRuleDraftInput(Input):
@@ -137,6 +141,8 @@ ResearchObjectKind = Literal[
     "software_copyright",
     "open_source",
     "certification",
+    "professional_work",
+    "other_achievement",
 ]
 
 
@@ -159,6 +165,7 @@ class ResumeProfile(Input):
         ),
     )
     unknown_fields: list[str] = Field(default_factory=list, max_length=100)
+    resume_form: ResumeForm | None = None
     research_objects: list[ResumeResearchObject] = Field(
         default_factory=list,
         max_length=100,
@@ -193,6 +200,37 @@ class JobAnalysis(Input):
     facts: dict[str, Fact] = Field(max_length=100)
     unknown_fields: list[str] = Field(default_factory=list, max_length=100)
     rules: RuleContent
+    job_form: JobForm | None = None
+
+
+class InterviewStandard(Input):
+    dimensions: list[InterviewDimension] = Field(max_length=100)
+    gaps: list[str] = Field(default_factory=list, max_length=100)
+
+    @model_validator(mode="after")
+    def proposed_weights(self):
+        if not self.dimensions:
+            if not self.gaps:
+                raise ValueError("Missing job requirements need explicit gaps")
+            return self
+        if len({d.id for d in self.dimensions}) != len(self.dimensions):
+            raise ValueError("Duplicate interview dimensions")
+        if any(d.weight is None or not d.anchors or not d.source_quotes for d in self.dimensions):
+            raise ValueError("A02 needs job-specific anchors, source quotes and proposed weights")
+        if abs(sum(d.weight or 0 for d in self.dimensions) - 1) > 0.00001:
+            raise ValueError("A02 weights must sum to 1")
+        return self
+
+
+class ScreeningStandard(Input):
+    rubric: ScreeningRubric | None = None
+    gaps: list[str] = Field(default_factory=list, max_length=100)
+
+    @model_validator(mode="after")
+    def explicit_missing_requirements(self):
+        if self.rubric is None and not self.gaps:
+            raise ValueError("Missing job requirements need explicit gaps")
+        return self
 
 
 class CorrectionItem(Input):

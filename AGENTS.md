@@ -15,6 +15,7 @@ Cheetah 是面向猎头的网页端 Agent 自动化工作流。前后端分离�
 - [数据模型与前端映射](docs/api/models.md)、[OpenAPI 草案](docs/api/openapi.v1.json)：逐项核对字段、枚举、空值和版本，不能直接照搬前端演示对象。
 - [接入与验收指引](docs/api/integration-guide.md)：按阶段实施，核对 A/B/F 责任、前端调用顺序、待冻结项和验收场景；[虚构样例](docs/api/examples.json) 只用于隔离联调。
 - [前端交付范围](docs/frontend-delivery.md)：区分已有页面交互、模拟状态与尚待后端接入的能力。
+- [从沟通材料创建岗位](docs/job-material-workflow.md)：录音／文字输入、D01/D02 表单、版本与导出，以及 ASR、人工修订回写等后端待接入项。
 - `docs/contracts/README.md`：交接合同及其维护方式。
 - 进入 `frontend/`、`backend/` 后继续遵守各自的 `AGENTS.md`。
 

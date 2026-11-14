@@ -24,6 +24,7 @@ from app.core.models import (
     OutboxEvent,
     ResumeBatch,
     RulePack,
+    StoredFile,
     Task,
     new_id,
     utcnow,
@@ -34,7 +35,7 @@ from app.modules.intake.schemas import RuleContent
 CONFIGS = {
     "research_config_ref": {"unavailable", "bounded-research", "pi-research"},
     "phone_config_ref": {"disabled"},
-    "method_config_ref": {"predicates"},
+    "method_config_ref": {"predicates", "a05-evidence"},
 }
 
 
@@ -59,7 +60,12 @@ def rule_issues(content: RuleContent) -> list[dict]:
     for field in ("screening_text", "interview_text", "recommendation_text"):
         if not getattr(content, field):
             fields.append(field)
-    if not content.screening_conditions:
+    evidence_method = bool(
+        content.method_config_ref and content.method_config_ref.config_id == "a05-evidence"
+    )
+    if evidence_method and content.screening_rubric is None:
+        fields.append("screening_rubric")
+    if not evidence_method and not content.screening_conditions:
         fields.append("screening_conditions")
     if not content.interview_dimensions:
         fields.append("interview_dimensions")
@@ -76,6 +82,21 @@ def rule_issues(content: RuleContent) -> list[dict]:
     for dimension in content.interview_dimensions:
         if not dimension.required_evidence:
             fields.append("interview_dimensions." + dimension.id)
+        if evidence_method and (
+            not dimension.anchors or not dimension.source_quotes or dimension.weight is None
+        ):
+            fields.append("interview_dimensions." + dimension.id)
+    if (
+        evidence_method
+        and abs(sum(d.weight or 0 for d in content.interview_dimensions) - 1) > 0.00001
+    ):
+        fields.append("interview_dimensions.weights")
+    if evidence_method and content.screening_rubric:
+        ids = {d.id for d in content.interview_dimensions}
+        if any(
+            not set(d.interview_dimension_ids) <= ids for d in content.screening_rubric.dimensions
+        ):
+            fields.append("screening_rubric.interview_dimension_ids")
     dimensions = {item.id for item in content.interview_dimensions}
     policy = content.recommendation_policy
     if (
@@ -156,7 +177,33 @@ def save_profile(
     inherited: list[str] | None = None,
 ) -> Artifact:
     refs = []
+    if application and profile.get("resume_form"):
+        file = db.get(StoredFile, application.file_id)
+        profile["document_metadata"] = {
+            "candidate_id": application.candidate_id,
+            "filename": file.name,
+            "format": "text"
+            if file.media_type == "text/plain"
+            else "PDF"
+            if file.name.lower().endswith(".pdf")
+            else "Word",
+            "file_id": file.id,
+        }
     statements = list(profile["facts"].items())
+    if profile.get("job_form"):
+        form = profile["job_form"]
+        statements.extend(("job_form/" + key, value) for key, value in form["fields"].items())
+        for section, values in form["jd"].items():
+            statements.extend(
+                (f"job_form/jd/{section}/{i}", value) for i, value in enumerate(values)
+            )
+    if profile.get("resume_form"):
+        for section, records in profile["resume_form"]["sections"].items():
+            for record in records:
+                statements.extend(
+                    (f"resume_form/{section}/{record['record_id']}/{key}", value)
+                    for key, value in record["fields"].items()
+                )
     for item in profile.get("research_objects", []):
         prefix = f"research_objects/{item['object_id']}"
         statements.append((prefix + "/name", item["name"]))
@@ -165,7 +212,9 @@ def save_profile(
         statements.extend((prefix + "/facts/" + key, value) for key, value in item["facts"].items())
     for key, fact in statements:
         quote = fact.get("quote")
-        material = application.material_text if application else job.material_text
+        from app.modules.intake.analysis import job_material
+
+        material = application.material_text if application else job_material(job)
         start = material.find(quote) if quote else -1
         evidence = Evidence(
             organization_id=job.organization_id,
@@ -179,13 +228,15 @@ def save_profile(
                 "field": key,
                 "start": start if start >= 0 else None,
                 "end": start + len(quote) if start >= 0 else None,
+                "file_id": application.file_id if application else None,
             },
         )
         db.add(evidence)
         db.flush()
         ref = evidence_ref(evidence)
         fact["evidence_refs"] = [ref]
-        fact["source_type"] = "resume" if application else "job_material"
+        if not key.startswith(("resume_form/", "job_form/")):
+            fact["source_type"] = "resume" if application else "job_material"
         refs.append(ref)
     return save_artifact(
         db,
@@ -208,6 +259,8 @@ def queue_step(
     *,
     input_refs: list | None = None,
 ) -> Task:
+    from app.modules.intake.agent_prompts import resource_fingerprint
+
     if input_refs is None and kind == "resume_parse":
         input_refs = [{"kind": "material", "id": application.file_id, "version": 1}]
     return enqueue(
@@ -218,6 +271,8 @@ def queue_step(
         kind=kind,
         dedup_key=f"{application.id}:{application.generation}:{kind}",
         payload={
+            "agent_spec_version": 2,
+            "agent_resource_hash": resource_fingerprint(),
             "generation": application.generation,
             "rule_version": application.rule_version,
             "execution_mode": application.execution_mode,

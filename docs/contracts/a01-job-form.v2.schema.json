@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "SourceFact": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "maxLength": 6000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "status": {
+          "default": "unknown",
+          "enum": [
+            "stated",
+            "unknown",
+            "conflict"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "quote": {
+          "anyOf": [
+            {
+              "maxLength": 6000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Quote"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        },
+        "evidence_refs": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "maxItems": 20,
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "title": "SourceFact",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "template_version": {
+      "const": "A01-1.5",
+      "default": "A01-1.5",
+      "title": "Template Version",
+      "type": "string"
+    },
+    "fields": {
+      "additionalProperties": {
+        "$ref": "#/$defs/SourceFact"
+      },
+      "description": "Exactly these 38 keys: 客户企业名称、客户企业简称、客户所属行业、对接 HR、用人部门、岗位名称、所属部门、直属上级岗位、下属人数、工作时间、试用期薪资、转正薪资、固定薪资与浮动薪资、奖金与绩效、薪资发放周期、浮动薪资与绩效指标挂钩、学历要求、经验要求、技能要求—硬技能、技能要求—软技能、行业经验、项目经验、行为特质、短期工作目标、长期工作目标、核心成果、团队结构、跨部门协作需求、工作挑战、成长机会、目标竞品公司、团队文化、工作地点、工作地点与流动性、文化契合度、加分项、隐性门槛、其他要求",
+      "title": "Fields",
+      "type": "object"
+    },
+    "jd": {
+      "additionalProperties": {
+        "items": {
+          "$ref": "#/$defs/SourceFact"
+        },
+        "type": "array"
+      },
+      "description": "Exactly 岗位职责、任职要求、加分条件; only confirmed source statements",
+      "title": "Jd",
+      "type": "object"
+    }
+  },
+  "required": [
+    "fields",
+    "jd"
+  ],
+  "title": "JobForm",
+  "type": "object"
+}

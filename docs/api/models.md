@@ -1,5 +1,7 @@
 # HTTP 数据模型、状态与前端映射
 
+初筛 V2：`RuleContent.screening_rubric` 保存独立于面试标准的岗位七维评分规则；`D01Content.job_form`、`D03Content.resume_form/document_metadata` 为完整表单；`D05Content.portrait/assessment_refs` 为画像及版本；`D06Content.assessment/score_summary` 保存逐维证据和程序计算值。`coverage<100` 时 `total=null`，`contribution` 不能当正式总分。岗位分析增加后续任务类型和 `continuation_task_id`，主任务等待整个建议链完成。[完整执行口径](../intake-agents.md)。
+
 本文解释 [OpenAPI 草案](openapi.v1.json) 的字段语义。HTTP 读模型与当前 `frontend/src/domain/workspace.ts` 的本地演示模型不同，接入时需要转换层。所有样例仅用于隔离测试。
 
 ## 1. 对象与版本关系
@@ -55,6 +57,8 @@ HTTP 的 Provenance 是规划的读模型，不修改已有 `SourceModes` 事件
 
 ## 3. 会话、工作台与待办
 
+`RegisterInput`：`username` 为 3–40 位 ASCII 字母／数字／`_.-`，首位为字母或数字，区分大小写；`display_name` 为 1–100 字符、至少一个非空白字符，保存时去除首尾空白；`password` 为 12–128 字符，原样加密。额外字段禁止；机构和权限只能由服务端决定。注册返回 201 `Session` 并自动登录，已有当前会话会轮换失效；重复账号返回 409，失败不更改原会话。注册不是加入已有团队。
+
 `Session` 包含 `user{id,display_name}`、`organization{id,name}`、`permissions[]`、`csrf_token`、`expires_at`、`capabilities`。能力对象包含可用模块列表、是否允许隔离模拟、`import_limits{max_items,max_file_bytes,max_text_chars}`。这是已登录用户可见的能力声明，不返回第三方凭据、私有域名或账号配置。
 
 `WorkspaceSummary` 包含 `as_of`、`source_scope=all/live/mock/manual` 和四个计数：`active_job_count`、`application_count`、`waiting_call_count`、`pending_report_count`。application_count 是岗位关联数量，不承诺去重候选人数。waiting_call_count 计 waiting_conditions/reconciling/stop_status=requested；未接但 awaiting_reschedule 不算正在通话。前端名称须随口径调整。
@@ -80,6 +84,8 @@ HTTP 的 Provenance 是规划的读模型，不修改已有 `SourceModes` 事件
 | `active_task_ids` | string[] | 刷新恢复分析状态 |
 | `counts` | object | applications/pending_reports，按当前用户可见范围 |
 | `provenance`, `created_at`, `updated_at` | 公共字段 | 时间带时区 |
+
+创建请求 `CreateJobInput` 仅 `material_text` 必填（1—30,000 字）；`title/company` 可省略或为 null，提供时仍须非空且不超过 100 字。未识别前返回的“待识别岗位／企业”只作展示，`material_fields` 仍保留 null；A01 表单与引文校验通过后，从 stated 字段回填未由用户指定的标签。文字样例见 `examples.json` 的 `create_job_from_transcript`。录音自动转写与人工产物写回的待接入合同见 [材料创建流程](../job-material-workflow.md)。
 
 ### 4.2 RuleDraft / RulePack
 

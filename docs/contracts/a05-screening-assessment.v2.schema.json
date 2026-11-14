@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "DimensionScore": {
+      "additionalProperties": false,
+      "properties": {
+        "dimension_id": {
+          "title": "Dimension Id",
+          "type": "string"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "maximum": 10,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Score"
+        },
+        "reason": {
+          "maxLength": 3000,
+          "minLength": 10,
+          "title": "Reason",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/EvidenceUse"
+          },
+          "maxItems": 40,
+          "title": "Evidence",
+          "type": "array"
+        },
+        "questions": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Questions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "dimension_id",
+        "reason"
+      ],
+      "title": "DimensionScore",
+      "type": "object"
+    },
+    "EvidenceUse": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_id": {
+          "title": "Evidence Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        },
+        "category": {
+          "enum": [
+            "E1",
+            "E2",
+            "E3",
+            "U"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "purpose": {
+          "maxLength": 1000,
+          "minLength": 5,
+          "title": "Purpose",
+          "type": "string"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "version",
+        "category",
+        "purpose"
+      ],
+      "title": "EvidenceUse",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "portrait": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Exactly: 教育和相关年限、主要工作经历与职责、专业技能与工作方法、行业及业务场景、项目及个人贡献、比赛论文等专业成果、岗位相关优势/迁移能力、已证实差距/信息缺口",
+      "title": "Portrait",
+      "type": "object"
+    },
+    "scores": {
+      "items": {
+        "$ref": "#/$defs/DimensionScore"
+      },
+      "maxItems": 7,
+      "minItems": 7,
+      "title": "Scores",
+      "type": "array"
+    },
+    "proposed_result": {
+      "enum": [
+        "passed",
+        "manual_review",
+        "rejected"
+      ],
+      "title": "Proposed Result",
+      "type": "string"
+    },
+    "reasons": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5,
+      "minItems": 3,
+      "title": "Reasons",
+      "type": "array"
+    },
+    "core_evidence_sufficient": {
+      "title": "Core Evidence Sufficient",
+      "type": "boolean"
+    },
+    "significant_mismatch_dimensions": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 7,
+      "title": "Significant Mismatch Dimensions",
+      "type": "array"
+    },
+    "essential_qualification_failure": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EvidenceUse"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "failed_qualification": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Failed Qualification"
+    },
+    "unresolved_core_conflicts": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 30,
+      "title": "Unresolved Core Conflicts",
+      "type": "array"
+    },
+    "handoff": {
+      "description": "Each: dimension_id, fact, clue, priority (high/normal/low). Factual handoff, not scripts.",
+      "items": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "type": "object"
+      },
+      "maxItems": 100,
+      "title": "Handoff",
+      "type": "array"
+    }
+  },
+  "required": [
+    "portrait",
+    "scores",
+    "proposed_result",
+    "reasons",
+    "core_evidence_sufficient"
+  ],
+  "title": "ScreeningAssessment",
+  "type": "object"
+}

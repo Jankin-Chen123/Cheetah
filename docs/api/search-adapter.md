@@ -13,7 +13,7 @@
 | `unavailable`, version 1 | 不发出搜索请求；后续配置提供者也不会让旧规则开始联网 |
 | `bounded-research`, version 1 | 可使用已配置适配器；固定公司／项目问题，每个任务最多 2 次查询，每次最多 5 条结果 |
 
-选择 http_json 时需配置 CHEETA_SEARCH_ENDPOINT（HTTPS）、CHEETA_SEARCH_ALLOWED_DOMAINS（JSON 域名数组），可选 CHEETA_SEARCH_API_KEY（Bearer）。没有允许来源、没有明确公司／项目名称、查询限额为零或提供者禁用时保存“未执行”与停止原因，不伪造搜索结果。配置格式不合法时任务明确失败。
+选择 http_json 时需配置 CHEETA_SEARCH_ENDPOINT（HTTPS），可选 CHEETA_SEARCH_API_KEY（Bearer）。CHEETA_SEARCH_ALLOWED_DOMAINS 默认为空数组 `[]`，表示不按业务域名限制，可检索公开网站；填写非空 JSON 域名数组才收窄范围。没有明确公司／项目名称、查询限额为零或提供者禁用时保存“未执行”与停止原因，不伪造搜索结果。配置格式不合法时任务明确失败。
 
 服务端可下调 research_query_limit、search_result_limit、search_timeout_seconds。查询数硬上限为 2、结果数为 5、单请求超时不超过 30 秒；岗位搜索预算默认 20 次，原子预留。金额和账单仍未知，次数预算不能冒充费用结算。
 
@@ -33,6 +33,8 @@ http_json 将 POST 发到配置的完整端点，不跟随重定向。`Idempoten
 ```
 
 请求只取简历中明确陈述的公司／项目标签和历史期间，不上传整份简历、候选人姓名或联系方式。标签中的邮箱或明显号码不用于查询。材料文字是查询数据，不能改变 HTTP 方法、端点、来源范围或业务规则。
+
+不限制公开网站范围时，请求中的 `allowed_domains` 为 `[]`。适配端必须将空数组解释为不设置业务域名过滤，并继续阻止本机、私有网段、云元数据地址和非公共 DNS 解析结果；旧版仅接受非空数组的桥接服务需同步更新此合同。Pi 插件使用空 domainFilter/domainPolicy.allow，仍执行其 DNS 和地址检查。
 
 200 响应由 [SearchResult Schema](../contracts/search-result.v1.schema.json) 定义：
 
@@ -64,7 +66,7 @@ source_mode 必须反映实际执行来源。隔离 mock 材料不会发给 live
 
 ## 研究产物与安全边界
 
-D04 保存已声明主体、逐主体执行状态、允许来源、时间、原始摘要证据、来源陈述差异、未知项及停止原因。只得到公司资料时，不会补造项目研究。拒绝私有地址、未允许域名、嵌入凭据、访问令牌参数和 fragment 链接。
+D04 保存已声明主体、逐主体执行状态、来源范围、时间、原始摘要证据、来源陈述差异、未知项及停止原因。只得到公司资料时，不会补造项目研究。拒绝私有地址、嵌入凭据、访问令牌参数和 fragment 链接；仅在显式配置域名列表时拒绝列表以外的网站。
 
 搜索摘要全部标为 U（待核实），不自动确认同名主体、历史适用性或个人贡献；多来源陈述不同则分别保留，不虚构一致结论。没有主体核实的 public_web 条件仍为 unknown，不会因“搜到了网页”而自动达标。后续专业核验接口和真实业务效果需单独评审。
 

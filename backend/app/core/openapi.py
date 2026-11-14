@@ -47,7 +47,8 @@ def install_openapi(application):
                         }
                 if path.startswith("/api/v1/health"):
                     continue
-                if path != "/api/v1/auth/login":
+                public_auth = path in {"/api/v1/auth/login", "/api/v1/auth/register"}
+                if not public_auth:
                     operation["security"] = [{"CookieAuth": []}]
                 params = operation.setdefault("parameters", [])
                 for name in ["Origin"] if method != "get" else []:
@@ -59,7 +60,7 @@ def install_openapi(application):
                             "schema": {"type": "string"},
                         }
                     )
-                if method != "get" and path != "/api/v1/auth/login":
+                if method != "get" and not public_auth:
                     params.append(
                         {
                             "name": "X-CSRF-Token",

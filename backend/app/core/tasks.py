@@ -7,7 +7,14 @@ from app.core.config import Settings
 from app.core.errors import DomainError
 from app.core.models import Budget, ModelUsage, ResearchAction, SearchUsage, Task, new_id, utcnow
 
-INTERNAL_KINDS = {"job_analysis", "resume_parse", "research", "screening"}
+INTERNAL_KINDS = {
+    "job_analysis",
+    "interview_standard",
+    "screening_standard",
+    "resume_parse",
+    "research",
+    "screening",
+}
 
 
 def enqueue(
@@ -53,6 +60,7 @@ def accepted(task: Task) -> dict:
 def retryable(task: Task, settings: Settings) -> bool:
     return (
         task.kind in INTERNAL_KINDS
+        and not task.payload.get("continuation_task_id")
         and task.status == "failed"
         and task.external_state in {None, "settled"}
         and task.attempt_count < settings.task_attempt_limit
@@ -130,6 +138,7 @@ def task_view(task: Task, settings: Settings, db: Session) -> dict:
         else task.application_id or task.job_id,
         "input_refs": refs,
         "result_refs": task.result_refs,
+        "continuation_task_id": task.payload.get("continuation_task_id"),
         "reason": {"code": task.error_code, "message": "请核对任务状态与依赖", "missing_fields": []}
         if task.error_code
         else None,
@@ -148,7 +157,7 @@ def task_view(task: Task, settings: Settings, db: Session) -> dict:
         "usage": usage(
             tokens=agent_tokens
             if agent_actions
-            else model_usage.actual_tokens
+            else task.payload.get("model_reported_tokens", model_usage.actual_tokens)
             if model_usage
             else None,
             search_count=search_count,

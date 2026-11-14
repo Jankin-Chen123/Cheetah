@@ -21,19 +21,18 @@
       "type": "integer"
     },
     "allowed_domains": {
+      "description": "Empty means all public websites; a nonempty list restricts domains. Private/local addresses remain forbidden.",
       "items": {
         "type": "string"
       },
       "maxItems": 30,
-      "minItems": 1,
       "title": "Allowed Domains",
       "type": "array"
     }
   },
   "required": [
     "query",
-    "limit",
-    "allowed_domains"
+    "limit"
   ],
   "title": "SearchRequest",
   "type": "object"

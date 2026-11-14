@@ -3,7 +3,7 @@
   "info": {
     "title": "Cheetah 猎报前后端接口草案",
     "version": "0.1.0-draft",
-    "description": "仅 /health 与 /health/ready 已实现。其余均为后续对接设计，不代表真实登录、AI、研究、电话或报告功能已经实现。所有 fixture 示例禁止进入真实执行。详见 README.md、models.md、integration-guide.md。"
+    "description": "完整设计仍含未实现项；实际运行接口见 openapi.implemented.v1.json。账号注册、登录、会话与退出已在本地实现，真实模型、搜索、电话和线上部署须分别验证。所有 fixture 示例仅供隔离联调。"
   },
   "servers": [
     {
@@ -13143,6 +13143,149 @@
         },
         "x-validation-boundary": "本地受控测试；真实模型、检索、电话和线上验收另行验证。"
       }
+    },
+    "/auth/register": {
+      "post": {
+        "operationId": "register_api_v1_auth_register_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Origin",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "稳定错误码；不回显敏感输入或第三方异常"
+          }
+        },
+        "summary": "Register",
+        "tags": [
+          "auth"
+        ],
+        "x-implementation-status": "implemented-local",
+        "description": "新建独立机构与账号，自动建立 Cookie 会话；不接受外部指定机构或权限。限流与关闭注册开关见接入文档。"
+      }
     }
   },
   "components": {
@@ -14039,76 +14182,38 @@
         "type": "object"
       },
       "Task": {
-        "type": "object",
+        "additionalProperties": true,
         "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 128
-          },
-          "kind": {
-            "type": "string",
-            "enum": [
-              "batch",
-              "job_analysis",
-              "resume_parse",
-              "research",
-              "screening",
-              "interview_outline",
-              "interview_extract",
-              "evaluation",
-              "recommendation",
-              "recompute",
-              "call_reconcile",
-              "call_stop"
-            ]
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "queued",
-              "running",
-              "waiting_conditions",
-              "awaiting_external",
-              "reconciling",
-              "completed",
-              "failed",
-              "cancelled"
-            ]
-          },
-          "revision": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "resource_type": {
-            "type": "string"
-          },
-          "resource_id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 128
-          },
-          "input_refs": {
-            "type": "array",
+          "allowed_actions": {
             "items": {
-              "$ref": "#/components/schemas/InputRef"
-            }
+              "type": "string"
+            },
+            "title": "Allowed Actions",
+            "type": "array"
           },
-          "result_refs": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ArtifactRef"
-            }
+          "attempt_count": {
+            "minimum": 0.0,
+            "title": "Attempt Count",
+            "type": "integer"
           },
-          "reason": {
+          "budget": {
+            "$ref": "#/components/schemas/Budget"
+          },
+          "continuation_task_id": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Reason"
+                "type": "string"
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Continuation Task Id"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
           },
           "error": {
             "anyOf": [
@@ -14120,61 +14225,125 @@
               }
             ]
           },
-          "attempt_count": {
-            "type": "integer",
-            "minimum": 0
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
           },
-          "retryable": {
-            "type": "boolean"
+          "id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
           },
-          "allowed_actions": {
-            "type": "array",
+          "input_refs": {
             "items": {
-              "type": "string"
-            }
+              "$ref": "#/components/schemas/InputRef"
+            },
+            "title": "Input Refs",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "batch",
+              "job_analysis",
+              "interview_standard",
+              "screening_standard",
+              "resume_parse",
+              "research",
+              "screening",
+              "interview_outline",
+              "interview_extract",
+              "evaluation",
+              "recommendation",
+              "recompute",
+              "call_reconcile",
+              "call_stop"
+            ],
+            "title": "Kind",
+            "type": "string"
           },
           "poll_after_ms": {
             "anyOf": [
               {
-                "type": "integer",
-                "minimum": 1000
+                "$ref": "#/components/schemas/PollAfterMs"
               },
               {
                 "type": "null"
               }
             ]
           },
-          "usage": {
-            "$ref": "#/components/schemas/Usage"
+          "reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Reason"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
-          "budget": {
-            "$ref": "#/components/schemas/Budget"
+          "resource_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Resource Id",
+            "type": "string"
           },
-          "created_at": {
-            "type": "string",
-            "format": "date-time"
+          "resource_type": {
+            "title": "Resource Type",
+            "type": "string"
+          },
+          "result_refs": {
+            "items": {
+              "$ref": "#/components/schemas/app__core__http_models__ArtifactRef"
+            },
+            "title": "Result Refs",
+            "type": "array"
+          },
+          "retryable": {
+            "title": "Retryable",
+            "type": "boolean"
+          },
+          "revision": {
+            "minimum": 1.0,
+            "title": "Revision",
+            "type": "integer"
           },
           "started_at": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "type": "string"
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Started At"
           },
-          "finished_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "waiting_conditions",
+              "awaiting_external",
+              "reconciling",
+              "completed",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/Usage"
           }
         },
         "required": [
@@ -14198,7 +14367,8 @@
           "started_at",
           "finished_at"
         ],
-        "additionalProperties": true
+        "title": "Task",
+        "type": "object"
       },
       "RetryTaskInput": {
         "type": "object",
@@ -14282,51 +14452,79 @@
         "additionalProperties": false
       },
       "InterviewDimension": {
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 128
-          },
-          "label": {
-            "type": "string"
-          },
-          "rubric": {
-            "type": "string",
-            "minLength": 1
-          },
-          "weight": {
+          "anchors": {
             "anyOf": [
               {
-                "type": "number",
-                "minimum": 0,
-                "maximum": 1
+                "$ref": "#/components/schemas/Anchors"
               },
               {
                 "type": "null"
               }
             ]
           },
-          "required_evidence": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+          "id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
           },
           "missing_action": {
-            "const": "not_evaluated"
+            "const": "not_evaluated",
+            "default": "not_evaluated",
+            "title": "Missing Action",
+            "type": "string"
+          },
+          "required_evidence": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "title": "Required Evidence",
+            "type": "array"
+          },
+          "rubric": {
+            "maxLength": 3000,
+            "minLength": 1,
+            "title": "Rubric",
+            "type": "string"
+          },
+          "source_quotes": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Source Quotes",
+            "type": "array"
+          },
+          "weight": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight"
           }
         },
         "required": [
           "id",
           "label",
-          "rubric",
-          "weight",
-          "required_evidence",
-          "missing_action"
+          "rubric"
         ],
-        "additionalProperties": false
+        "title": "InterviewDimension",
+        "type": "object"
       },
       "RecommendationPolicy": {
         "type": "object",
@@ -14372,43 +14570,22 @@
         "additionalProperties": false
       },
       "RuleContent": {
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
-          "screening_text": {
-            "type": "string",
-            "maxLength": 5000
-          },
-          "interview_text": {
-            "type": "string",
-            "maxLength": 5000
-          },
-          "recommendation_text": {
-            "type": "string",
-            "maxLength": 5000
-          },
-          "screening_conditions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ScreeningCondition"
-            }
-          },
           "interview_dimensions": {
-            "type": "array",
             "items": {
               "$ref": "#/components/schemas/InterviewDimension"
-            }
+            },
+            "title": "Interview Dimensions",
+            "type": "array"
           },
-          "recommendation_policy": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/RecommendationPolicy"
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "interview_text": {
+            "default": "",
+            "maxLength": 5000,
+            "title": "Interview Text",
+            "type": "string"
           },
-          "research_config_ref": {
+          "method_config_ref": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/ConfigRef"
@@ -14428,7 +14605,23 @@
               }
             ]
           },
-          "method_config_ref": {
+          "recommendation_policy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RecommendationPolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recommendation_text": {
+            "default": "",
+            "maxLength": 5000,
+            "title": "Recommendation Text",
+            "type": "string"
+          },
+          "research_config_ref": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/ConfigRef"
@@ -14437,20 +14630,34 @@
                 "type": "null"
               }
             ]
+          },
+          "screening_conditions": {
+            "items": {
+              "$ref": "#/components/schemas/ScreeningCondition"
+            },
+            "maxItems": 30,
+            "title": "Screening Conditions",
+            "type": "array"
+          },
+          "screening_rubric": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScreeningRubric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "screening_text": {
+            "default": "",
+            "maxLength": 5000,
+            "title": "Screening Text",
+            "type": "string"
           }
         },
-        "required": [
-          "screening_text",
-          "interview_text",
-          "recommendation_text",
-          "screening_conditions",
-          "interview_dimensions",
-          "recommendation_policy",
-          "research_config_ref",
-          "phone_config_ref",
-          "method_config_ref"
-        ],
-        "additionalProperties": false
+        "title": "RuleContent",
+        "type": "object"
       },
       "RuleDraft": {
         "type": "object",
@@ -14777,52 +14984,70 @@
         "additionalProperties": true
       },
       "CreateJobInput": {
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
-          "title": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100
-          },
           "company": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company"
           },
           "location": {
             "anyOf": [
               {
-                "type": "string",
-                "maxLength": 100
+                "maxLength": 100,
+                "type": "string"
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Location"
+          },
+          "material_text": {
+            "maxLength": 30000,
+            "minLength": 1,
+            "title": "Material Text",
+            "type": "string"
           },
           "salary": {
             "anyOf": [
               {
-                "type": "string",
-                "maxLength": 100
+                "maxLength": 100,
+                "type": "string"
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Salary"
           },
-          "material_text": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 30000
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
           }
         },
         "required": [
-          "title",
-          "company",
           "material_text"
         ],
-        "additionalProperties": false
+        "title": "CreateJobInput",
+        "type": "object"
       },
       "UpdateJobInput": {
         "type": "object",
@@ -16219,25 +16444,38 @@
         "additionalProperties": true
       },
       "D01Content": {
-        "type": "object",
+        "additionalProperties": true,
         "properties": {
+          "conflicts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Conflicts",
+            "type": "array"
+          },
           "fields": {
-            "type": "array",
             "items": {
               "$ref": "#/components/schemas/FieldValue"
-            }
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "job_form": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobForm"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "unknown_fields": {
-            "type": "array",
             "items": {
               "type": "string"
-            }
-          },
-          "conflicts": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+            },
+            "title": "Unknown Fields",
+            "type": "array"
           }
         },
         "required": [
@@ -16245,16 +16483,27 @@
           "unknown_fields",
           "conflicts"
         ],
-        "additionalProperties": true
+        "title": "D01Content",
+        "type": "object"
       },
       "D02Content": {
-        "type": "object",
+        "additionalProperties": true,
         "properties": {
+          "confirmation_status": {
+            "enum": [
+              "draft",
+              "needs_information",
+              "confirmed"
+            ],
+            "title": "Confirmation Status",
+            "type": "string"
+          },
           "dimensions": {
-            "type": "array",
             "items": {
               "$ref": "#/components/schemas/InterviewDimension"
-            }
+            },
+            "title": "Dimensions",
+            "type": "array"
           },
           "recommendation_policy": {
             "anyOf": [
@@ -16265,14 +16514,6 @@
                 "type": "null"
               }
             ]
-          },
-          "confirmation_status": {
-            "type": "string",
-            "enum": [
-              "draft",
-              "needs_information",
-              "confirmed"
-            ]
           }
         },
         "required": [
@@ -16280,7 +16521,8 @@
           "recommendation_policy",
           "confirmation_status"
         ],
-        "additionalProperties": true
+        "title": "D02Content",
+        "type": "object"
       },
       "D03Content": {
         "additionalProperties": true,
@@ -16291,6 +16533,16 @@
             },
             "title": "Claims",
             "type": "array"
+          },
+          "document_metadata": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DocumentMetadata"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "education": {
             "items": {
@@ -16322,6 +16574,16 @@
             },
             "title": "Research Objects",
             "type": "array"
+          },
+          "resume_form": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResumeForm"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "skills": {
             "items": {
@@ -16402,28 +16664,70 @@
         "type": "object"
       },
       "D05Content": {
-        "type": "object",
+        "additionalProperties": true,
         "properties": {
+          "assessment_refs": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/app__core__http_models__ArtifactRef"
+            },
+            "title": "Assessment Refs",
+            "type": "object"
+          },
           "experience_context": {
+            "title": "Experience Context",
             "type": "string"
           },
-          "match_signals": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Claim"
-            }
+          "form_context": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Form Context",
+            "type": "object"
           },
           "gaps": {
-            "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "title": "Gaps",
+            "type": "array"
+          },
+          "match_signals": {
+            "items": {
+              "$ref": "#/components/schemas/Claim"
+            },
+            "title": "Match Signals",
+            "type": "array"
+          },
+          "portrait": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Portrait"
           },
           "verification_questions": {
-            "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "title": "Verification Questions",
+            "type": "array"
           }
         },
         "required": [
@@ -16432,31 +16736,64 @@
           "gaps",
           "verification_questions"
         ],
-        "additionalProperties": true
+        "title": "D05Content",
+        "type": "object"
       },
       "D06Content": {
-        "type": "object",
+        "additionalProperties": true,
         "properties": {
-          "conditions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ConditionResult"
-            }
+          "assessment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScreeningAssessment"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "conclusion": {
-            "type": "string",
             "enum": [
               "pending",
               "passed",
               "unknown",
               "rejected",
               "manual_review"
-            ]
+            ],
+            "title": "Conclusion",
+            "type": "string"
+          },
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/ConditionResult"
+            },
+            "title": "Conditions",
+            "type": "array"
           },
           "override_of_ref": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ArtifactRef"
+                "$ref": "#/components/schemas/app__core__http_models__ArtifactRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "score_summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScoreSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "screening_rubric": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScreeningRubric"
               },
               {
                 "type": "null"
@@ -16469,7 +16806,8 @@
           "conclusion",
           "override_of_ref"
         ],
-        "additionalProperties": true
+        "title": "D06Content",
+        "type": "object"
       },
       "D07Content": {
         "type": "object",
@@ -21232,6 +21570,769 @@
           "rationale"
         ],
         "title": "Identity",
+        "type": "object"
+      },
+      "ScreeningRubric": {
+        "additionalProperties": false,
+        "properties": {
+          "dimensions": {
+            "items": {
+              "$ref": "#/components/schemas/ScreeningDimension"
+            },
+            "maxItems": 7,
+            "minItems": 7,
+            "title": "Dimensions",
+            "type": "array"
+          },
+          "method": {
+            "const": "a05-evidence-v2.1",
+            "default": "a05-evidence-v2.1",
+            "title": "Method",
+            "type": "string"
+          },
+          "necessary_qualifications": {
+            "description": "Confirmed indispensable professional licenses only; never age, gender, reputation or ordinary experience preferences",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Necessary Qualifications",
+            "type": "array"
+          },
+          "routing_policy": {
+            "description": "Job-level criteria for core evidence, mismatches and review. No invented universal cutoff.",
+            "maxLength": 5000,
+            "minLength": 20,
+            "title": "Routing Policy",
+            "type": "string"
+          },
+          "score_tiebreaker": {
+            "description": "Explain evidence-based choice within each two-point band",
+            "maxLength": 2000,
+            "minLength": 10,
+            "title": "Score Tiebreaker",
+            "type": "string"
+          }
+        },
+        "required": [
+          "dimensions",
+          "routing_policy",
+          "score_tiebreaker"
+        ],
+        "title": "ScreeningRubric",
+        "type": "object"
+      },
+      "ScreeningDimension": {
+        "additionalProperties": false,
+        "properties": {
+          "adjustment_reason": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Adjustment Reason"
+          },
+          "anchors": {
+            "$ref": "#/components/schemas/Anchors"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "id": {
+            "enum": [
+              "responsibilities",
+              "skills",
+              "education_experience",
+              "recent_relevance",
+              "industry_context",
+              "projects_preferences",
+              "salary"
+            ],
+            "title": "Id",
+            "type": "string"
+          },
+          "interview_dimension_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Interview Dimension Ids",
+            "type": "array"
+          },
+          "requirement": {
+            "maxLength": 3000,
+            "minLength": 1,
+            "title": "Requirement",
+            "type": "string"
+          },
+          "source_quotes": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Source Quotes",
+            "type": "array"
+          },
+          "weight": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "weight",
+          "requirement",
+          "anchors"
+        ],
+        "title": "ScreeningDimension",
+        "type": "object"
+      },
+      "Anchors": {
+        "additionalProperties": false,
+        "properties": {
+          "excellent": {
+            "description": "9--10 points",
+            "maxLength": 2000,
+            "minLength": 5,
+            "title": "Excellent",
+            "type": "string"
+          },
+          "limited": {
+            "description": "3--4 points",
+            "maxLength": 2000,
+            "minLength": 5,
+            "title": "Limited",
+            "type": "string"
+          },
+          "low": {
+            "description": "1--2 points, observed mismatch",
+            "maxLength": 2000,
+            "minLength": 5,
+            "title": "Low",
+            "type": "string"
+          },
+          "partial": {
+            "description": "5--6 points",
+            "maxLength": 2000,
+            "minLength": 5,
+            "title": "Partial",
+            "type": "string"
+          },
+          "strong": {
+            "description": "7--8 points",
+            "maxLength": 2000,
+            "minLength": 5,
+            "title": "Strong",
+            "type": "string"
+          }
+        },
+        "required": [
+          "low",
+          "limited",
+          "partial",
+          "strong",
+          "excellent"
+        ],
+        "title": "Anchors",
+        "type": "object"
+      },
+      "PollAfterMs": {
+        "minimum": 1000.0,
+        "title": "PollAfterMs",
+        "type": "integer"
+      },
+      "app__core__http_models__ArtifactRef": {
+        "additionalProperties": false,
+        "properties": {
+          "artifact_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Artifact Id",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "artifact_id",
+          "version"
+        ],
+        "title": "ArtifactRef",
+        "type": "object"
+      },
+      "JobForm": {
+        "additionalProperties": false,
+        "properties": {
+          "fields": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SourceFact"
+            },
+            "description": "Exactly these 38 keys: 客户企业名称、客户企业简称、客户所属行业、对接 HR、用人部门、岗位名称、所属部门、直属上级岗位、下属人数、工作时间、试用期薪资、转正薪资、固定薪资与浮动薪资、奖金与绩效、薪资发放周期、浮动薪资与绩效指标挂钩、学历要求、经验要求、技能要求—硬技能、技能要求—软技能、行业经验、项目经验、行为特质、短期工作目标、长期工作目标、核心成果、团队结构、跨部门协作需求、工作挑战、成长机会、目标竞品公司、团队文化、工作地点、工作地点与流动性、文化契合度、加分项、隐性门槛、其他要求",
+            "title": "Fields",
+            "type": "object"
+          },
+          "jd": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/SourceFact"
+              },
+              "type": "array"
+            },
+            "description": "Exactly 岗位职责、任职要求、加分条件; only confirmed source statements",
+            "title": "Jd",
+            "type": "object"
+          },
+          "template_version": {
+            "const": "A01-1.5",
+            "default": "A01-1.5",
+            "title": "Template Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fields",
+          "jd"
+        ],
+        "title": "JobForm",
+        "type": "object"
+      },
+      "SourceFact": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence_refs": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "maxItems": 20,
+            "title": "Evidence Refs",
+            "type": "array"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "quote": {
+            "anyOf": [
+              {
+                "maxLength": 6000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quote"
+          },
+          "status": {
+            "default": "unknown",
+            "enum": [
+              "stated",
+              "unknown",
+              "conflict"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "maxLength": 6000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "title": "SourceFact",
+        "type": "object"
+      },
+      "DocumentMetadata": {
+        "additionalProperties": false,
+        "properties": {
+          "candidate_id": {
+            "title": "Candidate Id",
+            "type": "string"
+          },
+          "file_id": {
+            "title": "File Id",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "format": {
+            "title": "Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "candidate_id",
+          "filename",
+          "format",
+          "file_id"
+        ],
+        "title": "DocumentMetadata",
+        "type": "object"
+      },
+      "ResumeForm": {
+        "additionalProperties": false,
+        "properties": {
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Limitations",
+            "type": "array"
+          },
+          "parse_status": {
+            "enum": [
+              "completed",
+              "partial",
+              "needs_confirmation"
+            ],
+            "title": "Parse Status",
+            "type": "string"
+          },
+          "sections": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/FormRecord"
+              },
+              "type": "array"
+            },
+            "description": "All nine sections with exact per-record fields: {'基本信息': ['候选人姓名', '联系电话', '电子邮箱', '所在城市', '当前任职公司', '当前岗位', '求职意向'], '教育经历': ['学校名称', '学历', '学位', '所学专业', '入学时间', '毕业时间', '学习形式', '其他教育信息'], '工作经历': ['任职公司名称', '所属部门', '岗位名称', '任职开始时间', '任职结束时间', '主要工作职责', '管理职责', '核心工作成果', '量化业绩数据', '公司相关描述'], '项目经历': ['项目名称', '所属公司', '起止时间', '项目背景', '项目目标', '候选人角色', '个人职责', '关键行动', '技术或方法', '项目成果', '量化结果', '项目链接'], '专业技能': ['专业技能', '技术工具', '管理能力描述', '语言能力', '相关证书', '其他专业能力'], '比赛与获奖经历': ['比赛名称', '举办时间', '获得奖项', '所属赛道', '主办机构', '参赛形式', '候选人角色', '相关成果', '证明链接'], '论文与科研成果': ['论文名称', '发表年份', '发表平台', '作者信息', '研究主题', '论文链接', '其他科研成果'], '专利及其他专业成果': ['成果类别', '成果名称', '登记号或编号', '申请/发布/授权时间', '候选人角色', '成果描述', '证明链接'], '信息缺失与异常': ['缺失信息', '歧义或识别错误', '时间冲突', '个人贡献不清晰', '量化口径不完整', '其他待核实问题']}",
+            "title": "Sections",
+            "type": "object"
+          },
+          "template_version": {
+            "const": "A04-1.1",
+            "default": "A04-1.1",
+            "title": "Template Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parse_status",
+          "sections"
+        ],
+        "title": "ResumeForm",
+        "type": "object"
+      },
+      "FormRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "fields": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SourceFact"
+            },
+            "maxProperties": 20,
+            "title": "Fields",
+            "type": "object"
+          },
+          "record_id": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "title": "Record Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "record_id",
+          "fields"
+        ],
+        "title": "FormRecord",
+        "type": "object"
+      },
+      "ScreeningAssessment": {
+        "additionalProperties": false,
+        "properties": {
+          "core_evidence_sufficient": {
+            "title": "Core Evidence Sufficient",
+            "type": "boolean"
+          },
+          "essential_qualification_failure": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvidenceUse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "failed_qualification": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failed Qualification"
+          },
+          "handoff": {
+            "description": "Each: dimension_id, fact, clue, priority (high/normal/low). Factual handoff, not scripts.",
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "maxItems": 100,
+            "title": "Handoff",
+            "type": "array"
+          },
+          "portrait": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Exactly: 教育和相关年限、主要工作经历与职责、专业技能与工作方法、行业及业务场景、项目及个人贡献、比赛论文等专业成果、岗位相关优势/迁移能力、已证实差距/信息缺口",
+            "title": "Portrait",
+            "type": "object"
+          },
+          "proposed_result": {
+            "enum": [
+              "passed",
+              "manual_review",
+              "rejected"
+            ],
+            "title": "Proposed Result",
+            "type": "string"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "minItems": 3,
+            "title": "Reasons",
+            "type": "array"
+          },
+          "scores": {
+            "items": {
+              "$ref": "#/components/schemas/DimensionScore"
+            },
+            "maxItems": 7,
+            "minItems": 7,
+            "title": "Scores",
+            "type": "array"
+          },
+          "significant_mismatch_dimensions": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 7,
+            "title": "Significant Mismatch Dimensions",
+            "type": "array"
+          },
+          "unresolved_core_conflicts": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 30,
+            "title": "Unresolved Core Conflicts",
+            "type": "array"
+          }
+        },
+        "required": [
+          "portrait",
+          "scores",
+          "proposed_result",
+          "reasons",
+          "core_evidence_sufficient"
+        ],
+        "title": "ScreeningAssessment",
+        "type": "object"
+      },
+      "EvidenceUse": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "enum": [
+              "E1",
+              "E2",
+              "E3",
+              "U"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "evidence_id": {
+            "title": "Evidence Id",
+            "type": "string"
+          },
+          "purpose": {
+            "maxLength": 1000,
+            "minLength": 5,
+            "title": "Purpose",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "evidence_id",
+          "version",
+          "category",
+          "purpose"
+        ],
+        "title": "EvidenceUse",
+        "type": "object"
+      },
+      "DimensionScore": {
+        "additionalProperties": false,
+        "properties": {
+          "dimension_id": {
+            "title": "Dimension Id",
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceUse"
+            },
+            "maxItems": 40,
+            "title": "Evidence",
+            "type": "array"
+          },
+          "questions": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Questions",
+            "type": "array"
+          },
+          "reason": {
+            "maxLength": 3000,
+            "minLength": 10,
+            "title": "Reason",
+            "type": "string"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "maximum": 10.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          }
+        },
+        "required": [
+          "dimension_id",
+          "reason"
+        ],
+        "title": "DimensionScore",
+        "type": "object"
+      },
+      "ScoreSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "contribution": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Contribution",
+            "type": "number"
+          },
+          "coverage": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Coverage",
+            "type": "number"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ScoredDimension"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total"
+          },
+          "weight_total": {
+            "const": 100,
+            "title": "Weight Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "weight_total",
+          "coverage",
+          "contribution",
+          "rows"
+        ],
+        "title": "ScoreSummary",
+        "type": "object"
+      },
+      "ScoredDimension": {
+        "additionalProperties": false,
+        "properties": {
+          "dimension_id": {
+            "title": "Dimension Id",
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceUse"
+            },
+            "maxItems": 40,
+            "title": "Evidence",
+            "type": "array"
+          },
+          "interview_dimension_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Interview Dimension Ids",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "questions": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Questions",
+            "type": "array"
+          },
+          "reason": {
+            "maxLength": 3000,
+            "minLength": 10,
+            "title": "Reason",
+            "type": "string"
+          },
+          "requirement": {
+            "title": "Requirement",
+            "type": "string"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "maximum": 10.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "status": {
+            "enum": [
+              "not_applicable",
+              "not_evaluated",
+              "evaluated"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "number"
+          },
+          "weighted_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weighted Score"
+          }
+        },
+        "required": [
+          "dimension_id",
+          "reason",
+          "label",
+          "weight",
+          "requirement",
+          "interview_dimension_ids",
+          "status",
+          "weighted_score"
+        ],
+        "title": "ScoredDimension",
+        "type": "object"
+      },
+      "RegisterInput": {
+        "additionalProperties": false,
+        "properties": {
+          "display_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Display Name",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 128,
+            "minLength": 12,
+            "title": "Password",
+            "type": "string"
+          },
+          "username": {
+            "maxLength": 40,
+            "minLength": 3,
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]*$",
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "display_name",
+          "password"
+        ],
+        "title": "RegisterInput",
         "type": "object"
       }
     },

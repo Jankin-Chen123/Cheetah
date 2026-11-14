@@ -13,6 +13,8 @@
 
 ## 实现与检查约定
 
+岗位需求录音／文字输入及 D01/D02 的网页留存、修订、导出，先读 [材料创建流程](../docs/job-material-workflow.md)。`CreateJobInput` 允许只提交 `material_text`；录音 ASR 和人工产物版本写回尚待实现，不把前端本机保存当作服务端已完成。
+
 - 使用 Python 3.12、FastAPI、Pydantic、SQLAlchemy 与 PostgreSQL；在本目录通过 uv 管理依赖和锁文件。
 - A 维护 `core/`、启动入口与统一迁移；A/B 分别维护 `modules/intake/` 和 `modules/outreach/`。公共变更先同步合同，禁止新增另一套鉴权、任务或产物格式。
 - 所有业务路由统一由 `app.main:create_app` 挂到 `/api/v1`。未实现的业务不添加伪成功接口。

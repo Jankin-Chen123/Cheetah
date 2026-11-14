@@ -7,6 +7,16 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.core.contracts import ArtifactRef, EvidenceRef
 
 FIELDS = {
+    "professional_work": {
+        "identity": "作品名称与公开链接",
+        "status": "公开状态与时间",
+        "ownership": "候选人角色与成果归属",
+    },
+    "other_achievement": {
+        "identity": "成果原始名称与类别",
+        "status": "公开记录与状态",
+        "ownership": "候选人角色与成果归属",
+    },
     "company": {
         "description": "公司原始简介",
         "identity": "公司身份与任职期",
@@ -169,6 +179,8 @@ class ResearchObject(BaseModel):
         "software_copyright",
         "open_source",
         "certification",
+        "professional_work",
+        "other_achievement",
     ]
     name: ResearchFact
     period: ResearchFact | None = None

@@ -2,9 +2,13 @@
 
 更新时间：2026-11-13。统一前缀：`/api/v1`。面向前端 F、后端 A 与后端 B。
 
-**完整设计稿仍包含未实现项；A 的本地可联调版本已经实现。** 具体状态与限制见 [后端 A 交付说明](../backend-a-delivery.md)，机器可读的实际运行接口为 [openapi.implemented.v1.json](openapi.implemented.v1.json)。前端页面仍是演示，B 的电话与报告尚未接入；不能把本地测试等同真实模型、联网研究、真实电话或线上验收。
+**完整设计稿仍包含未实现项；A 的本地可联调版本已经实现。** 具体状态与限制见 [后端 A 交付说明](../backend-a-delivery.md)，机器可读的实际运行接口为 [openapi.implemented.v1.json](openapi.implemented.v1.json)。前端岗位产物页已加入文字分析调用，真实模型链路尚未验证；其他页面仍为演示，B 的电话与报告尚未接入；不能把本地测试等同真实模型、联网研究、真实电话或线上验收。
+
+岗位创建新流程见 [从沟通材料创建岗位](../job-material-workflow.md)：只提交沟通文字，生成 D01/D02，网页修改留存与 PDF/Word 导出。录音可本机保存，ASR 和人工版本回写仍待后端对接。
 
 ## 文档入口与优先级
+
+初筛 V2 新增 `interview_standard`、`screening_standard` 任务及 `continuation_task_id`；岗位分析主任务在建议步骤完成前保持等待。新增 `a05-evidence` v1 配置和 `screening_rubric`，保留已发布旧谓词规则。D01/D03 增加完整表单，D05/D06 增加画像、结构化评估与程序计分。具体口径见 [初筛 Agent V2](../intake-agents.md)，字段以实际 OpenAPI 快照为准。
 
 | 文件 | 用法 |
 | --- | --- |
@@ -19,6 +23,8 @@
 当前运行行为以实际后端源代码为准；现有 A/B 事件以 `backend/app/core/contracts.py` 为唯一模型入口。待实现 HTTP 接口以本目录的 OpenAPI 和文字语义共同评审，冻结后实现到 Pydantic/OpenAPI；出现冲突先修正文档，不能各自采用不同解释。OpenAPI 的 `x-implementation-status` 区分 `implemented`、`planned` 和 `integration-draft`；服务运行时 `/openapi.json` 仅包含实际已注册的 A 与健康检查端点；`openapi.implemented.v1.json` 从同一应用生成，完整设计稿保留 B 的 planned/integration-draft。
 
 ## 1. 通用协议
+
+账号入口新增 `/auth/register`，详见 [官网与账号交付](../website-auth.md)。注册与登录不要求预先存在 Cookie／CSRF，但必须验证 Origin；其他写操作继续校验会话与 CSRF。本轮不修改 A/B 内部事件合同。
 
 ### 1.1 URL、命名、时间与空值
 
@@ -139,6 +145,7 @@ A 已使用其中的稳定业务码；B 专用业务码仍为规划。当前未�
 | --- | --- | --- | --- |
 | `GET /health` | A | 无 → 200 `Health` | **已实现**；`service` 当前仍是 `cheeta-api`，品牌改名未修改此协议常量 |
 | `GET /health/ready` | A | 无 → 200/503 `Readiness` | **已实现**；实际检测数据库，不能扩展解释为全部业务就绪 |
+| `POST /auth/register` | A | `RegisterInput` → 201 `Session` + Cookie | **本地已实现**；Origin 必填；账号唯一；每次注册创建独立机构；409 `USERNAME_TAKEN`、403 `REGISTRATION_DISABLED`、429 `RATE_LIMITED` |
 | `POST /auth/login` | A | `LoginInput` → 200 `Session` + Cookie | 登录失败 401；不存密码；不使用业务幂等 key |
 | `GET /auth/me` | A | Cookie → 200 `Session` | 恢复会话、权限、CSRF 与运行能力；失效 401 |
 | `POST /auth/logout` | A | Cookie + CSRF → 204 | 清除会话；本身幂等；无业务 key |

@@ -25,7 +25,14 @@ class SearchRequest(BaseModel):
     protocol_version: Literal["1.0"] = "1.0"
     query: str = Field(min_length=1, max_length=500)
     limit: int = Field(ge=1, le=5)
-    allowed_domains: list[str] = Field(min_length=1, max_length=30)
+    allowed_domains: list[str] = Field(
+        default_factory=list,
+        max_length=30,
+        description=(
+            "Empty means all public websites; a nonempty list restricts domains. "
+            "Private/local addresses remain forbidden."
+        ),
+    )
 
 
 class SearchHit(BaseModel):
@@ -78,7 +85,7 @@ def allowed_domains(settings: Settings) -> list[str]:
 
 def public_source_url(value: str, domains: list[str]) -> str | None:
     try:
-        if any(character.isspace() or ord(character) < 32 for character in value):
+        if any(character.isspace() or ord(character) < 32 for character in value) or "\\" in value:
             return None
         parsed = urlsplit(value)
         host = (parsed.hostname or "").lower().rstrip(".")
@@ -88,7 +95,12 @@ def public_source_url(value: str, domains: list[str]) -> str | None:
             or parsed.password
             or parsed.fragment
             or parsed.port not in {None, 80, 443}
-            or not any(host == domain or host.endswith("." + domain) for domain in domains)
+            or not host
+            or "%" in host
+            or (
+                domains
+                and not any(host == domain or host.endswith("." + domain) for domain in domains)
+            )
         ):
             return None
         if any(
@@ -102,10 +114,39 @@ def public_source_url(value: str, domains: list[str]) -> str | None:
         ):
             return None
         try:
-            if not ipaddress.ip_address(host).is_global:
+            address = ipaddress.ip_address(host)
+            if not address.is_global or address.is_multicast or address.is_reserved:
                 return None
         except ValueError:
-            if host == "localhost" or host.endswith((".local", ".internal", ".localhost")):
+            if re.fullmatch(r"(?:0x[0-9a-f]+|[0-9]+)(?:\.(?:0x[0-9a-f]+|[0-9]+)){0,3}", host):
+                return None
+            try:
+                host = host.encode("idna").decode("ascii")
+            except UnicodeError:
+                return None
+            labels = host.split(".")
+            if (
+                len(host) > 253
+                or len(labels) < 2
+                or any(
+                    not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?", label)
+                    for label in labels
+                )
+                or labels[-1].isdigit()
+                or host.endswith(
+                    (
+                        ".local",
+                        ".internal",
+                        ".localhost",
+                        ".localdomain",
+                        ".lan",
+                        ".home",
+                        ".test",
+                        ".invalid",
+                        ".onion",
+                    )
+                )
+            ):
                 return None
         return value
     except ValueError:

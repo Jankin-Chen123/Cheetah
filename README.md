@@ -6,9 +6,11 @@ Cheetah 意为“猎豹”；中文名“猎报”，“猎”取自猎头，“
 
 面向猎头的网页端 Agent 自动化工作流：梳理 HR 招聘需求，批量分析与初筛简历，安排 AI 电话沟通，生成内部评估和候选人推荐报告。
 
-**当前为前端交互演示与后端 A 本地开发版本。** 前端已实现工作台、岗位与规则草案、简历暂存校验、候选人产物与证据查看、模拟电话状态、模拟报告版本审核与 Markdown 下载。所有样例均为虚构，修改仅存于当前页面内存，刷新重置。后端 A 已实现预置账号会话、对象权限、岗位和规则版本、PDF/TXT/文本批次、持久化任务、D01—D06、三分支初筛与事务交接事件。搜索支持可配置的有界适配，默认禁用；模型与搜索均未做真实供应商验收。电话与服务端报告由后端 B 负责，尚未接入。前端业务页尚未调用这些 A 接口。
+**当前为前端交互演示与后端 A 本地开发版本。** 前端已实现工作台、岗位与规则草案、简历暂存校验、候选人产物与证据查看、模拟电话状态、模拟报告版本审核与 Markdown 下载。所有样例均为虚构。岗位材料、录音和 D01/D02 人工版本保存在本机，支持刷新恢复及 PDF/Word 导出；候选人、电话与推荐演示仍为页面内存。后端 A 已实现预置账号会话、对象权限、岗位和规则版本、PDF/TXT/文本批次、持久化任务、D01—D06、三分支初筛与事务交接事件。搜索支持可配置的有界适配，默认禁用；模型 JSON 输出、工具调用及 DeepSeek 搜索、正文读取已分别实测；完整业务流程与专业质量仍待验收。电话与服务端报告由后端 B 负责，尚未接入。前端岗位产物页已接入会话、文字建岗、异步分析和产物查询调用；真实模型端到端尚未验证，录音 ASR 与人工版本回写后端待接入。其余业务页仍为演示。详见[材料创建流程](docs/job-material-workflow.md)。
 
 ## 架构与分工
+
+初筛 Agent 已按业务资料补充完整表单：A01、A02、A05 岗位规则建议依次持久化执行，A04 提取九模块简历并派生研究清单，A03 使用 Pi 进行有界研究，A05 按发布的七维规则输出 D05/D06。新增 DOCX 文本读取及表单报告；完整真实业务流程及专业筛选质量尚未验收。规则启用方式、模板差异和验证边界见 [初筛 Agent V2](docs/intake-agents.md)。
 
 前后端分离，后端两条业务线在同一 FastAPI 工程和 PostgreSQL 数据库内并行开发：
 
@@ -47,11 +49,13 @@ npm ci
 npm run dev
 ```
 
-打开前端 [http://localhost:5173](http://localhost:5173)，API 文档为 [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)。前端开发代理将 `/api` 转发给本地后端。
+打开前端 [http://127.0.0.1:5173](http://127.0.0.1:5173)，API 文档为 [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)。前端开发代理将 `/api` 转发给本地后端。
 
 未运行数据库时后端仍可启动，存活检查返回成功；数据库就绪检查返回 503，不会把未连接状态冒充就绪。
 
 ## 数据库与容器
+
+数据库采用 PostgreSQL 17 容器及命名卷，主机和容器内连接地址分别配置。启动、显式迁移、数据保存和后续服务器部署准备见 [容器数据库说明](docs/container-database.md)。
 
 在根目录启动本地数据库：
 
@@ -61,7 +65,7 @@ cd backend
 uv run alembic upgrade head
 ```
 
-当前包含 `0001_intake_baseline` 和增量 `0002_bounded_research` 迁移。必须显式升级到 head；API 和 worker 均不会在启动时建表。首次启动前先创建本地预置账号：
+当前包含 `0001_intake_baseline` 和增量 `0002_bounded_research` 迁移。必须显式升级到 head；API 和 worker 均不会在启动时建表。需要使用预置账号时，可先创建本地账号（也可启动后从官网注册）：
 
 ```powershell
 uv run python scripts/create_user.py dev-user --organization local-dev --display-name "本地开发"
@@ -69,7 +73,7 @@ uv run python scripts/create_user.py dev-user --organization local-dev --display
 
 密码通过隐藏输入读取，不存在默认账号或密码。另开终端在 `backend/` 运行 `uv run python -m app.worker` 执行队列任务；也可用 `--drain` 处理当前队列后退出。仅隔离演示时在本地 `.env` 显式设置 `CHEETA_ALLOW_MOCK=true`，并在请求中选择 `execution_mode=mock`。模拟分析采用受限字段解析，不代表真实 AI。
 
-容器运行前先显式迁移并预置账号，再启动服务（本轮未实际运行 Docker）：
+完整应用容器运行前先显式迁移并预置账号，再启动服务（整套应用容器仍需独立验收）：
 
 ```powershell
 docker compose build
@@ -90,6 +94,8 @@ uv run pytest
 uv run python scripts/export_contract_schema.py --check
 uv run python scripts/export_http_schema.py --check
 uv run python scripts/export_search_schema.py --check
+uv run python scripts/export_a03_schema.py --check
+uv run python scripts/export_intake_schema.py --check
 ```
 
 ```powershell
@@ -109,6 +115,12 @@ A 接口覆盖登录／退出、岗位与规则、批次和单份替换、候选
 
 健康检查保留原协议：`/api/v1/health` 仅存活；`/health/ready` 仅探测数据库连接，不代表迁移、模型、搜索、电话和全部业务就绪。业务错误均带请求标识，并隐藏敏感输入与连接信息。
 
+## 官网与账号
+
+默认打开官网（`#home`），可进入登录（`#login`）、注册（`#register`）或无需账号的演示区（`#demo/overview`）。注册成功进入账号工作空间（`#app/overview`），支持刷新恢复、退出与过期拦截；本机岗位数据按账号隔离。后端须先完成迁移并启动，不必预置账号即可注册。
+
+注册默认开启，可用 `CHEETA_REGISTRATION_ENABLED=false` 关闭；默认每个直接连接来源每 10 分钟最多 5 次尝试，通过 `CHEETA_REGISTRATION_ATTEMPT_LIMIT` 调整。每次注册建立独立机构，不支持自行加入已有团队。候选人、电话与推荐真实页面仍待接入。账号验证不需要模型服务。详见 [官网与账号交付](docs/website-auth.md)。
+
 ## 项目文档
 
 - [品牌故事与文案](docs/Cheetah_品牌故事与文案_V1.md)
@@ -123,6 +135,8 @@ A 接口覆盖登录／退出、岗位与规则、批次和单份替换、候选
 
 搜索配置、标准 HTTP 协议和接入方法见 [可配置研究适配器](docs/api/search-adapter.md)。未配置或规则禁用时 D04 明确未执行；已收集摘要仍为待核实证据，不自动确认主体、历史适用性或个人贡献。
 
-A03 新增基于 Pi 的研究执行模式：完整 D03 对象、目标规划、工具循环、逐项证据校验和五部分 D04。需要 Node.js 24、安装 `backend/agents/a03` 依赖、显式升级到 `0003_pi_research`，并发布 pi-research v1 规则。默认禁用外部研究；配置、插件复用与实际测试边界见 [A03 Pi Agent](docs/a03-pi-agent.md)。旧规则不会自动切换，真实模型／搜索供应商仍未验收。
+研究来源默认不限制公开网站域名：`CHEETA_SEARCH_ALLOWED_DOMAINS=[]`。非空域名列表才收窄来源；本机、内网和携带凭据的链接仍不作为公开研究来源。搜索提供者默认仍禁用，需配置实际搜索接口。
+
+A03 新增基于 Pi 的研究执行模式：完整 D03 对象、目标规划、工具循环、逐项证据校验和五部分 D04。需要 Node.js 24、安装 `backend/agents/a03` 依赖、显式升级到 `0003_pi_research`，并发布 pi-research v1 规则。默认禁用外部研究；配置、插件复用与实际测试边界见 [A03 Pi Agent](docs/a03-pi-agent.md)。旧规则不会自动切换。模型与 DeepSeek 搜索、正文读取已分别实测，完整真实候选人研究与专业质量仍待验收。
 
 下一步由 F 接入实际 A 接口，B 接入并核验 1.1 交接事件；真实模型、搜索及语音能力须分别验证。真实／模拟来源必须明确，实际外呼前须具备有效联系前提和停止能力；未审核的推荐版本不能对外交付。
