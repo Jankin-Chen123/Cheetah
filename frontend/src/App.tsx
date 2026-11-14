@@ -15,6 +15,7 @@ import CandidateWorkspace from './components/CandidateWorkspace'
 import JobWorkspace from './components/JobWorkspace'
 import ResumeImport from './components/ResumeImport'
 import TalentPool from './components/TalentPool'
+import OutreachWorkspace from './components/OutreachWorkspace'
 import MatchedJobs from './components/MatchedJobs'
 import TalentImport from './components/TalentImport'
 import CreateJob from './components/CreateJob'
@@ -171,8 +172,8 @@ function Workspace({ session, onLogout, logoutBusy }: WorkspaceProps) {
   let content = dashboard
   if (page === 'jobs') content = jobsPage
   else if (page === 'candidates') content = candidatesPage
-  else if (page === 'calls') content = callsPage
-  else if (page === 'reports') content = reportsPage
+  else if (page === 'calls') content = isDemo ? callsPage : <OutreachWorkspace key="calls" />
+  else if (page === 'reports') content = isDemo ? reportsPage : <OutreachWorkspace key="reports" view="reports" />
   else if (page === 'settings') content = settingsPage
   else if (page === 'job' && selectedJob) content = <></>
   else if (page === 'candidate' && selectedCandidate && selectedCandidateJobId) content = <CandidateWorkspace key={selectedCandidate.id} candidate={selectedCandidate} jobs={jobs} jobId={selectedCandidateJobId} onJobChange={jobId => navigate(`candidate/${selectedCandidate.id}/${route.split('/')[2] ?? 'summary'}/${jobId}`, true)} onUpdate={updateCandidate} onBack={() => back('candidates')} backLabel={backLabel} section={route.split('/')[2] ?? 'summary'} />

@@ -1,8 +1,12 @@
 from alembic import context
 
-from app.core import models  # noqa: F401 -- register the shared metadata for migrations
+from app.core import models as core_models  # noqa: F401 -- register shared tables
 from app.core.config import get_settings
 from app.core.database import Base, get_engine
+from app.modules.outreach import (
+    knowledge,  # noqa: F401
+    models,  # noqa: F401
+)
 
 target_metadata = Base.metadata
 provided_connection = context.config.attributes.get("connection")

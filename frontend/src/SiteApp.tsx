@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Alert, Button, Form, Input, Spin } from 'antd'
 import Workspace from './App'
+import { syncOutreachSession } from './api/outreach'
 import { getIntakeSession, IntakeApiError, loginIntake, logoutAccount, registerAccount } from './api/jobIntake'
 import type { IntakeSession } from './api/jobIntake'
 import { RemoteAccessContext } from './domain/access'
@@ -79,6 +80,7 @@ function AuthPage({ register, onAuthenticated, notice }: { register: boolean; on
 export default function SiteApp() {
   const [path, setPath] = useState(currentPath)
   const [session, setSession] = useState<IntakeSession | null>(null)
+  useEffect(() => { syncOutreachSession(session?.csrf_token ?? '') }, [session?.csrf_token])
   const [checking, setChecking] = useState(true)
   const [sessionError, setSessionError] = useState('')
   const [logoutBusy, setLogoutBusy] = useState(false)

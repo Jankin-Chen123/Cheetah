@@ -1,0 +1,11 @@
+{
+  "id": "demo-evaluation",
+  "version": 1,
+  "status": "demo",
+  "dimensions": [
+    {"id": "responsibility", "label": "个人职责（演示）", "weight": 0.5, "required_evidence": "实际回答中明确的个人职责及行动"},
+    {"id": "results", "label": "成果证据（演示）", "weight": 0.5, "required_evidence": "实际回答中的结果、口径及归因"}
+  ],
+  "threshold": 3,
+  "report_template_version": 1
+}

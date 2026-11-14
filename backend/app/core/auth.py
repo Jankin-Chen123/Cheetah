@@ -11,7 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core import http_models as dto
-from app.core.database import get_db
+from app.core.database import get_db, get_engine
 from app.core.errors import DomainError
 from app.core.models import Identity, LoginSession, LoginThrottle, aware, new_id, utcnow
 
@@ -99,7 +99,7 @@ def session_view(request: Request, user: Identity, login: LoginSession, raw: str
         "csrf_token": digest("csrf:" + raw),
         "expires_at": aware(login.expires_at),
         "capabilities": {
-            "modules": ["auth", "jobs", "intake"],
+            "modules": ["auth", "jobs", "intake", "outreach"],
             "mock_execution_allowed": settings.allow_mock,
             "model_configured": bool(
                 settings.model_endpoint and settings.model_api_key and settings.model_name
@@ -216,3 +216,25 @@ def logout(request: Request, response: Response, db: Db, user: User):
     entry = db.get(LoginSession, digest(request.cookies[COOKIE]))
     db.delete(entry)
     response.delete_cookie(COOKIE, path="/")
+
+
+def database_session(request: Request) -> Session:
+    """Open an interview transaction using the platform database."""
+    settings = request.app.state.settings
+    if settings.database_url is None:
+        raise DomainError("DEPENDENCY_NOT_READY", "尚未配置数据库", 503)
+    return Session(get_engine(settings.database_url.get_secret_value()))
+
+
+def require_identity(request: Request) -> dict:
+    """Adapt the shared account; no separate development login or session table."""
+    with database_session(request) as db:
+        user = current_user(request, db)
+        raw = request.cookies[COOKIE]
+        login = db.get(LoginSession, digest(raw))
+        return {
+            "user_id": user.id,
+            "organization_id": user.organization_id,
+            "csrf_token": digest("csrf:" + raw),
+            "expires_at": aware(login.expires_at).isoformat(),
+        }

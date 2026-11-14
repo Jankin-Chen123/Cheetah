@@ -42,3 +42,7 @@ coverage/
 .DS_Store
 Thumbs.db
 ~$*
+
+# Local original product documents
+/AI猎头候选人筛选与推荐系统_产品需求文档_V0.4.md
+/Cheeta_产品需求文档_V0.5.md

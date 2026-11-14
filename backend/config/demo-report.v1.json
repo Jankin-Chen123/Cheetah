@@ -1,0 +1,9 @@
+{
+  "id": "demo-recommendation",
+  "version": 1,
+  "status": "demo",
+  "title": "推荐报告（虚构样例／演示规则）",
+  "highlights_heading": "回答中的匹配线索",
+  "unknowns_heading": "待核实",
+  "disclaimer": "本报告用于虚构流程演示，不具有正式专业评估效力；亮点来自候选人自述，未经独立核实。"
+}
