@@ -69,7 +69,7 @@ class Task(Base):
     __tablename__ = "tasks"
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=new_id)
     organization_id: Mapped[str] = mapped_column(String(64), index=True)
-    job_id: Mapped[str] = mapped_column(String(64), index=True)
+    job_id: Mapped[str | None] = mapped_column(String(64), index=True)
     application_id: Mapped[str | None] = mapped_column(String(64), index=True)
     kind: Mapped[str] = mapped_column(String(40))
     dedup_key: Mapped[str] = mapped_column(String(200), unique=True)
@@ -234,6 +234,9 @@ class IntakeJob(Base):
     salary: Mapped[str | None] = mapped_column(String(100))
     material_text: Mapped[str] = mapped_column(Text)
     material_fields: Mapped[dict] = mapped_column(JSON, default=dict)
+    routing_directions: Mapped[list] = mapped_column(
+        JSON, default=list, server_default=text("'[]'")
+    )
     revision: Mapped[int] = mapped_column(Integer, default=1)
     draft_revision: Mapped[int] = mapped_column(Integer, default=1)
     draft: Mapped[dict] = mapped_column(JSON, default=dict)
@@ -261,6 +264,8 @@ class Application(Base):
     __table_args__ = (UniqueConstraint("job_id", "material_hash", name="uq_job_material"),)
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=new_id)
     candidate_id: Mapped[str] = mapped_column(String(64), default=new_id)
+    talent_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    routing: Mapped[dict] = mapped_column(JSON, default=dict, server_default=text("'{}'"))
     workflow_id: Mapped[str] = mapped_column(String(64), default=new_id)
     organization_id: Mapped[str] = mapped_column(String(64), index=True)
     job_id: Mapped[str] = mapped_column(String(64), index=True)
@@ -304,4 +309,37 @@ class BatchItem(Base):
     revision: Mapped[int] = mapped_column(Integer, default=1)
     replaces_item_id: Mapped[str | None] = mapped_column(String(64))
     duplicate_of_item_id: Mapped[str | None] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class Talent(Base):
+    __tablename__ = "talents"
+    __table_args__ = (
+        UniqueConstraint("owner_id", "material_hash", "execution_mode", name="uq_talent_material"),
+    )
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(String(64), index=True)
+    owner_id: Mapped[str] = mapped_column(String(64), index=True)
+    name: Mapped[str] = mapped_column(String(200))
+    filename: Mapped[str] = mapped_column(String(200))
+    media_type: Mapped[str] = mapped_column(String(100))
+    data: Mapped[bytes] = mapped_column(LargeBinary)
+    material_text: Mapped[str] = mapped_column(Text)
+    material_hash: Mapped[str] = mapped_column(String(64))
+    execution_mode: Mapped[str] = mapped_column(String(16))
+    status: Mapped[str] = mapped_column(String(32), default="active")
+    profile_version: Mapped[int | None] = mapped_column(Integer)
+    task_id: Mapped[str] = mapped_column(String(64))
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class TalentProfile(Base):
+    __tablename__ = "talent_profiles"
+    talent_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, primary_key=True)
+    content: Mapped[dict] = mapped_column(JSON)
+    directions: Mapped[list] = mapped_column(JSON)
+    classification_source: Mapped[str] = mapped_column(String(16))
+    classification_note: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

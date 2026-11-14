@@ -27,13 +27,14 @@ export function Icon({ name, size = 20 }: { name: string; size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name] ?? paths.file}</svg>
 }
 export function SourceTag({ source, inherited = false }: { source: SourceMode; inherited?: boolean }) {
-  return <Tag className="source-tag" color={source === 'mock' ? 'gold' : source === 'manual' ? 'blue' : 'green'}>{inherited ? '含上游' : ''}{source === 'mock' ? '模拟' : source === 'manual' ? '人工' : '真实'}来源</Tag>
+  if (source === 'mock') return null
+  return <Tag className="source-tag" color={source === 'manual' ? 'blue' : 'green'}>{inherited ? '含上游' : ''}{source === 'manual' ? '人工' : '真实'}来源</Tag>
 }
 export function ScreeningTag({ value }: { value: Screening }) {
   return <Tag className="status-tag" color={{ pending: 'default', passed: 'green', unknown: 'orange', rejected: 'default' }[value]}><span className={`status-dot ${value}`} />{screeningLabels[value]}</Tag>
 }
-export function PageHeading({ title, description, actions }: { title: string; description?: string; actions?: ReactNode }) {
-  return <div className="page-heading"><div><h1>{title}</h1>{description && <p className="page-description">{description}</p>}</div><div className="heading-actions">{actions}</div></div>
+export function PageHeading({ title, titleExtra, description, actions }: { title: string; titleExtra?: ReactNode; description?: string; actions?: ReactNode }) {
+  return <div className="page-heading"><div><h1 className={titleExtra ? 'heading-with-status' : undefined}>{title}{titleExtra}</h1>{description && <p className="page-description">{description}</p>}</div><div className="heading-actions">{actions}</div></div>
 }
 export function Person({ name, detail, index = 0 }: { name: string; detail: string; index?: number }) {
   return <div className="person"><span className={`person-avatar tone-${index % 4}`}>{name.slice(-2)}</span><div><strong>{name}</strong><span>{detail}</span></div></div>

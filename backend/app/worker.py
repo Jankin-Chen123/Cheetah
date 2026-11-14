@@ -42,14 +42,11 @@ from app.modules.intake.evidence_screening import (
     model_context,
     uses_evidence_method,
 )
-from app.modules.intake.form_sources import canonical_resume_facts, resume_objects
 from app.modules.intake.schemas import (
     ConfigRef,
     Fact,
     InterviewStandard,
     JobAnalysis,
-    ResumeProfile,
-    ResumeResearchObject,
     RuleContent,
     ScreeningStandard,
 )
@@ -57,7 +54,6 @@ from app.modules.intake.service import (
     audit,
     check_mode,
     publish_handoff,
-    queue_step,
     save_profile,
     screening_decision,
 )
@@ -88,6 +84,10 @@ def _context(db: Session, task: Task) -> tuple[IntakeJob, Application | None]:
     expected = task.payload.get("agent_resource_hash")
     if expected and expected != resource_fingerprint():
         raise DomainError("AGENT_RESOURCES_CHANGED", "提示词或合同版本已变化，请核对任务输入版本")
+    if task.kind == "talent_parse":
+        from app.modules.intake.talents import talent_context
+
+        return None, talent_context(db, task)
     job = db.scalar(select(IntakeJob).where(IntakeJob.id == task.job_id).with_for_update())
     if job is None or job.organization_id != task.organization_id:
         raise DomainError("PRECONDITION_NOT_MET", "任务对象已不可访问")
@@ -118,6 +118,10 @@ def _finish_model(
     db: Session, task: Task, job: IntakeJob, application: Application | None, data: dict
 ) -> list[dict]:
     mode = task.payload["execution_mode"]
+    if task.kind == "talent_parse":
+        from app.modules.intake.talents import finish_talent
+
+        return finish_talent(db, task, application, data)
     if task.kind == "screening":
         return finish_screening(db, task, job, application, data)
     if task.kind in {"interview_standard", "screening_standard"}:
@@ -197,62 +201,16 @@ def _finish_model(
         return [artifact_ref(d01), artifact_ref(d02)]
     if application is None:
         raise DomainError("PRECONDITION_NOT_MET", "简历任务缺少关联")
-    profile = analysis.validate_quotes(
-        ResumeProfile.model_validate(data), application.material_text
-    )
-    if task.payload.get("agent_spec_version") == 2:
-        if profile.resume_form is None:
-            raise ValueError("A04 output is missing its nine-module standard form")
-        if mode == "live":
-            profile.facts.update(
-                {
-                    key: Fact.model_validate(value)
-                    for key, value in canonical_resume_facts(profile.resume_form).items()
-                }
-            )
-            profile.research_objects = [
-                ResumeResearchObject.model_validate(
-                    {
-                        **item,
-                        "name": {k: v for k, v in item["name"].items() if k != "evidence_refs"},
-                        "period": {k: v for k, v in item["period"].items() if k != "evidence_refs"},
-                        "facts": {
-                            key: {k: v for k, v in value.items() if k != "evidence_refs"}
-                            for key, value in item["facts"].items()
-                        },
-                    }
-                )
-                for item in resume_objects(profile.resume_form)
-            ]
-        if "[[UNREADABLE_" in application.material_text:
-            profile.resume_form.parse_status = "partial"
-            profile.resume_form.limitations.append(
-                "原文件包含尚未识别的页面或嵌入内容，需补充文字材料"
-            )
-    artifact = save_profile(
+    from app.modules.intake.resume_profiles import save_application_profile
+
+    return save_application_profile(
         db,
         job,
-        {
-            **profile.model_dump(mode="json"),
-            "unknown_fields": sorted(
-                set(profile.unknown_fields)
-                | {key for key, fact in profile.facts.items() if fact.status != "stated"}
-            ),
-        },
-        "D03",
-        source=mode,
-        application=application,
-        inherited=["manual"],
-        inputs=[{"kind": "material", "id": application.file_id, "version": 1}],
+        application,
+        data,
+        mode,
+        full_form=task.payload.get("agent_spec_version") == 2,
     )
-    application.stage = "research"
-    name = profile.facts.get("name")
-    if name and name.status == "stated" and isinstance(name.value, str) and len(name.value) <= 100:
-        application.name = name.value
-    application.revision += 1
-    application.updated_at = utcnow()
-    queue_step(db, job, application, "research", input_refs=[artifact_ref(artifact)])
-    return [artifact_ref(artifact)]
 
 
 def _queue_standard(db, parent, job, kind, inputs):
@@ -497,6 +455,7 @@ def run_once(settings: Settings, engine: Engine | None = None) -> bool:
         "interview_standard",
         "screening_standard",
         "resume_parse",
+        "talent_parse",
         "research",
         *INTERNAL_HANDLERS,
     }
@@ -529,7 +488,13 @@ def run_once(settings: Settings, engine: Engine | None = None) -> bool:
             )
             if (
                 task.kind
-                not in {"job_analysis", "interview_standard", "screening_standard", "resume_parse"}
+                not in {
+                    "job_analysis",
+                    "interview_standard",
+                    "screening_standard",
+                    "resume_parse",
+                    "talent_parse",
+                }
                 and not evidence_screen
             ):
                 task.result_refs = INTERNAL_HANDLERS[task.kind](db, task, job, application)

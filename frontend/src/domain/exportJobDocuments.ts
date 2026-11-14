@@ -2,11 +2,11 @@ import type { Job } from './workspace'
 import type { DocumentTable, JobDocument } from './jobDocuments'
 import { canExportJobDocument } from './jobDocuments'
 
-const sourceLabel = (document: JobDocument) => document.source === 'mock' || document.inheritedSources.includes('mock') ? '模拟样例，非真实模型结果' : document.source === 'manual' ? '人工修订草案' : '模型生成草案'
-const stamp = (document: JobDocument) => `v${document.version} · ${sourceLabel(document)} · 待确认`
+const sourceLabel = (document: JobDocument) => document.source === 'mock' || document.inheritedSources.includes('mock') ? '模拟样例，非真实模型结果' : document.source === 'manual' ? '人工修订' : '模型生成'
+const stamp = (document: JobDocument) => `v${document.version} · ${sourceLabel(document)} · ${document.status === 'confirmed' ? '已确认' : '待确认'}`
 const safeName = (name: string) => Array.from(name).map(char => char.charCodeAt(0) < 32 || '<>:"/\\|?*'.includes(char) ? '_' : char).join('').slice(0, 100)
 function validate(job: Job, documents: JobDocument[]) {
-  if (!documents.length || documents.some(document => !canExportJobDocument(job, document))) throw new Error('只能导出当前版本；待复核产物须先保存新版本。')
+  if (!documents.length || documents.some(document => !canExportJobDocument(job, document))) throw new Error('只能导出当前可用内容；待复核产物请先确认。')
   for (const document of documents) {
     if (document.type === 'D02' && document.tables.find(t => t.id === 'dimensions')?.rows.some(row => row.cells[4] || row.cells[5])) throw new Error('岗位面试表不能预填候选人实际得分。')
   }

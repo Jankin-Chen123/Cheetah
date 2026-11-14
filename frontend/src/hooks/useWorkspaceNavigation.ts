@@ -63,8 +63,9 @@ export function useWorkspaceNavigation(prefix: 'app' | 'demo', scope: string) {
   function updateView(patch: Partial<ListView>) {
     setViews(items => ({ ...items, [route]: { ...(items[route] ?? EMPTY), ...patch } }))
   }
-  const backLabel = from?.startsWith('job/') ? '返回岗位' : ({ overview: '返回工作台', calls: '返回电话任务', reports: '返回推荐审核', jobs: '返回岗位列表', candidates: '返回候选人列表' }[from ?? ''] ?? '返回候选人列表')
+  const backLabel = from?.startsWith('job/') ? '返回岗位' : ({ overview: '返回工作台', calls: '返回电话任务', reports: '返回推荐审核', jobs: '返回岗位列表', candidates: '返回人才库' }[from ?? ''] ?? '返回人才库')
   return { route, navigate, back, backLabel, ...view,
+    resetJobList: () => setViews(items => ({ ...items, jobs: { ...EMPTY } })),
     setQuery: (query: string) => updateView({ query, tablePage: 1 }),
     setJobFilter: (jobFilter: string) => updateView({ jobFilter, tablePage: 1 }),
     setStatusFilter: (statusFilter: string) => updateView({ statusFilter, tablePage: 1 }),

@@ -127,7 +127,7 @@ Application（含列表摘要，详情补 `artifact_slots`）包含：
 | --- | --- |
 | `id`, `candidate_id`, `job_id`, `workflow_id`, `revision` | application 的 id 用于候选人工作区 |
 | `candidate` | display_name/current_role/experience_text/education_text，未知字段为 null |
-| `stage` | intake/research/screening/outreach/extraction/evaluation/recommendation/finished |
+| `stage` | matched/intake/research/screening/outreach/extraction/evaluation/recommendation/finished |
 | `screening_result` | pending/passed/unknown/rejected/manual_review |
 | `evaluation_result` | pending/insufficient/recommended/rejected/manual_review，尚未评估为 pending，不给默认推荐 |
 | `summary`, `gaps[]`, `waiting_reason` | 有证据的摘要，缺口与技术原因分开 |
@@ -138,6 +138,8 @@ Application（含列表摘要，详情补 `artifact_slots`）包含：
 | `provenance`, `created_at`, `updated_at` | 来源与时间 |
 
 `artifact_slots` 为 D03—D10 的阶段描述，每个含 type/state/reason/artifact_ref。不存在、未执行和失败不等于零内容完成；历史内容由产物版本端点查。TimelineEvent 为 id/type/title/detail/actor_type/actor_id/created_at/artifact_ref，可空 actor 允许系统事件，记录原始结论、人工覆盖、旧结果失效与导出，而非无版本的展示字符串。
+
+岗位候选人列表将上述字段投影为“简历分析／电话沟通／推荐报告待审核”，这是展示状态，不覆盖任何 HTTP 枚举。只有明确初筛 rejected 或当前有效报告版本已审核才退出该岗位活动队列；不删除人才或历史。推荐报告待审核必须核对电话 ended、内部评估 recommended、报告 pending_review 及其引用的具体 D10 版本可读、valid、内容非空，不能仅凭 stage=recommendation 或一条 report_summary 认定生成成功。失效旧审批不隐藏新版本，unknown/manual_review 不作为拒绝。完整映射及实际后端 B 缺口见 [岗位候选人状态与退出](../talent-routing.md#岗位候选人状态与退出)。
 
 ## 7. Artifact 与 Evidence
 
@@ -252,3 +254,7 @@ D03Content 增加 research_objects。每项含 object_id、kind、name、period�
 D04 由可配置适配器执行固定计划，详见 [研究适配器](search-adapter.md)。配置与已发布规则允许时可保存 partial 结果；未执行时阶段来源为 null。扩展字段包括 declared_subjects（含逐主体 execution_state）、fields、sources（含 declared_subject、published_at、subject_identity、historical_applicability）、source_assertions 和 rejected_source_count。摘要 Evidence 带 public_url/source_date，全部为 U／待核实，不自动确认主体、任职历史或个人贡献；public_web 来源要求仍不满足。
 
 共享产物写入器校验上游归属和有效性、自动继承来源，将输入引用保存为 `{kind,id,version}`。D01/D03 包含原始材料引用；姓名更正同步搜索标签但不改变身份 ID。原文件受限时，关联读取、列表／计数、批次展示和 worker 缓存均受限，重导入不能恢复旧受限材料。
+
+## 人才档案、职能分类与岗位关系
+
+`Talent` 是独立于岗位的所有者私有人才材料；`TalentProfile` 为不可变的完整 A04 提取及分类快照。`direction_assignments` 包含目录内方向、primary/secondary、原文引文及理由，可为空。分类修订以 revision 校验并保存新 profile_version。`Application.candidate_id=Talent.id`、`talent_id` 标识共用人才，`application_id` 仍区分岗位关系；`routing` 保存目录版本、人才版本、岗位方向和命中方向。`stage=matched`、`screening_result=pending` 表示仅按职能进入岗位列表。未开始的过时分流关系可转 routing_inactive 并退出当前列表，不产生拒绝；已开始流程保持输入快照。D03 新增 direction_assignments 及 talent_profile_ref，来源和独立岗位证据均保留。没有岗位的 talent_parse 使用 Task.job_id=null，任务 resource_type=talent，不伪造岗位或 D03 引用。完整生命周期及旧资料迁移边界见 [职能分流说明](../talent-routing.md)。

@@ -63,6 +63,8 @@ export interface Report {
 export interface Candidate {
   id: string
   jobId: string
+  matchedJobIds?: string[]
+  applications?: CandidateApplication[]
   name: string
   role: string
   experience: string
@@ -79,6 +81,8 @@ export interface Candidate {
   reports: Report[]
   timeline: { title: string; detail: string; at: string }[]
 }
+// A person's other applications own their workflow data, including approvals.
+export type CandidateApplication = Pick<Candidate, 'jobId' | 'screening' | 'ruleVersion' | 'source' | 'gaps' | 'artifacts' | 'evidence' | 'call' | 'evaluation' | 'reports' | 'timeline'>
 export interface ImportRecord {
   id: string
   jobId: string
@@ -97,7 +101,7 @@ export const screeningLabels: Record<Screening, string> = {
   pending: '待评估', passed: '进入电话', unknown: '信息不足', rejected: '暂不推荐',
 }
 export const callLabels: Record<CallState, string> = {
-  waiting: '等待条件', active: '模拟通话中', stopping: '停止请求中', unknown: '外部结果待核对',
+  waiting: '等待条件', active: '沟通进行中', stopping: '停止请求中', unknown: '外部结果待核对',
   completed: '已结束', cancelled: '已取消',
 }
 export const reportLabels: Record<ReportState, string> = {
@@ -177,6 +181,7 @@ export function requestStop(candidate: Candidate): Candidate {
 
 export function reportMarkdown(candidate: Candidate, report: Report, job: Job): string {
   if (!canExport(candidate, report)) throw new Error('只能导出当前有效且已批准的版本。')
+  if (candidate.jobId !== job.id) throw new Error('推荐报告与所选岗位不一致。')
   return `# 【模拟演示 · 不用于真实交付】候选人推荐报告\n\n候选人：${candidate.name}\n岗位：${job.title}\n版本：v${report.version}\n来源：虚构材料 / 模拟访谈 / 人工修订（如有），无真实模型或研究结果\n规则包：v${candidate.ruleVersion}（测试规则）\n\n${report.content}\n\n## 待核实事项\n${candidate.gaps.map(g => `- ${g}`).join('\n') || '- 无新增事项（仅限模拟样例）'}\n\n审核意见：${report.reviewReason}\n\n仅下载至本地，未发送给 HR。\n`
 }
 

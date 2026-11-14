@@ -5,7 +5,7 @@ import { addImport, canExport, publishRules, reportMarkdown, requestStop, review
 function fixture() {
   const report = { id: 'fixture-report', version: 1, state: 'pending', content: '模拟 D10，只有公开推荐内容。', exports: 0 }
   return {
-    id: 'fixture-candidate', name: '虚构候选人', ruleVersion: 1, evaluation: 'recommended', gaps: ['个人贡献待核实'],
+    id: 'fixture-candidate', jobId: 'job', name: '虚构候选人', ruleVersion: 1, evaluation: 'recommended', gaps: ['个人贡献待核实'],
     reports: [report], timeline: [], call: { id: 'call-one', state: 'active', attempts: 1 },
     artifacts: [{ id: 'artifact-d10', type: 'D10', version: 1, status: 'valid', source: 'mock', upstreamSources: ['mock'], inputRefs: ['D09@v1'], content: report.content }],
   }

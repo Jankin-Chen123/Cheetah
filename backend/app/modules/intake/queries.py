@@ -209,7 +209,12 @@ def read_task(task_id: str, request: Request, db: Db, user: User):
     task = db.get(Task, task_id)
     if task is None:
         raise not_found()
-    get_job(db, user, task.job_id)
+    if task.kind == "talent_parse":
+        from app.modules.intake.talents import get_talent
+
+        get_talent(db, user, task.payload["talent_id"])
+    else:
+        get_job(db, user, task.job_id)
     if task.application_id:
         get_application(db, user, task.application_id)
     return task_view(task, request.app.state.settings, db)
@@ -221,7 +226,16 @@ def retry_task(task_id: str, body: RetryInput, request: Request, db: Db, user: U
         task = db.get(Task, task_id)
         if task is None:
             raise not_found()
-        job = get_job(db, user, task.job_id, lock=True)
+        if task.kind == "talent_parse":
+            from app.modules.intake.talents import get_talent, lock_owner
+
+            lock_owner(db, user.id)
+            talent = get_talent(db, user, task.payload["talent_id"], lock=True)
+            if talent.profile_version is not None:
+                raise DomainError("PRECONDITION_NOT_MET", "人才提取已经完成")
+            job = None
+        else:
+            job = get_job(db, user, task.job_id, lock=True)
         db.refresh(task)
         require_revision(task.revision, body.expected_revision)
         if not retryable(task, request.app.state.settings):
@@ -245,14 +259,15 @@ def retry_task(task_id: str, body: RetryInput, request: Request, db: Db, user: U
                 parent.revision += 1
             child = parent
         task.revision += 1
-        audit(
-            db,
-            job,
-            user.id,
-            "task.retried",
-            application_id=task.application_id,
-            refs={"task_id": task.id, "reason": body.reason},
-        )
+        if job is not None:
+            audit(
+                db,
+                job,
+                user.id,
+                "task.retried",
+                application_id=task.application_id,
+                refs={"task_id": task.id, "reason": body.reason},
+            )
         return accepted(task)
 
     return execute(db, user, request, body.model_dump(), 202, action)

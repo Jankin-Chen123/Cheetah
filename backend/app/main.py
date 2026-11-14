@@ -16,6 +16,7 @@ from app.modules.intake.batches import router as batches_router
 from app.modules.intake.corrections import router as corrections_router
 from app.modules.intake.queries import router as queries_router
 from app.modules.intake.router import router as intake_router
+from app.modules.intake.talents import router as talents_router
 from app.modules.intake.workspace import router as workspace_router
 from app.modules.outreach.router import router as outreach_router
 
@@ -124,6 +125,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(health_router, prefix="/api/v1")
     application.include_router(auth_router, prefix="/api/v1")
     application.include_router(intake_router, prefix="/api/v1")
+    application.include_router(talents_router, prefix="/api/v1")
     application.include_router(batches_router, prefix="/api/v1")
     application.include_router(queries_router, prefix="/api/v1")
     application.include_router(corrections_router, prefix="/api/v1")

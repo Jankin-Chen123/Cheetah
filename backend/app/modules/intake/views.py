@@ -76,6 +76,7 @@ def job_view(db: Session, job: IntakeJob):
         "owner_id": job.owner_id,
         "revision": job.revision,
         "title": job.title,
+        "routing_directions": job.routing_directions,
         "company": job.company,
         "location": job.location,
         "salary": job.salary,
@@ -134,6 +135,8 @@ def application_view(db: Session, application: Application):
     return {
         "id": application.id,
         "candidate_id": application.candidate_id,
+        "talent_id": application.talent_id,
+        "routing": application.routing,
         "job_id": application.job_id,
         "workflow_id": application.workflow_id,
         "revision": application.revision,
@@ -165,7 +168,9 @@ def application_view(db: Session, application: Application):
         "call_summary": None,
         "report_summary": None,
         "active_task_ids": active_tasks(db, application.job_id, application.id),
-        "allowed_actions": ["correct", "screening_review"]
+        "allowed_actions": ["start_screening"]
+        if application.stage == "matched"
+        else ["correct", "screening_review"]
         if application.status == "active"
         else [],
         "provenance": provenance(

@@ -2,6 +2,7 @@ import { useContext, useEffect, useRef, useState } from 'react'
 import { RemoteAccessContext } from '../domain/access'
 import type { Job } from '../domain/workspace'
 import { attachGeneratedDocument, currentDocument, documentFromArtifact, profileValues } from '../domain/jobDocuments'
+import { retainCommunicationMinutes } from '../domain/jobMaterials'
 import { analyzeIntakeJob, createIntakeRemoteJob, getIntakeArtifact, getIntakeJob, getIntakeSession, getIntakeTask, IntakeApiError, loginIntake } from '../api/jobIntake'
 
 const delay = (signal: AbortSignal) => new Promise<void>((resolve, reject) => {
@@ -30,7 +31,7 @@ export function useJobGeneration(job: Job, onUpdate: (job: Job) => void) {
     async function run() {
       if (!canGenerate) return
       const original = latest.current.job
-      if (!original.materialInput?.transcript || !original.generation || ['completed', 'waiting_transcript'].includes(original.generation.state) || original.generation.state === 'failed' && !attempt) return
+      if (!original.materialInput?.transcript || !original.generation || original.generation.state === 'waiting_transcript' || original.generation.state === 'completed' && !!original.materialInput.minutes?.length || original.generation.state === 'failed' && !attempt) return
       setBusy(true)
       try {
         const session = await getIntakeSession(signal)
@@ -55,11 +56,15 @@ export function useJobGeneration(job: Job, onUpdate: (job: Job) => void) {
         while (!signal.aborted) {
           remote = await getIntakeJob(remote.id, signal)
           for (const artifactRef of [remote.d01_ref, remote.d02_ref]) {
-            if (!artifactRef || latest.current.job.documents?.some(d => d.remoteRef?.artifact_id === artifactRef.artifact_id && d.remoteRef.version === artifactRef.version)) continue
+            if (!artifactRef) continue
+            const hasDocument = latest.current.job.documents?.some(d => d.remoteRef?.artifact_id === artifactRef.artifact_id && d.remoteRef.version === artifactRef.version)
+            const needsMinutes = artifactRef === remote.d01_ref && !latest.current.job.materialInput?.minutes?.some(item => item.artifactRef.artifact_id === artifactRef.artifact_id && item.artifactRef.version === artifactRef.version)
+            if (hasDocument && !needsMinutes) continue
             const artifact = await getIntakeArtifact(artifactRef, signal)
             commit(value => {
               const profile = currentDocument(value, 'D01')
-              return attachGeneratedDocument(value, documentFromArtifact(artifact, profile ? profileValues(profile) : {}))
+              const next = retainCommunicationMinutes(value, artifact)
+              return hasDocument ? next : attachGeneratedDocument(next, documentFromArtifact(artifact, profile ? profileValues(profile) : {}))
             })
           }
           if (remote.d01_ref && remote.d02_ref) {

@@ -108,6 +108,11 @@ def install_openapi(application):
                 },
             },
         }
+        from copy import deepcopy
+
+        schema["paths"]["/api/v1/talent-imports"]["post"]["requestBody"] = deepcopy(
+            schema["paths"]["/api/v1/jobs/{job_id}/resume-batches"]["post"]["requestBody"]
+        )
         application.openapi_schema = schema
         return schema
 

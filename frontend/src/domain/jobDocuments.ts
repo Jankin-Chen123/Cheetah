@@ -22,13 +22,21 @@ export interface DocumentTable {
 }
 export interface JobDocument {
   id: string; type: 'D01' | 'D02'; title: string; version: number;
-  status: 'draft' | 'superseded' | 'needs_review'; source: SourceMode;
+  status: 'draft' | 'confirmed' | 'superseded' | 'needs_review'; source: SourceMode;
   inheritedSources: SourceMode[]; tables: DocumentTable[]; unknowns: string[];
-  createdAt: string; changeReason: string; remoteRef?: { artifact_id: string; version: number }
+  createdAt: string; changeReason: string; confirmedAt?: string; remoteRef?: { artifact_id: string; version: number }
 }
 export interface JobMaterial {
   kind: 'transcript' | 'audio'; transcript: string;
-  audio?: { name: string; type: string; size: number; blob: Blob }
+  audio?: MaterialFile;
+  textFile?: MaterialFile;
+  originalText?: string;
+  minutes?: CommunicationMinutes[];
+}
+export interface MaterialFile { name: string; type: string; size: number; blob: Blob }
+export interface CommunicationMinutes {
+  text: string; createdAt: string; source: SourceMode; inheritedSources: SourceMode[];
+  artifactRef: { artifact_id: string; version: number }; inputText: string;
 }
 export interface JobGeneration {
   state: 'not_started' | 'waiting_transcript' | 'queued' | 'running' | 'completed' | 'failed';
@@ -58,7 +66,7 @@ export function createMaterialJob(materialInput: JobMaterial): Job {
   if (!transcript && !materialInput.audio) throw new Error('请粘贴转写记录或选择录音。')
   return {
     id: `local-job-${id()}`, title: '待识别岗位', company: '待识别企业', location: '', salary: '',
-    material: transcript, materialInput: { ...materialInput, transcript },
+    material: transcript, materialInput: { ...materialInput, originalText: materialInput.originalText ?? materialInput.transcript, transcript },
     status: 'draft', version: 0, rules: { screening: '', interview: '', recommendation: '' },
     source: 'manual', documents: [], updatedAt: time(),
     generation: { state: transcript ? 'not_started' : 'waiting_transcript', createKey: id(), analyzeKey: id() },
@@ -136,8 +144,12 @@ export function attachGeneratedDocument(job: Job, document: JobDocument): Job {
     location: meaningful(fields['工作地点']) ?? job.location,
     salary: meaningful(fields['转正薪资']) ?? job.salary,
     source: document.source, updatedAt: time(),
-    ...(document.type === 'D01' ? { status: 'draft' as const } : {}),
-    documents: [...(job.documents ?? []).map(d => d.type === document.type || document.type === 'D01' && d.type === 'D02' ? { ...d, status: d.type === document.type ? 'superseded' as const : d.status === 'superseded' ? d.status : 'needs_review' as const } : d), next],
+    status: 'draft',
+    documents: [...(job.documents ?? []).map(d => {
+      if (d.type === document.type) return { ...d, status: 'superseded' as const }
+      if (document.type === 'D01' && d.type === 'D02' && d.status !== 'superseded') return { ...d, status: 'needs_review' as const, confirmedAt: undefined }
+      return d
+    }), next],
   }
 }
 
@@ -154,11 +166,53 @@ export function saveDocumentRevision(job: Job, documentId: string, tables: Docum
     const summary = cleaned.find(t => t.id === 'summary')
     if (summary) { summary.rows[0].cells[1] = String(dimensions?.rows.length ?? 0); summary.rows[1].cells[1] = total }
   }
-  return attachGeneratedDocument(job, { ...original, id: id(), remoteRef: undefined, tables: cleaned, source: 'manual', inheritedSources: [...new Set([...original.inheritedSources, original.source])], createdAt: time(), changeReason: reason.trim(), status: 'draft' })
+  return attachGeneratedDocument(job, { ...original, id: id(), remoteRef: undefined, confirmedAt: undefined, tables: cleaned, source: 'manual', inheritedSources: [...new Set([...original.inheritedSources, original.source])], createdAt: time(), changeReason: reason.trim(), status: 'draft' })
 }
 
 export function canExportJobDocument(job: Job, document: JobDocument): boolean {
-  return currentDocument(job, document.type)?.id === document.id && document.status === 'draft'
+  return currentDocument(job, document.type)?.id === document.id && ['draft', 'confirmed'].includes(document.status)
+}
+
+export function areJobDocumentsConfirmed(job: Job): boolean {
+  return currentDocument(job, 'D01')?.status === 'confirmed' && currentDocument(job, 'D02')?.status === 'confirmed'
+}
+
+export const jobCardLabels = {
+  generating: '生成中', waiting_transcript: '待补充文字', unavailable: '待生成',
+  failed: '生成失败', review: '待复核', draft: '待确认', published: '已确认',
+} as const
+
+export function jobCardState(job: Job, canGenerate: boolean): keyof typeof jobCardLabels {
+  const state = job.generation?.state
+  if (state === 'waiting_transcript') return 'waiting_transcript'
+  if (state === 'failed') return 'failed'
+  if (state === 'not_started' || state === 'queued' || state === 'running') return canGenerate ? 'generating' : 'unavailable'
+  if (areJobDocumentsConfirmed(job)) return 'published'
+  if ((['D01', 'D02'] as const).some(type => currentDocument(job, type)?.status === 'needs_review')) return 'review'
+  return 'draft'
+}
+
+export function confirmJobDocument(job: Job, documentId: string): Job {
+  const document = job.documents?.find(item => item.id === documentId)
+  if (!document || currentDocument(job, document.type)?.id !== documentId || document.status === 'superseded') throw new Error('内容已变化，请重新查看当前草案。')
+  if (document.status === 'confirmed') return job
+  const profile = currentDocument(job, 'D01')
+  const values = profile ? profileValues(profile) : {}
+  const meaningful = (value: string | undefined) => !!value?.trim() && !['未提及', '待确认', '待识别岗位', '待识别企业'].includes(value.trim())
+  if (document.type === 'D01') {
+    if (!meaningful(values['岗位名称']) || !meaningful(values['客户企业名称'])) throw new Error('请先补充岗位名称和客户企业名称。')
+  } else {
+    if (profile?.status !== 'confirmed') throw new Error('请先确认岗位画像。')
+    const dimensions = document.tables.find(table => table.id === 'dimensions')?.rows ?? []
+    if (!dimensions.length || weightTotal(dimensions.map(row => row.cells[2])) !== '100%' || dimensions.some(row => Number.parseFloat(row.cells[2]) <= 0)) throw new Error('面试维度权重须为正数且合计 100%。')
+    const normalize = (value: string) => value.replace(/\s/g, '').replace(/[—–～~]/g, '-')
+    if (dimensions.some(row => !meaningful(row.cells[0]) || !meaningful(row.cells[1]) || !ANCHORS.every(band => normalize(row.cells[3]).includes(normalize(band))))) throw new Error('请补齐每个维度的名称、考核说明和五档评分标准。')
+    if (dimensions.some(row => row.cells[4] || row.cells[5])) throw new Error('面试前不能填写实际得分。')
+    const context = document.tables.find(table => table.id === 'context')
+    if (context?.rows.some(row => meaningful(values[row.cells[0]]) && row.cells[1] !== values[row.cells[0]])) throw new Error('面试表的客户或岗位信息与画像不一致，请先修改。')
+  }
+  const confirmedAt = time()
+  return { ...job, updatedAt: confirmedAt, documents: job.documents?.map(item => item.id === documentId ? { ...item, status: 'confirmed', confirmedAt } : item) }
 }
 
 export function demoJobDocuments(job: Job): JobDocument[] {

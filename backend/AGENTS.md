@@ -25,3 +25,5 @@
 - 更改 `core/contracts.py` 后更新导出 Schema、合同文档、样例与对应消费方。
 - 检查：`uv run ruff check .`、`uv run ruff format --check .`、`uv run pytest`、`uv run python scripts/export_contract_schema.py --check`。
 - 检查需要数据库、外部接口或 Docker 时说明实际验证环境；仅单元测试通过不能宣称真实电话已可用。
+
+人才分类新流程先读 [人才入库与职能分流](../docs/talent-routing.md)。`/talent-imports` 不依赖岗位，`talent_parse` 复用执行器但没有伪造 job_id；方向分流不能生成拒绝、初筛通过或电话事件。旧岗位批次入口保留兼容行为。新表只能通过显式 `0004_talent_routing` 迁移创建。

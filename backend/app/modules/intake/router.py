@@ -36,11 +36,16 @@ Version = Annotated[int, Query(ge=1)]
 @router.post("/jobs", status_code=201, response_model=dto.Job)
 def create_job(body: CreateJobInput, request: Request, db: Db, user: User):
     def action():
+        from app.modules.intake.directions import title_directions
+
         job = IntakeJob(
             **{
                 **body.model_dump(),
                 "title": body.title or "待识别岗位",
                 "company": body.company or "待识别企业",
+                "routing_directions": body.routing_directions
+                if body.routing_directions is not None
+                else title_directions(body.title or ""),
             },
             material_fields={
                 field: getattr(body, field) for field in ("title", "company", "location", "salary")
@@ -112,15 +117,22 @@ def read_job(job_id: str, db: Db, user: User):
 
 @router.patch("/jobs/{job_id}", response_model=dto.Job)
 def update_job(job_id: str, body: UpdateJobInput, db: Db, user: User):
+    from app.modules.intake.talents import lock_owner, route_job
+
+    lock_owner(db, user.id)
     job = get_job(db, user, job_id, lock=True)
     require_revision(job.revision, body.expected_revision)
     for field in ("title", "status"):
         value = getattr(body, field)
         if value is not None:
             setattr(job, field, value)
+    if body.routing_directions is not None:
+        job.routing_directions = sorted(set(body.routing_directions))
     job.revision += 1
     job.updated_at = utcnow()
     audit(db, job, user.id, "job.updated", refs={"status": job.status})
+    db.flush()
+    route_job(db, job)
     return job_view(db, job)
 
 
@@ -173,6 +185,9 @@ def save_draft(job_id: str, body: SaveRuleDraftInput, db: Db, user: User):
 @router.post("/jobs/{job_id}/rules/publish", status_code=201, response_model=dto.RulePack)
 def publish_rules(job_id: str, body: PublishRulesInput, request: Request, db: Db, user: User):
     def action():
+        from app.modules.intake.talents import lock_owner, route_job
+
+        lock_owner(db, user.id)
         job = get_job(db, user, job_id, lock=True)
         require_revision(job.draft_revision, body.expected_draft_revision)
         issues = rule_issues(RuleContent.model_validate(job.draft))
@@ -225,6 +240,7 @@ def publish_rules(job_id: str, body: PublishRulesInput, request: Request, db: Db
             refs={"version": version, "confirmation_note": body.confirmation_note},
         )
         db.flush()
+        route_job(db, job)
         return rule_view(rule)
 
     return execute(db, user, request, body.model_dump(), 201, action)

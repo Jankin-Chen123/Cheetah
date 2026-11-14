@@ -98,6 +98,12 @@ def validate_quotes(profile: ResumeProfile | JobAnalysis, text: str):
             if item.period:
                 item.period = validate_fact(item.period)
             item.facts = {key: validate_fact(fact) for key, fact in item.facts.items()}
+    if isinstance(profile, ResumeProfile):
+        by_direction = {}
+        for item in profile.direction_assignments:
+            if item.quote in text and "[[UNREADABLE_" not in item.quote:
+                by_direction.setdefault(item.direction_id, item)
+        profile.direction_assignments = list(by_direction.values())
     profile.unknown_fields = sorted(
         set(profile.unknown_fields)
         | {key for key, fact in profile.facts.items() if fact.status != "stated"}
@@ -216,6 +222,7 @@ def model_ready(settings: Settings):
 
 
 def model_messages(kind: str, text: str) -> list[dict]:
+    kind = "resume_parse" if kind == "talent_parse" else kind
     schema = {
         "job_analysis": JobAnalysis,
         "resume_parse": ResumeProfile,
@@ -292,9 +299,25 @@ def mock_analysis(kind: str, text: str) -> dict:
             if key not in profile.facts:
                 profile.facts[key] = Fact(value=None, status="unknown")
         return JobAnalysis(
-            **profile.model_dump(exclude={"research_objects", "resume_form"}),
+            **profile.model_dump(
+                exclude={"research_objects", "resume_form", "direction_assignments"}
+            ),
             rules=RuleContent(),
             job_form=empty_job_form(),
         ).model_dump(mode="json")
+    from app.modules.intake.directions import DirectionAssignment, title_directions
+
+    # Explicitly simulated, narrow title classifier; never a fallback for live model errors.
+    for line in text.splitlines():
+        if line.startswith(("职能：", "职位：", "current_role:", "擅长方向：")):
+            profile.direction_assignments.extend(
+                DirectionAssignment(
+                    direction_id=key,
+                    level="primary",
+                    quote=line,
+                    reason="模拟模式仅按显式职能名称归类",
+                )
+                for key in title_directions(line)
+            )
     profile.resume_form = empty_resume_form()
     return profile.model_dump(mode="json")

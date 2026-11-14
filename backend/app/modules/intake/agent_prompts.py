@@ -31,7 +31,7 @@ def resource_fingerprint():
     for path in sorted(RESOURCES.glob("*-adapter.md")):
         digest.update(path.read_bytes())
     digest.update((RESOURCES / "execution-policy.md").read_bytes())
-    for name in ("agent_prompts.py", "form_contracts.py", "schemas.py"):
+    for name in ("agent_prompts.py", "form_contracts.py", "schemas.py", "directions.py"):
         digest.update((Path(__file__).parent / name).read_bytes())
     return digest.hexdigest()
 
