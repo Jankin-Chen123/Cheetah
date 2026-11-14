@@ -1,4 +1,5 @@
 from decimal import Decimal
+from types import SimpleNamespace
 
 import pytest
 
@@ -30,6 +31,25 @@ def standard():
             for key, weight in [("one", 20), ("two", 80)]
         ],
     )
+
+
+def test_evaluation_binding_rejects_changed_standard_fields():
+    from app.modules.outreach.templates import validate_standard_template
+
+    configured = evaluation_template_from_standard(
+        standard(), threshold=8, report_template_version=1
+    )
+    case = SimpleNamespace(
+        session_data={"job_interview_standard": {"standard": standard().model_dump()}}
+    )
+    validate_standard_template(case, configured, "D09")
+    for field, value in [("score_scale", "0-5"), ("version", 2), ("status", "demo")]:
+        with pytest.raises(ValueError, match="EVALUATION_STANDARD_MISMATCH"):
+            validate_standard_template(case, configured.model_copy(update={field: value}), "D09")
+    changed = configured.model_copy(deep=True)
+    changed.dimensions[0].scoring_anchors["7-8"] = "different anchor"
+    with pytest.raises(ValueError, match="EVALUATION_STANDARD_MISMATCH"):
+        validate_standard_template(case, changed, "D09")
 
 
 def test_ten_point_weighted_score_and_missing_coverage():

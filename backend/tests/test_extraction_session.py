@@ -7,7 +7,17 @@ from app.modules.outreach.handoff import require_extraction_session
 
 
 @pytest.mark.parametrize(
-    "fault", [None, "identity", "intent", "permission", "version", "turn", "correction"]
+    "fault",
+    [
+        None,
+        "identity",
+        "intent",
+        "permission",
+        "formal_permission",
+        "version",
+        "turn",
+        "correction",
+    ],
 )
 def test_formal_extraction_requires_execution_and_independent_permissions(fault):
     standard = {"standard": {"version": 1}}
@@ -29,7 +39,7 @@ def test_formal_extraction_requires_execution_and_independent_permissions(fault)
         "status": "COMPLETED",
         "permissions": {
             purpose: {"status": "AUTHORIZED", "receipt_id": purpose, "recorded_at": 1}
-            for purpose in ["transcription", "extraction", "evaluation"]
+            for purpose in ["formal_interview", "transcription", "extraction", "evaluation"]
         },
         "executed_outline": ref,
         "executed_standard": standard,
@@ -62,6 +72,8 @@ def test_formal_extraction_requires_execution_and_independent_permissions(fault)
         package["interview_mode"] = "INFO_FIRST"
     elif fault == "permission":
         package["permissions"]["extraction"]["status"] = "WITHDRAWN"
+    elif fault == "formal_permission":
+        package["permissions"].pop("formal_interview")
     elif fault == "version":
         package["executed_outline"]["version"] = 2
     elif fault == "turn":

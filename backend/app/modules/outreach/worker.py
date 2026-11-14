@@ -11,7 +11,7 @@ from app.modules.outreach.handoff import question_execution_ref
 from app.modules.outreach.interview import Outline, validate_outline, validate_question_cards
 from app.modules.outreach.knowledge import retrieve
 from app.modules.outreach.models import ModelStep, OutreachCase
-from app.modules.outreach.outline_inputs import outline_dimensions, outline_inputs
+from app.modules.outreach.outline_inputs import outline_dimensions, outline_handoff, outline_inputs
 from app.modules.outreach.outline_prompts import OUTLINE_INSTRUCTION, PROMPT_VERSION
 from app.modules.outreach.outline_review import review_and_revise_outline
 from app.modules.outreach.provenance import inherited_provenance
@@ -113,6 +113,9 @@ def execute_outline(engine, settings: Settings, task_id: str):
             "D07",
             {
                 **outline.model_dump(),
+                **outline_handoff(
+                    case, outline, dimensions, preview=task.detail.get("knowledge_preview", False)
+                ),
                 "retrieved_methods": methods,
                 "knowledge_preview": task.detail.get("knowledge_preview", False),
                 "dimension_ids": sorted(dimension_ids),

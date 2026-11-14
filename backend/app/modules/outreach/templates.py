@@ -43,6 +43,7 @@ def bind_templates(case, settings, step):
         model = model_type.model_validate(bound["content"])
         if snapshot(model) != bound:
             raise ValueError("TEMPLATE_SNAPSHOT_HASH_MISMATCH")
+        validate_standard_template(case, model, step)
         return bound
     path = (
         settings.evaluation_template_path or CONFIG_DIRECTORY / "demo-evaluation.v1.json"
@@ -50,8 +51,28 @@ def bind_templates(case, settings, step):
         else settings.report_template_path or CONFIG_DIRECTORY / "demo-report.v1.json"
     )
     model = model_type.model_validate_json(path.read_text(encoding="utf8"))
+    validate_standard_template(case, model, step)
     if model.status == "demo" and not case.snapshot.get("fixture_only"):
         raise ValueError("DEMO_TEMPLATE_REQUIRES_FIXTURE")
     bound = snapshot(model)
     case.session_data = {**data, key: bound}
     return bound
+
+
+def validate_standard_template(case, model, step):
+    binding = case.session_data.get("job_interview_standard")
+    if step != "D09" or not binding:
+        return
+    from app.modules.outreach.job_standard import (
+        JobInterviewStandard,
+        evaluation_template_from_standard,
+    )
+
+    standard = JobInterviewStandard.model_validate(binding["standard"])
+    expected = evaluation_template_from_standard(
+        standard,
+        threshold=model.threshold,
+        report_template_version=model.report_template_version,
+    )
+    if model.model_dump() != expected.model_dump():
+        raise ValueError("EVALUATION_STANDARD_MISMATCH")

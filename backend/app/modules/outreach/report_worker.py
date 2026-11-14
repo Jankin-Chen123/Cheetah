@@ -1,5 +1,6 @@
 """D09/D10 inference outside locks; current evidence is rechecked on persistence."""
 
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -19,6 +20,28 @@ from app.modules.outreach.recommendation import (
 from app.modules.outreach.report_review import review_report_claims
 from app.modules.outreach.steps import claim_step, finish_step, result_still_current
 from app.modules.outreach.templates import bind_templates
+
+
+def validation_diagnostics(error):
+    if isinstance(error, ValidationError):
+        return {
+            "validation_fields": [
+                {"loc": list(item["loc"]), "type": item["type"]}
+                for item in error.errors(include_input=False, include_url=False)[:12]
+            ]
+        }
+    codes = {
+        "INSUFFICIENT_INDICATOR_REQUIRES_REVIEW",
+        "SCORING_ANCHOR_BASIS_REQUIRED",
+        "SCORING_FACT_REFERENCE_INVALID",
+        "UNASSESSED_ANCHOR_NOT_ALLOWED",
+        "ASSESSMENT_REASON_REQUIRED",
+        "UNKNOWN_REPORT_EVIDENCE",
+        "Score outside configured scale",
+        "Unknown or empty answer evidence",
+        "Exactly one assessment per configured dimension is required",
+    }
+    return {"output_validation_code": str(error)} if str(error) in codes else {}
 
 
 def execute_report_step(engine, settings, task_id):
@@ -75,17 +98,19 @@ def execute_report_step(engine, settings, task_id):
                 "report_template": bound["content"],
             }
             instruction = RECOMMENDATION_INSTRUCTION
+    diagnostics = {}
     try:
         result = generate_json(settings, instruction, context)
         if review_required:
             output = RecommendationOutput.model_validate(result["content"])
             result["quality_review"] = review_report_claims(
                 settings,
-                [claim.model_dump() for claim in output.match_highlights],
+                [claim.model_dump() for claim in output.evidence_claims()],
                 context["answers"],
             )
         failure = None
     except (ModelUnavailable, ValueError) as error:
+        diagnostics = validation_diagnostics(error)
         failure = str(error) if isinstance(error, ModelUnavailable) else "MODEL_OUTPUT_INVALID"
     with Session(engine) as session, session.begin():
         task = session.get(ModelStep, task_id, with_for_update=True)
@@ -97,12 +122,14 @@ def execute_report_step(engine, settings, task_id):
             task.detail = {**task.detail, "error_code": "INPUT_VERSION_CHANGED"}
             return
         if failure:
+            task.detail = {**task.detail, **diagnostics}
             finish_step(task, error_code=failure)
             return
         try:
             generator = generate_evaluation if step == "D09" else generate_recommendation
             artifact = generator(session, case, settings, model_result=result)
-        except ValueError:
+        except ValueError as error:
+            task.detail = {**task.detail, **validation_diagnostics(error)}
             finish_step(task, error_code="MODEL_OUTPUT_INVALID")
             return
         finish_step(task, result_ref={"id": artifact.id, "version": artifact.version})

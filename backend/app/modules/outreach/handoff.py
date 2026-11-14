@@ -40,7 +40,7 @@ def require_extraction_session(session, case):
     if package.get("status") not in {"COMPLETED", "PARTIAL", "INTERRUPTED"}:
         raise ValueError("A06_SESSION_NOT_FINISHED")
     permissions = package.get("permissions", {})
-    for purpose in ("transcription", "extraction", "evaluation"):
+    for purpose in ("formal_interview", "transcription", "extraction", "evaluation"):
         receipt = permissions.get(purpose, {})
         if (
             receipt.get("status") != "AUTHORIZED"

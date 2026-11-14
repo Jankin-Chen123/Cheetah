@@ -6,6 +6,7 @@ import PreflightCard from '../PreflightCard'
 import EvaluationStandardCard from '../EvaluationStandardCard'
 import PostInterviewContent from '../PostInterviewContent'
 import ClientContextCard from '../ClientContextCard'
+import CareerConfirmationCard from '../CareerConfirmationCard'
 
 export default function OutreachWorkspace() {
   const [password, setPassword] = useState('')
@@ -120,8 +121,12 @@ export default function OutreachWorkspace() {
         </Card>
         <Input.TextArea value={reason} onChange={event => setReason(event.target.value)} placeholder="核读具体推荐版本后填写真实审核意见" />
         <ClientContextCard key={current.id} current={current} onSaved={() => refresh(current.id)} />
+        <CareerConfirmationCard key={`career-${current.id}`} current={current} onSaved={() => refresh(current.id)} />
         {current.artifacts?.map(artifact => <Card key={artifact.id} title={`${artifact.type} v${artifact.version} · ${artifact.valid ? '有效' : '失效'} · ${artifact.review_status}`}>
           <PostInterviewContent artifact={artifact} />
+          {artifact.type === 'D07' && <Button disabled={!artifact.valid} onClick={() => void run(() => download(artifact, 'docx'))}>下载面试准备稿 Word</Button>}
+          {artifact.type === 'D08' && <Button disabled={!artifact.valid} onClick={() => void run(() => download(artifact, 'docx'))}>下载内部信息提取 Word</Button>}
+          {artifact.type === 'D09' && <Button disabled={!artifact.valid} onClick={() => void run(() => download(artifact, 'docx'))}>下载内部评估 Word（非客户报告）</Button>}
           {typeof artifact.content.content_markdown === 'string' && <Typography.Paragraph style={{ whiteSpace: 'pre-wrap' }}>{artifact.content.content_markdown}</Typography.Paragraph>}
           <details><summary>结构化内容与证据引用</summary><pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(artifact.content, null, 2)}</pre></details>
           <details><summary>来源和输入版本</summary><pre>{JSON.stringify({ provenance: artifact.provenance, input_refs: artifact.input_refs }, null, 2)}</pre></details>

@@ -1,6 +1,52 @@
 from app.modules.outreach.report_profile import professional_profile
 
 
+def test_professional_tables_projects_and_salary_keep_source_precision():
+    from io import BytesIO
+    from zipfile import ZipFile
+
+    from app.modules.outreach.report_document import report_docx
+
+    profile, body = professional_profile(
+        {
+            "D03": {
+                "education": [
+                    {"period": "2020年", "institution": "虚构学院", "credential": "原文证书"}
+                ],
+                "employment": [
+                    {
+                        "company": "虚构甲",
+                        "position": "分析员",
+                        "department": "产品部",
+                        "responsibilities": ["整理访谈"],
+                        "achievements": ["团队成果待核实"],
+                    },
+                    {"company": "虚构乙", "position": "研究员"},
+                ],
+                "job_preferences": {
+                    "salary_expectation": "税前年薪30万元，奖金未知",
+                    "availability": "交接后协商",
+                },
+                "projects": [
+                    {
+                        "name": "虚构研究",
+                        "role": "负责访谈",
+                        "actions": "完成12次访谈",
+                        "results": "团队转化率差2个百分点，未独立核实",
+                    }
+                ],
+            }
+        }
+    )
+    assert len(profile["work_history"]) == 2 and len(profile["projects"]) == 1
+    assert "税前年薪30万元，奖金未知" in body and "交接后协商" in body
+    assert "团队转化率差2个百分点，未独立核实" in body
+    assert "整理访谈" in body and "产品部" in body
+    xml = ZipFile(BytesIO(report_docx(body))).read("word/document.xml").decode()
+    assert xml.count("<w:tbl>") == 2
+    assert "虚构学院" in xml and "2020年" in xml
+
+
 def test_profile_preserves_professional_fields_without_private_attributes():
     profile, body = professional_profile(
         {

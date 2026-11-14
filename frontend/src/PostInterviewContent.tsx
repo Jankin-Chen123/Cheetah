@@ -12,6 +12,21 @@ const dimensionLabels: Record<string, string> = { responsibility: '个人职责'
 
 export default function PostInterviewContent({ artifact }: { artifact: Artifact }) {
   const { content, type } = artifact
+  if (type === 'D10') {
+    const summary = records([content.summary])[0]
+    const profile = records([content.client_profile])[0]
+    return <section aria-label="客户推荐报告">
+      <Alert type="info" message="具体版本推荐草案；批准与导出仍以当前有效版本及客户分享许可为准。" />
+      {summary && <><Typography.Title level={5}>核心推荐摘要</Typography.Title><p>{String(summary.text ?? '')}</p></>}
+      <Table size="small" pagination={false} rowKey={(_, index) => String(index)} scroll={{ x: 600 }}
+        dataSource={records(content.match_highlights)} columns={[
+          { title: '岗位关注点', dataIndex: 'dimension_id', render: value => String(value ?? '岗位相关经历') },
+          { title: '候选人事实与证据', dataIndex: 'text' },
+          { title: '岗位关联与边界', dataIndex: 'job_relevance', render: value => value || '以本行具体经历为限，其他能力待核实' },
+        ]} />
+      {profile && strings(profile.unresolved_conflicts).length > 0 && <Alert type="warning" message="存在未解决冲突，不能批准或导出" description={<ul>{strings(profile.unresolved_conflicts).map((text, index) => <li key={index}>{text}</li>)}</ul>} />}
+    </section>
+  }
   if (type !== 'D07' && type !== 'D08' && type !== 'D09') return null
   const gaps = strings(content.gaps)
   const conflicts = strings(content.conflicts)
@@ -19,6 +34,16 @@ export default function PostInterviewContent({ artifact }: { artifact: Artifact 
   return <section aria-label={type === 'D07' ? '面试提纲' : type === 'D08' ? '面试信息提取' : '内部面试评估'}>
     {type === 'D07' && <>
       <Alert type="info" message="面试准备稿；不代表候选人已同意，也不代表问题已经问过。" />
+      <p>准备状态：{String(content.readiness ?? '历史提纲未记录就绪状态')}</p>
+      {strings(content.readiness_reasons).map((reason, index) => <p key={index}>{reason}</p>)}
+      {records(content.dimension_coverage).length > 0 && <Table size="small" pagination={false} rowKey="dimension_id" scroll={{ x: 600 }} dataSource={records(content.dimension_coverage)} columns={[
+        { title: '岗位能力', dataIndex: 'dimension_name' },
+        { title: '权重', dataIndex: 'weight_percent' },
+        { title: '指标', dataIndex: 'indicator' },
+        { title: '计划题号', render: (_, row) => strings(row.question_ids).join('、') },
+        { title: '分钟', dataIndex: 'planned_minutes' },
+        { title: '覆盖状态', render: (_, row) => row.coverage_status === 'PLANNED' ? '已安排' : '缺失' },
+      ]} />}
       {typeof content.planned_total_minutes === 'number' && <p>建议总时长：{content.planned_total_minutes} 分钟</p>}
       {records(content.questions).map((question, index) => <div key={index} style={{ marginTop: 16 }}>
         <Typography.Text strong>{String(question.id ?? '')}：{String(question.question ?? '')}</Typography.Text>

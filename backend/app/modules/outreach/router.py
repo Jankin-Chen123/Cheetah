@@ -785,8 +785,17 @@ def call_detail(case_id: str, request: Request):
                 )
             )
         )
+        from app.modules.outreach.career_confirmation import confirmed_upstream
+
+        current_minutes = next((a for a in artifacts if a.type == "D08" and a.valid), None)
+        career_upstream, active_confirmations = confirmed_upstream(case, current_minutes)
         return {
             **case_view(case),
+            "session": {
+                **case.session_data,
+                "career_confirmed_upstream": career_upstream,
+                "active_career_confirmation_ids": [r.get("id") for r in active_confirmations],
+            },
             "failed_tasks": [
                 {
                     "id": task.id,
@@ -1397,6 +1406,106 @@ class ProcessingPermissionInput(BaseModel):
     expected_revision: int = Field(ge=1)
     purpose: Literal["formal_interview", "transcription", "extraction", "evaluation"]
     authorized: bool
+
+
+@router.get("/evaluations/{artifact_id}/export")
+@router.get("/minutes/{artifact_id}/export")
+@router.get("/outlines/{artifact_id}/export")
+def export_internal_evaluation(artifact_id: str, request: Request, version: int):
+    from app.modules.outreach.evaluation_document import (
+        evaluation_markdown,
+        minutes_markdown,
+        outline_markdown,
+    )
+    from app.modules.outreach.report_document import report_docx
+
+    identity = require_identity(request)
+    with database_session(request) as session:
+        artifact = session.get(OutreachArtifact, artifact_id)
+        expected_type = "D08" if "/minutes/" in request.url.path else "D09"
+        if "/outlines/" in request.url.path:
+            expected_type = "D07"
+        if artifact is None or artifact.type != expected_type:
+            raise HTTPException(404)
+        try:
+            locked_case(session, artifact.case_id, identity["organization_id"], identity["user_id"])
+        except LookupError:
+            raise HTTPException(404) from None
+        if not artifact.valid or artifact.version != version:
+            raise HTTPException(409, detail="EVALUATION_VERSION_INVALID")
+        renderers = {"D07": outline_markdown, "D08": minutes_markdown, "D09": evaluation_markdown}
+        return Response(
+            content=report_docx(renderers[expected_type](artifact)),
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={
+                "Cache-Control": "no-store",
+                "Content-Disposition": (
+                    f'attachment; filename="internal-evaluation-v{version}.docx"'
+                ),
+            },
+        )
+
+
+class CareerConfirmationInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    expected_revision: int = Field(ge=1)
+    minutes_id: str = Field(min_length=1, max_length=128)
+    minutes_version: int = Field(ge=1)
+    field_path: str = Field(min_length=1, max_length=128)
+    value: str = Field(min_length=1, max_length=500)
+    answer_id: str = Field(min_length=1, max_length=128)
+    quote: str = Field(min_length=1, max_length=4000)
+    reason: str = Field(min_length=1, max_length=2000)
+    conflict_index: int | None = Field(default=None, ge=0)
+
+
+@router.post("/calls/{case_id}/career-confirmations")
+def confirm_career_field(case_id: str, data: CareerConfirmationInput, request: Request):
+    from app.modules.outreach.career_confirmation import confirm_field
+
+    identity = require_identity(request)
+    with database_session(request) as session, session.begin():
+        try:
+            case = locked_case(session, case_id, identity["organization_id"], identity["user_id"])
+            receipt = confirm_field(
+                session, case, **data.model_dump(), actor_id=identity["user_id"]
+            )
+        except LookupError:
+            raise HTTPException(404) from None
+        except ValueError as error:
+            raise HTTPException(409, detail=str(error)) from None
+        return {"revision": case.revision, "confirmation": receipt}
+
+
+class CareerRevocationInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    expected_revision: int = Field(ge=1)
+    reason: str = Field(min_length=1, max_length=2000)
+
+
+@router.post("/calls/{case_id}/career-confirmations/{confirmation_id}/revoke")
+def revoke_career_field(
+    case_id: str, confirmation_id: str, data: CareerRevocationInput, request: Request
+):
+    from app.modules.outreach.career_confirmation import revoke_confirmation
+
+    identity = require_identity(request)
+    with database_session(request) as session, session.begin():
+        try:
+            case = locked_case(session, case_id, identity["organization_id"], identity["user_id"])
+            revoke_confirmation(
+                session,
+                case,
+                confirmation_id,
+                data.expected_revision,
+                data.reason,
+                identity["user_id"],
+            )
+        except LookupError:
+            raise HTTPException(404) from None
+        except ValueError as error:
+            raise HTTPException(409, detail=str(error)) from None
+        return {"revision": case.revision}
 
 
 class ClientContextInput(BaseModel):

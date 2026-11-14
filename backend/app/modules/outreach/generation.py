@@ -19,7 +19,7 @@ from app.modules.outreach.interview import (
 )
 from app.modules.outreach.knowledge import retrieve
 from app.modules.outreach.models import OutreachCase
-from app.modules.outreach.outline_inputs import outline_dimensions, outline_inputs
+from app.modules.outreach.outline_inputs import outline_dimensions, outline_handoff, outline_inputs
 from app.modules.outreach.outline_prompts import OUTLINE_INSTRUCTION, PROMPT_VERSION
 from app.modules.outreach.outline_review import review_and_revise_outline
 from app.modules.outreach.provenance import inherited_provenance
@@ -62,6 +62,7 @@ def generate_outline(session: Session, case: OutreachCase, settings: Settings, *
         "D07",
         {
             **outline.model_dump(),
+            **outline_handoff(case, outline, dimensions, preview=preview),
             "retrieved_methods": methods,
             "knowledge_preview": preview,
             "dimension_ids": sorted(dimension_ids),

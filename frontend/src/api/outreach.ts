@@ -42,7 +42,9 @@ export async function api<T>(path: string, body?: unknown, signal?: AbortSignal)
   return value as T
 }
 export async function download(artifact: Artifact, format: 'markdown' | 'docx' = 'markdown') {
-  const response = await fetch(`/api/v1/reports/${artifact.id}/export?version=${artifact.version}&format=${format}`, {
+  const internal = ['D07', 'D08', 'D09'].includes(artifact.type)
+  const category = artifact.type === 'D07' ? 'outlines' : artifact.type === 'D08' ? 'minutes' : artifact.type === 'D09' ? 'evaluations' : 'reports'
+  const response = await fetch(`/api/v1/${category}/${artifact.id}/export?version=${artifact.version}&format=${format}`, {
     credentials: 'same-origin',
     headers: { 'X-Export-Request-ID': crypto.randomUUID() },
   })
@@ -52,6 +54,7 @@ export async function download(artifact: Artifact, format: 'markdown' | 'docx' =
   }
   const url = URL.createObjectURL(await response.blob())
   const anchor = document.createElement('a')
-  anchor.href = url; anchor.download = `推荐报告-v${artifact.version}.${format === 'docx' ? 'docx' : 'md'}`; anchor.click()
+  const label = internal ? { D07: '面试准备稿', D08: '内部信息提取', D09: '内部面试评估' }[artifact.type] : '推荐报告'
+  anchor.href = url; anchor.download = `${label}-v${artifact.version}.${format === 'docx' ? 'docx' : 'md'}`; anchor.click()
   URL.revokeObjectURL(url)
 }

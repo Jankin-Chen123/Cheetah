@@ -2,7 +2,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     retrieval_min_similarity: float = 0.35
     dialogue_understanding_enabled: bool = False
     model_max_tokens: int = 2000
+    extraction_max_tokens: int = Field(default=4000, ge=128, le=4000)
     model_max_requests_per_case: int = 100
     voice_provider: Literal["bailian", "volcengine"] = "bailian"
     volc_speech_api_key: SecretStr | None = None

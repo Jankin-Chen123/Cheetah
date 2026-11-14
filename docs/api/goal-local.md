@@ -196,3 +196,12 @@ farewell=true仅允许已结束场次播报固定问候，不依赖已结束场�
 ### 职业事实冲突与报告审批
 
 D10的client_profile.unresolved_conflicts非空时，批准与Markdown/Word导出返回业务冲突（REPORT_FACT_CONFLICT_REQUIRES_CORRECTION），既有批准也不绕过。驳回不受此限制。应更正实际回答或源资料、使受影响产物失效并重算，再单独审核新版本；不能直接清空报告中的冲突字段或沿用旧批准。
+# 职业字段确认接口
+
+`POST /api/v1/calls/{case_id}/career-confirmations`：已实现，沿用本地会话、CSRF、机构及对象归属校验。
+
+请求包含 `expected_revision`、`minutes_id`、`minutes_version`、`field_path`、`value`、`answer_id`、`quote`、`reason`，可选 `conflict_index`。字段路径白名单覆盖 `profile` 当前城市/公司/岗位/在职状态，已有 `employment` 任职字段、已有 `education` 教育字段，以及 `qualifications`、`additional_projects_or_results`、`career_preferences` 列表项（允许顺序追加）。不接受任意 JSON 路径。
+
+确认值必须包含于引用原话，原话必须逐字出现在同案例已保存回答中；冲突索引必须属于当前有效 D08。确认记录绑定 D03 引用、D08 ID/版本、回答 ID/版本、操作者和理由。返回 `{revision, confirmation}`。来源变更后不再采用旧确认，不修改 D03、D08 原件；当前 D10 及批准失效，须显式生成新报告并单独审批。无关冲突继续保留。人工确认不等于独立核实，也不更改 D09 分数。
+
+并发、失效来源、非法字段/引文/冲突引用返回 409；请求格式错误 422，非所属对象 404。运行时 OpenAPI 见 `openapi.goal-local.json`。目前代码及局部测试已接入，尚未完成此新增流程的浏览器与真实模型联合验收。

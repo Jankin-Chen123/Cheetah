@@ -1,6 +1,6 @@
 """A10 prepares D07 before the call; A06 owns live dialogue."""
 
-PROMPT_VERSION = "a10-outline.v3"
+PROMPT_VERSION = "a10-outline.v4"
 
 OUTLINE_INSTRUCTION = (
     "你是A10结构化面试出题专家，唯一产物是D07候选人专属面试提纲。"
@@ -22,6 +22,9 @@ OUTLINE_INSTRUCTION = (
     "evidence_target明确需要取得的证据，不预设答案或得分。"
     "每道题填写priority、planned_minutes、question_type、source_refs、"
     "conditional_followups和stop_rule；source_refs只填upstream中真实产物ID。"
+    "逐字复制upstream.artifact_refs对应项的artifact_id，不得截断、缩写或改写。"
+    "例如实际artifact_id为fixture-D03-001时，fixture-D03不是合法引用。"
+    "confirmed_dimension_details中的source_refs是标准自身的来源，不能替代上游产物ID。"
     "主问题计划分钟合计26分钟，另预留开场2分钟、候选人提问4分钟、收尾3分钟。"
     "每题准备1至3条有明确缺口触发条件的追问，不要求全部执行；"
     "证据已足、拒答或无新增信息时停止追问并保留未知。"

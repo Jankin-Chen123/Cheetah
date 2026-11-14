@@ -31,12 +31,18 @@ class RecommendationClaim(BaseModel):
     model_config = ConfigDict(extra="forbid")
     text: str = Field(min_length=1, max_length=2000)
     answer_ids: list[str] = Field(min_length=1, max_length=12)
+    dimension_id: str | None = Field(default=None, max_length=128)
+    job_relevance: str = Field(default="", max_length=1000)
 
 
 class RecommendationOutput(BaseModel):
     model_config = ConfigDict(extra="forbid")
     match_highlights: list[RecommendationClaim] = Field(min_length=1, max_length=10)
     unknowns: list[str] = Field(default_factory=list, max_length=20)
+    summary: RecommendationClaim | None = None
+
+    def evidence_claims(self):
+        return ([self.summary] if self.summary else []) + self.match_highlights
 
 
 def validate_indicator_scoring(assessments, indicator_evidence):
@@ -150,16 +156,19 @@ def generate_recommendation(
     )
     output = RecommendationOutput.model_validate(result["content"])
     allowed = {answer["id"] for answer in answers if answer["text"].strip()}
-    for claim in output.match_highlights:
+    dimensions = {d["dimension_id"]: d for d in evaluation.content.get("dimensions", [])}
+    for claim in output.evidence_claims():
         if not claim.text.strip() or not set(claim.answer_ids).issubset(allowed):
             raise ValueError("UNKNOWN_REPORT_EVIDENCE")
+        if claim.dimension_id is not None and claim.dimension_id not in dimensions:
+            raise ValueError("UNKNOWN_REPORT_DIMENSION")
     if model_result is None and not evaluation.content.get("demo_rules", False):
         from app.modules.outreach.budget import reserve_model_request
         from app.modules.outreach.report_review import review_report_claims
 
         reserve_model_request(case, settings, "D10_evidence_review")
         result["quality_review"] = review_report_claims(
-            settings, [claim.model_dump() for claim in output.match_highlights], answers
+            settings, [claim.model_dump() for claim in output.evidence_claims()], answers
         )
     # A model cannot silently omit unresolved upstream qualifications.
     output.unknowns = list(
@@ -174,8 +183,28 @@ def generate_recommendation(
     markdown = (
         f"# {template.title}\n\n> {template.disclaimer}\n\n"
         f"## 第一部分｜猎头机构评估\n\n## {template.highlights_heading}\n\n"
-        + "\n\n".join(claim.text for claim in output.match_highlights)
+        + ("### 核心推荐摘要\n\n" + output.summary.text + "\n\n" if output.summary else "")
+        + "### 核心优势与岗位匹配\n\n"
     )
+
+    def cell(value):
+        return value.replace("|", "&#124;").replace("\n", " ")
+
+    markdown += "| 岗位关注点 | 候选人事实与证据 | 与目标岗位的关联 |\n| --- | --- | --- |\n"
+    for claim in output.match_highlights:
+        dimension = dimensions.get(claim.dimension_id, {})
+        markdown += (
+            "| "
+            + " | ".join(
+                cell(value)
+                for value in (
+                    dimension.get("label", "岗位相关经历"),
+                    claim.text,
+                    claim.job_relevance or "仅依据本行自述经历判断，其他能力待核实",
+                )
+            )
+            + " |\n"
+        )
     markdown += f"\n\n## {template.unknowns_heading}\n\n" + "\n".join(output.unknowns)
     from app.modules.outreach.report_profile import professional_profile
 
@@ -186,9 +215,35 @@ def generate_recommendation(
             OutreachArtifact.valid.is_(True),
         )
     )
+    from app.modules.outreach.career_confirmation import confirmed_upstream
+
+    career_upstream, confirmations = confirmed_upstream(case, minutes)
+    career_minutes = dict(minutes.content) if minutes else None
+    if career_minutes:
+        resolved = {
+            receipt["conflict_index"]: receipt["conflict_text"]
+            for receipt in confirmations
+            if receipt.get("conflict_index") is not None
+        }
+        career_minutes["conflicts"] = [
+            conflict
+            for index, conflict in enumerate(career_minutes.get("conflicts", []))
+            if resolved.get(index) != conflict
+        ]
     client_profile, career_section = professional_profile(
-        case.session_data.get("upstream_content", {}),
-        minutes.content if minutes else None,
+        career_upstream,
+        career_minutes,
+    )
+    client_profile["field_confirmations"] = confirmations
+    preferences = client_profile["job_preferences"]
+    markdown = markdown.replace(
+        "## 第一部分｜猎头机构评估",
+        "## 第一部分｜猎头机构评估\n\n"
+        f"薪酬要求：{preferences['salary_expectation']}\n\n"
+        f"最快到岗：{preferences['availability']}\n\n"
+        f"职业现状：{client_profile['current_employment_status']}\n\n"
+        f"目前所在地：{client_profile['current_city']}",
+        1,
     )
     markdown = markdown.replace(
         "## 第一部分｜猎头机构评估",

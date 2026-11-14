@@ -235,7 +235,7 @@ def generate_minutes(
         model_result
         if model_result is not None
         else generate_json(
-            settings,
+            settings.model_copy(update={"model_max_tokens": settings.extraction_max_tokens}),
             MINUTES_INSTRUCTION,
             {
                 "schema": Minutes.model_json_schema(),

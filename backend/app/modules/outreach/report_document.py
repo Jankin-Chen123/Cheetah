@@ -37,6 +37,8 @@ def report_docx(markdown: str) -> bytes:
     paragraphs = []
     table_rows = []
     for line in markdown.splitlines():
+        if not line.strip():
+            continue
         if line.startswith("|") and line.endswith("|"):
             cells = [cell.strip().replace("&#124;", "|") for cell in line[1:-1].split("|")]
             if all(cell and set(cell) <= {"-", ":"} for cell in cells):

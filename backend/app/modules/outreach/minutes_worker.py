@@ -33,7 +33,7 @@ def execute_minutes(engine, settings, task_id):
             return
     try:
         result = generate_json(
-            settings,
+            settings.model_copy(update={"model_max_tokens": settings.extraction_max_tokens}),
             MINUTES_INSTRUCTION,
             {"schema": Minutes.model_json_schema(), "answers": answers, "indicators": indicators},
         )

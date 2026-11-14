@@ -4,6 +4,47 @@ from app.integrations.bailian import ModelUnavailable
 from app.modules.outreach.job_standard import JobInterviewStandard
 
 
+def outline_handoff(case, outline, dimensions, *, preview):
+    reasons = []
+    if case.snapshot.get("fixture_only"):
+        reasons.append("虚构上游，仅供隔离流程验收，不可作为真实外呼准备。")
+    if preview:
+        reasons.append("使用未审核知识预览，须完成专业审核后用于正式业务。")
+    if not case.session_data.get("job_interview_standard"):
+        reasons.append("仅使用演示维度，尚无已确认的岗位面试标准。")
+    rows = []
+    for dimension in dimensions:
+        questions = [q for q in outline.questions if q.dimension_id == dimension["id"]]
+        rows.append(
+            {
+                "dimension_id": dimension["id"],
+                "dimension_name": dimension.get("label"),
+                "weight_percent": dimension.get("weight_percent"),
+                "indicator": dimension.get("indicators"),
+                "question_ids": [q.id for q in questions],
+                "evidence_targets": [q.evidence_target for q in questions],
+                "planned_minutes": sum(q.planned_minutes for q in questions),
+                "coverage_status": "PLANNED" if questions else "MISSING",
+            }
+        )
+    missing = any(row["coverage_status"] == "MISSING" for row in rows)
+    if missing:
+        reasons.append("存在未安排主问题的能力维度。")
+    return {
+        "readiness": "BLOCKED" if missing else "READY_WITH_LIMITATIONS" if reasons else "READY",
+        "readiness_reasons": reasons,
+        "dimension_coverage": rows,
+        "planned_total_minutes": 35,
+        "time_plan": {
+            "opening_consent": 2,
+            "competency": 26,
+            "candidate_questions": 4,
+            "closing": 3,
+        },
+        "handoff_to": "A06",
+    }
+
+
 def outline_dimensions(case):
     binding = case.session_data.get("job_interview_standard")
     if binding:

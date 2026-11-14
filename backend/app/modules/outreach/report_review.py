@@ -22,7 +22,8 @@ def review_report_claims(settings, claims, answers):
     items = [
         {
             "claim_index": index,
-            "claim": claim["text"],
+            "claim": claim["text"]
+            + ("；岗位关联：" + claim["job_relevance"] if claim.get("job_relevance") else ""),
             "answers": {key: by_id[key] for key in claim["answer_ids"] if key in by_id},
         }
         for index, claim in enumerate(claims)
