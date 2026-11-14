@@ -229,6 +229,9 @@ npm test
 
 ## 项目文档
 
+GitHub 检查后的镜像发布与服务器独立配置见[服务器部署说明](docs/server-deployment.md)，
+生产编排使用 `deploy/compose.production.yaml`。
+
 | 想了解什么 | 阅读入口 |
 | --- | --- |
 | 产品定位与品牌 | [产品需求文档](docs/Cheetah_产品需求文档_V0.5.md) · [品牌故事与文案](docs/Cheetah_品牌故事与文案_V1.md) |
