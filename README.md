@@ -4,7 +4,7 @@
 
 面向猎头顾问与猎头公司的 AI 招聘工作台，围绕需求梳理、人才入库、简历初筛、AI 沟通与推荐审核，减少重复整理，让顾问把时间留给关键沟通与专业判断。
 
-[在线体验](https://cheetah.asia/) · [图文使用指南](https://nankai.feishu.cn/wiki/K2VGweSJjiHgcNkWnf6cEqEsnff) · [功能与用法](#功能与用法) · [本地运行](#本地运行与开发)
+[在线体验](https://cheetah.asia/) · [产品介绍](https://nankai.feishu.cn/wiki/K2VGweSJjiHgcNkWnf6cEqEsnff) · [功能与用法](#功能与用法) · [本地运行](#本地运行与开发)
 
 ![Cheetah 猎报品牌主视觉：找对人，快人一步。](docs/assets/readme/cover.png)
 
