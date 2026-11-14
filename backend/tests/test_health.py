@@ -51,7 +51,7 @@ def test_readiness_success_requires_database_probe(monkeypatch: pytest.MonkeyPat
 
 
 def test_unknown_business_route_is_not_a_fake_success():
-    response = client_with_database().get("/api/v1/jobs")
+    response = client_with_database().get("/api/v1/not-implemented")
     assert response.status_code == 404
     assert response.json()["code"] == "HTTP_404"
     assert response.json()["request_id"] == response.headers["X-Request-ID"]
@@ -62,3 +62,9 @@ def test_cors_does_not_grant_access_to_unconfigured_origin():
         "/api/v1/health", headers={"Origin": "https://untrusted.example"}
     )
     assert "Access-Control-Allow-Origin" not in response.headers
+
+
+def test_anonymous_business_request_requires_login_before_database_configuration():
+    response = client_with_database().get("/api/v1/jobs")
+    assert response.status_code == 401
+    assert response.json()["code"] == "AUTH_REQUIRED"

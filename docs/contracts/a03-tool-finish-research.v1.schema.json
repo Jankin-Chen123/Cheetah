@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "reason": {
+      "enum": [
+        "sufficient",
+        "identity_uncertain",
+        "no_new_information",
+        "no_sources"
+      ],
+      "title": "Reason",
+      "type": "string"
+    },
+    "summary": {
+      "maxLength": 3000,
+      "minLength": 1,
+      "title": "Summary",
+      "type": "string"
+    }
+  },
+  "required": [
+    "reason",
+    "summary"
+  ],
+  "title": "Finish",
+  "type": "object"
+}

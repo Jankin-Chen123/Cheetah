@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class ContractModel(BaseModel):
@@ -80,3 +80,28 @@ class ScreeningPassedEvent(ContractModel):
         if set(value) != {f"D{number:02}" for number in range(1, 7)}:
             raise ValueError("The P0 handoff requires exactly D01 through D06")
         return value
+
+
+class IntakeSourceModes(ContractModel):
+    """Executed sources only; outreach has not happened at the intake handoff."""
+
+    candidate_material: SourceMode
+    model: SourceMode
+    research: SourceMode | None
+    phone: Literal[None] = None
+
+
+class ScreeningPassedEventV11(ScreeningPassedEvent):
+    protocol_version: Literal["1.1"]
+    source_modes: IntakeSourceModes
+    phone_execution_mode: Literal["live", "mock"]
+
+    @model_validator(mode="after")
+    def mock_cannot_enter_live(self):
+        modes = self.source_modes.model_dump().values()
+        if self.rule_pack_ref.is_test_rule or SourceMode.MOCK in modes:
+            if not self.fixture_only or self.phone_execution_mode != "mock":
+                raise ValueError("Test rules and mock inputs must remain fixture-only")
+        if self.fixture_only and self.phone_execution_mode != "mock":
+            raise ValueError("Fixtures cannot request live outreach")
+        return self

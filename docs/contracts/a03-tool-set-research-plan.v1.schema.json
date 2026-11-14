@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Goal": {
+      "additionalProperties": false,
+      "properties": {
+        "object_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Object Id",
+          "type": "string"
+        },
+        "field": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Field",
+          "type": "string"
+        },
+        "question": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        },
+        "priority": {
+          "default": "normal",
+          "enum": [
+            "high",
+            "normal",
+            "low"
+          ],
+          "title": "Priority",
+          "type": "string"
+        },
+        "rationale": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        }
+      },
+      "required": [
+        "object_id",
+        "field",
+        "question",
+        "rationale"
+      ],
+      "title": "Goal",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "goals": {
+      "items": {
+        "$ref": "#/$defs/Goal"
+      },
+      "maxItems": 100,
+      "minItems": 1,
+      "title": "Goals",
+      "type": "array"
+    }
+  },
+  "required": [
+    "goals"
+  ],
+  "title": "Plan",
+  "type": "object"
+}

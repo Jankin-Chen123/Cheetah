@@ -1,0 +1,285 @@
+{
+  "$defs": {
+    "ArtifactRef": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "minLength": 1,
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "version"
+      ],
+      "title": "ArtifactRef",
+      "type": "object"
+    },
+    "ContactAuthorizationRef": {
+      "additionalProperties": false,
+      "properties": {
+        "authorization_id": {
+          "minLength": 1,
+          "title": "Authorization Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "authorization_id",
+        "version"
+      ],
+      "title": "ContactAuthorizationRef",
+      "type": "object"
+    },
+    "EvidenceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_id": {
+          "minLength": 1,
+          "title": "Evidence Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "version"
+      ],
+      "title": "EvidenceRef",
+      "type": "object"
+    },
+    "IntakeSourceModes": {
+      "additionalProperties": false,
+      "description": "Executed sources only; outreach has not happened at the intake handoff.",
+      "properties": {
+        "candidate_material": {
+          "$ref": "#/$defs/SourceMode"
+        },
+        "model": {
+          "$ref": "#/$defs/SourceMode"
+        },
+        "research": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceMode"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "phone": {
+          "const": null,
+          "default": null,
+          "title": "Phone",
+          "type": "null"
+        }
+      },
+      "required": [
+        "candidate_material",
+        "model",
+        "research"
+      ],
+      "title": "IntakeSourceModes",
+      "type": "object"
+    },
+    "RulePackRef": {
+      "additionalProperties": false,
+      "properties": {
+        "rule_pack_id": {
+          "minLength": 1,
+          "title": "Rule Pack Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        },
+        "publication_status": {
+          "const": "published",
+          "title": "Publication Status",
+          "type": "string"
+        },
+        "is_test_rule": {
+          "title": "Is Test Rule",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "rule_pack_id",
+        "version",
+        "publication_status",
+        "is_test_rule"
+      ],
+      "title": "RulePackRef",
+      "type": "object"
+    },
+    "SourceMode": {
+      "enum": [
+        "live",
+        "mock",
+        "manual"
+      ],
+      "title": "SourceMode",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "protocol_version": {
+      "const": "1.1",
+      "title": "Protocol Version",
+      "type": "string"
+    },
+    "fixture_only": {
+      "default": false,
+      "title": "Fixture Only",
+      "type": "boolean"
+    },
+    "event_id": {
+      "minLength": 1,
+      "title": "Event Id",
+      "type": "string"
+    },
+    "event_type": {
+      "const": "screening.passed",
+      "title": "Event Type",
+      "type": "string"
+    },
+    "occurred_at": {
+      "format": "date-time",
+      "title": "Occurred At",
+      "type": "string"
+    },
+    "organization_id": {
+      "minLength": 1,
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "job_id": {
+      "minLength": 1,
+      "title": "Job Id",
+      "type": "string"
+    },
+    "candidate_id": {
+      "minLength": 1,
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "application_id": {
+      "minLength": 1,
+      "title": "Application Id",
+      "type": "string"
+    },
+    "workflow_id": {
+      "minLength": 1,
+      "title": "Workflow Id",
+      "type": "string"
+    },
+    "screening_result": {
+      "const": "passed",
+      "title": "Screening Result",
+      "type": "string"
+    },
+    "rule_pack_ref": {
+      "$ref": "#/$defs/RulePackRef"
+    },
+    "artifact_refs": {
+      "additionalProperties": {
+        "$ref": "#/$defs/ArtifactRef"
+      },
+      "title": "Artifact Refs",
+      "type": "object"
+    },
+    "evidence_refs": {
+      "items": {
+        "$ref": "#/$defs/EvidenceRef"
+      },
+      "title": "Evidence Refs",
+      "type": "array"
+    },
+    "contact_authorization_ref": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ContactAuthorizationRef"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "source_modes": {
+      "$ref": "#/$defs/IntakeSourceModes"
+    },
+    "business_dedup_key": {
+      "minLength": 1,
+      "title": "Business Dedup Key",
+      "type": "string"
+    },
+    "expected_receiver_action": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Expected Receiver Action"
+    },
+    "notes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes",
+      "type": "array"
+    },
+    "phone_execution_mode": {
+      "enum": [
+        "live",
+        "mock"
+      ],
+      "title": "Phone Execution Mode",
+      "type": "string"
+    }
+  },
+  "required": [
+    "protocol_version",
+    "event_id",
+    "event_type",
+    "occurred_at",
+    "organization_id",
+    "job_id",
+    "candidate_id",
+    "application_id",
+    "workflow_id",
+    "screening_result",
+    "rule_pack_ref",
+    "artifact_refs",
+    "evidence_refs",
+    "contact_authorization_ref",
+    "source_modes",
+    "business_dedup_key",
+    "phone_execution_mode"
+  ],
+  "title": "ScreeningPassedEventV11",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

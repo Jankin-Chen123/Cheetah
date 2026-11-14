@@ -1,5 +1,7 @@
 # HTTP 数据模型、状态与前端映射
 
+初筛 V2：`RuleContent.screening_rubric` 保存独立于面试标准的岗位七维评分规则；`D01Content.job_form`、`D03Content.resume_form/document_metadata` 为完整表单；`D05Content.portrait/assessment_refs` 为画像及版本；`D06Content.assessment/score_summary` 保存逐维证据和程序计算值。`coverage<100` 时 `total=null`，`contribution` 不能当正式总分。岗位分析增加后续任务类型和 `continuation_task_id`，主任务等待整个建议链完成。[完整执行口径](../intake-agents.md)。
+
 本文解释 [OpenAPI 草案](openapi.v1.json) 的字段语义。HTTP 读模型与当前 `frontend/src/domain/workspace.ts` 的本地演示模型不同，接入时需要转换层。所有样例仅用于隔离测试。
 
 ## 1. 对象与版本关系
@@ -55,6 +57,8 @@ HTTP 的 Provenance 是规划的读模型，不修改已有 `SourceModes` 事件
 
 ## 3. 会话、工作台与待办
 
+`RegisterInput`：`username` 为 3–40 位 ASCII 字母／数字／`_.-`，首位为字母或数字，区分大小写；`display_name` 为 1–100 字符、至少一个非空白字符，保存时去除首尾空白；`password` 为 12–128 字符，原样加密。额外字段禁止；机构和权限只能由服务端决定。注册返回 201 `Session` 并自动登录，已有当前会话会轮换失效；重复账号返回 409，失败不更改原会话。注册不是加入已有团队。
+
 `Session` 包含 `user{id,display_name}`、`organization{id,name}`、`permissions[]`、`csrf_token`、`expires_at`、`capabilities`。能力对象包含可用模块列表、是否允许隔离模拟、`import_limits{max_items,max_file_bytes,max_text_chars}`。这是已登录用户可见的能力声明，不返回第三方凭据、私有域名或账号配置。
 
 `WorkspaceSummary` 包含 `as_of`、`source_scope=all/live/mock/manual` 和四个计数：`active_job_count`、`application_count`、`waiting_call_count`、`pending_report_count`。application_count 是岗位关联数量，不承诺去重候选人数。waiting_call_count 计 waiting_conditions/reconciling/stop_status=requested；未接但 awaiting_reschedule 不算正在通话。前端名称须随口径调整。
@@ -80,6 +84,8 @@ HTTP 的 Provenance 是规划的读模型，不修改已有 `SourceModes` 事件
 | `active_task_ids` | string[] | 刷新恢复分析状态 |
 | `counts` | object | applications/pending_reports，按当前用户可见范围 |
 | `provenance`, `created_at`, `updated_at` | 公共字段 | 时间带时区 |
+
+创建请求 `CreateJobInput` 仅 `material_text` 必填（1—30,000 字）；`title/company` 可省略或为 null，提供时仍须非空且不超过 100 字。未识别前返回的“待识别岗位／企业”只作展示，`material_fields` 仍保留 null；A01 表单与引文校验通过后，从 stated 字段回填未由用户指定的标签。文字样例见 `examples.json` 的 `create_job_from_transcript`。录音自动转写与人工产物写回的待接入合同见 [材料创建流程](../job-material-workflow.md)。
 
 ### 4.2 RuleDraft / RulePack
 
@@ -226,3 +232,23 @@ Delivery 为 id/report_id/report_version/channel=markdown_download/status=export
 | `reportMarkdown` 本地拼接 | 服务端 export 流 | 后端再次校验，不能相信浏览器传全文或 approved=true |
 
 接入时后端返回新增字段前端应容忍，未知枚举以“待支持状态”显示并禁用危险操作；写请求应拒绝未声明字段，避免浏览器伪造 source_mode、审核人或机构。F 需新增实际 API DTO 与转换函数，不能直接覆盖本地演示对象再宣称完成联调。
+
+## A 实现与设计稿的对齐记录（2026-11-14）
+
+A 已将响应对齐到上述字段：BatchItem.state、互斥批次桶、CandidateProfile、Artifact structured_content/content_markdown、Reason 和 Provenance.source_modes。实际结构从 Python 导出到 `openapi.implemented.v1.json`。D01—D06 各自经过对应 Pydantic 内容模型校验；扩展 `facts` 保留字段值、精确原文、状态、证据引用和来源种类，供确定性初筛与受限更正使用。
+
+初筛规则新增可空 predicate（发布时必填）。Task.kind 新增 batch 汇总类型；其资源为 batch，不允许将批次失败转换为通用重试。单份替换保留旧行；列表／计数默认按替换链末端统计，原始行仍通过 replaces_item_id 留痕。
+
+1.1 交接事件区分计划电话模式与实际阶段来源；旧 1.0 保持不变。A 的 D04 无检索提供者时仍保存有效的“未执行说明”，status=valid 仅表示记录未失效，不能解释为研究已完成。材料中的公司信息与个人自述不等同公开核实事实。
+
+D03 更正只接受 `/facts/{白名单字段}`，value 为带 status 与 quote 的结构，不能更正规则、系统权限或工具配置；新证据采用原证据 ID 的新版本并失效旧证据。D03—D10 受影响旧版本、待交接事件与内部任务同事务阻断，后续重算显式触发。B 后半段的任务停止、已交付记录定位与报告审批仍待 B 集成，不能由 A 的空列表推断已经验收。
+
+`ScreeningCondition.required_evidence` 保持人工可读证据要求；新增 `evidence_sources` 单独声明程序核验来源（resume/manual_revision/public_web）。二者不可混用；发布时需与 predicate 一并完整确认。面试维度也必须有明确证据要求。Job 补充可空 d01_ref/d02_ref，供发布时读取精确版本。
+
+Task.budget 增加可空 model_calls/model_tokens/search_calls，每项为 `{limit,reserved,used}` 的次数／Token 计数，金额字段保持 null。Session.capabilities 补充 model_configured/search_configured/voice_configured；配置标志不是供应商可用性验收。
+
+D03Content 增加 research_objects。每项含 object_id、kind、name、period、parent_object_id、facts，事实值保留 quote/status/evidence_refs/source_type。name/period 也是事实对象，未知时不造确定值。D04Content 增加可空 report，结构见 [A03 report Schema](../contracts/a03-report.v1.schema.json)：系统 ID、精确版本、逐对象原始信息与身份、并列字段、来源引文、目标、缺口、事实核实问题、资源与停止原因。Pi 执行依赖受控工具合同，不新增浏览器工具执行接口。
+
+D04 由可配置适配器执行固定计划，详见 [研究适配器](search-adapter.md)。配置与已发布规则允许时可保存 partial 结果；未执行时阶段来源为 null。扩展字段包括 declared_subjects（含逐主体 execution_state）、fields、sources（含 declared_subject、published_at、subject_identity、historical_applicability）、source_assertions 和 rejected_source_count。摘要 Evidence 带 public_url/source_date，全部为 U／待核实，不自动确认主体、任职历史或个人贡献；public_web 来源要求仍不满足。
+
+共享产物写入器校验上游归属和有效性、自动继承来源，将输入引用保存为 `{kind,id,version}`。D01/D03 包含原始材料引用；姓名更正同步搜索标签但不改变身份 ID。原文件受限时，关联读取、列表／计数、批次展示和 worker 缓存均受限，重导入不能恢复旧受限材料。

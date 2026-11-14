@@ -1,0 +1,177 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Anchors": {
+      "additionalProperties": false,
+      "properties": {
+        "low": {
+          "description": "1--2 points, observed mismatch",
+          "maxLength": 2000,
+          "minLength": 5,
+          "title": "Low",
+          "type": "string"
+        },
+        "limited": {
+          "description": "3--4 points",
+          "maxLength": 2000,
+          "minLength": 5,
+          "title": "Limited",
+          "type": "string"
+        },
+        "partial": {
+          "description": "5--6 points",
+          "maxLength": 2000,
+          "minLength": 5,
+          "title": "Partial",
+          "type": "string"
+        },
+        "strong": {
+          "description": "7--8 points",
+          "maxLength": 2000,
+          "minLength": 5,
+          "title": "Strong",
+          "type": "string"
+        },
+        "excellent": {
+          "description": "9--10 points",
+          "maxLength": 2000,
+          "minLength": 5,
+          "title": "Excellent",
+          "type": "string"
+        }
+      },
+      "required": [
+        "low",
+        "limited",
+        "partial",
+        "strong",
+        "excellent"
+      ],
+      "title": "Anchors",
+      "type": "object"
+    },
+    "ScreeningDimension": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "enum": [
+            "responsibilities",
+            "skills",
+            "education_experience",
+            "recent_relevance",
+            "industry_context",
+            "projects_preferences",
+            "salary"
+          ],
+          "title": "Id",
+          "type": "string"
+        },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "weight": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Weight",
+          "type": "number"
+        },
+        "requirement": {
+          "maxLength": 3000,
+          "minLength": 1,
+          "title": "Requirement",
+          "type": "string"
+        },
+        "source_quotes": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Source Quotes",
+          "type": "array"
+        },
+        "anchors": {
+          "$ref": "#/$defs/Anchors"
+        },
+        "adjustment_reason": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Adjustment Reason"
+        },
+        "interview_dimension_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "title": "Interview Dimension Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "weight",
+        "requirement",
+        "anchors"
+      ],
+      "title": "ScreeningDimension",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "method": {
+      "const": "a05-evidence-v2.1",
+      "default": "a05-evidence-v2.1",
+      "title": "Method",
+      "type": "string"
+    },
+    "dimensions": {
+      "items": {
+        "$ref": "#/$defs/ScreeningDimension"
+      },
+      "maxItems": 7,
+      "minItems": 7,
+      "title": "Dimensions",
+      "type": "array"
+    },
+    "routing_policy": {
+      "description": "Job-level criteria for core evidence, mismatches and review. No invented universal cutoff.",
+      "maxLength": 5000,
+      "minLength": 20,
+      "title": "Routing Policy",
+      "type": "string"
+    },
+    "score_tiebreaker": {
+      "description": "Explain evidence-based choice within each two-point band",
+      "maxLength": 2000,
+      "minLength": 10,
+      "title": "Score Tiebreaker",
+      "type": "string"
+    },
+    "necessary_qualifications": {
+      "description": "Confirmed indispensable professional licenses only; never age, gender, reputation or ordinary experience preferences",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 20,
+      "title": "Necessary Qualifications",
+      "type": "array"
+    }
+  },
+  "required": [
+    "dimensions",
+    "routing_policy",
+    "score_tiebreaker"
+  ],
+  "title": "ScreeningRubric",
+  "type": "object"
+}

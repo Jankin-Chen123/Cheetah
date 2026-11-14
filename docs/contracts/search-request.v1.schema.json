@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "protocol_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Protocol Version",
+      "type": "string"
+    },
+    "query": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Query",
+      "type": "string"
+    },
+    "limit": {
+      "maximum": 5,
+      "minimum": 1,
+      "title": "Limit",
+      "type": "integer"
+    },
+    "allowed_domains": {
+      "description": "Empty means all public websites; a nonempty list restricts domains. Private/local addresses remain forbidden.",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 30,
+      "title": "Allowed Domains",
+      "type": "array"
+    }
+  },
+  "required": [
+    "query",
+    "limit"
+  ],
+  "title": "SearchRequest",
+  "type": "object"
+}

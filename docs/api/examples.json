@@ -110,7 +110,22 @@
           "estimated": null,
           "remaining": null,
           "currency": "CNY",
-          "reconciliation_status": "not_required"
+          "reconciliation_status": "not_required",
+          "model_calls": {
+            "limit": 30,
+            "reserved": 1,
+            "used": 0
+          },
+          "model_tokens": {
+            "limit": 300000,
+            "reserved": 8192,
+            "used": 0
+          },
+          "search_calls": {
+            "limit": 20,
+            "reserved": 0,
+            "used": 0
+          }
         },
         "created_at": "2026-11-13T02:20:00Z",
         "started_at": "2026-11-13T02:20:00Z",
@@ -1158,6 +1173,9 @@
             "outreach_mock"
           ],
           "mock_execution_allowed": true,
+          "model_configured": false,
+          "search_configured": false,
+          "voice_configured": false,
           "import_limits": {
             "max_items": 10,
             "max_file_bytes": 5242880,
@@ -1265,6 +1283,2181 @@
         "resource_type": "application",
         "resource_id": "fixture-application-001",
         "poll_after_ms": 3000
+      }
+    },
+    "backend_a_text_batch": {
+      "schema": "TextBatchInput",
+      "value": {
+        "execution_mode": "mock",
+        "items": [
+          {
+            "client_item_id": "fixture-a-import",
+            "name": "虚构简历.txt",
+            "text": "姓名：虚构候选人\n工作年限：5"
+          }
+        ]
+      }
+    },
+    "backend_a_correction": {
+      "schema": "CorrectionInput",
+      "value": {
+        "target_artifact_ref": {
+          "artifact_id": "fixture-d03",
+          "version": 1
+        },
+        "changes": [
+          {
+            "path": "/facts/years_experience",
+            "value": {
+              "value": 3,
+              "quote": "人工核实的虚构测试陈述：3 年经验",
+              "status": "stated"
+            },
+            "reason": "仅验证更正版本流程"
+          }
+        ],
+        "evidence_refs": [],
+        "reason": "虚构材料更正，不拨号、不交付"
+      }
+    },
+    "a03_multi_object_not_executed": {
+      "schema": "ResearchReport",
+      "value": {
+        "report_version": "1.0",
+        "candidate_id": "fixture-candidate-a03",
+        "application_id": "fixture-application-a03",
+        "job_id": "fixture-job-a03",
+        "d03_ref": {
+          "artifact_id": "fixture-d03-a03",
+          "version": 1
+        },
+        "d01_ref": {
+          "artifact_id": "fixture-d01-a03",
+          "version": 1
+        },
+        "status": "not_executed",
+        "objects": [
+          {
+            "object_id": "company_a",
+            "kind": "company",
+            "original_name": "虚构公司甲",
+            "original_period": null,
+            "original_information": {
+              "object_id": "company_a",
+              "kind": "company",
+              "name": {
+                "value": "虚构公司甲",
+                "quote": "虚构公司甲",
+                "status": "stated",
+                "evidence_refs": [],
+                "source_type": "resume"
+              },
+              "period": null,
+              "parent_object_id": null,
+              "facts": {}
+            },
+            "identity": {
+              "status": "uncertain",
+              "rationale": "本对象尚未完成公开核实",
+              "citations": [],
+              "a04_anchor_fields": []
+            },
+            "state": "not_executed",
+            "fields": [
+              {
+                "field": "description",
+                "label": "公司原始简介",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "identity",
+                "label": "公司身份与任职期",
+                "a04_information": [
+                  {
+                    "value": "虚构公司甲",
+                    "quote": "虚构公司甲",
+                    "status": "stated",
+                    "evidence_refs": [],
+                    "source_type": "resume"
+                  }
+                ],
+                "public_information": [],
+                "status": "self_report_only"
+              },
+              {
+                "field": "industry",
+                "label": "所属行业及主营业务",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "products",
+                "label": "核心产品及品牌",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "customers",
+                "label": "客户、市场及渠道",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "scale",
+                "label": "规模与发展阶段",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "business",
+                "label": "商业模式与经营情况",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "competitiveness",
+                "label": "核心竞争力",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "historical_context",
+                "label": "任职期间重要动态",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "management",
+                "label": "创始人与管理团队",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "contribution",
+                "label": "候选人职责与个人归属待核实",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              }
+            ],
+            "gaps": [
+              "主体身份待核实",
+              "尚未完成公开检索与核实"
+            ],
+            "verification_questions": [
+              "请核实本人职责、关键行动及量化成果归因"
+            ],
+            "stop_reason": "research_provider_unavailable"
+          },
+          {
+            "object_id": "company_b",
+            "kind": "company",
+            "original_name": "虚构公司乙",
+            "original_period": null,
+            "original_information": {
+              "object_id": "company_b",
+              "kind": "company",
+              "name": {
+                "value": "虚构公司乙",
+                "quote": "虚构公司乙",
+                "status": "stated",
+                "evidence_refs": [],
+                "source_type": "resume"
+              },
+              "period": null,
+              "parent_object_id": null,
+              "facts": {}
+            },
+            "identity": {
+              "status": "uncertain",
+              "rationale": "本对象尚未完成公开核实",
+              "citations": [],
+              "a04_anchor_fields": []
+            },
+            "state": "not_executed",
+            "fields": [
+              {
+                "field": "description",
+                "label": "公司原始简介",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "identity",
+                "label": "公司身份与任职期",
+                "a04_information": [
+                  {
+                    "value": "虚构公司乙",
+                    "quote": "虚构公司乙",
+                    "status": "stated",
+                    "evidence_refs": [],
+                    "source_type": "resume"
+                  }
+                ],
+                "public_information": [],
+                "status": "self_report_only"
+              },
+              {
+                "field": "industry",
+                "label": "所属行业及主营业务",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "products",
+                "label": "核心产品及品牌",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "customers",
+                "label": "客户、市场及渠道",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "scale",
+                "label": "规模与发展阶段",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "business",
+                "label": "商业模式与经营情况",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "competitiveness",
+                "label": "核心竞争力",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "historical_context",
+                "label": "任职期间重要动态",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "management",
+                "label": "创始人与管理团队",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "contribution",
+                "label": "候选人职责与个人归属待核实",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              }
+            ],
+            "gaps": [
+              "主体身份待核实",
+              "尚未完成公开检索与核实"
+            ],
+            "verification_questions": [
+              "请核实本人职责、关键行动及量化成果归因"
+            ],
+            "stop_reason": "research_provider_unavailable"
+          },
+          {
+            "object_id": "project_a",
+            "kind": "project",
+            "original_name": "虚构项目",
+            "original_period": null,
+            "original_information": {
+              "object_id": "project_a",
+              "kind": "project",
+              "name": {
+                "value": "虚构项目",
+                "quote": "虚构项目",
+                "status": "stated",
+                "evidence_refs": [],
+                "source_type": "resume"
+              },
+              "period": null,
+              "parent_object_id": null,
+              "facts": {}
+            },
+            "identity": {
+              "status": "uncertain",
+              "rationale": "本对象尚未完成公开核实",
+              "citations": [],
+              "a04_anchor_fields": []
+            },
+            "state": "not_executed",
+            "fields": [
+              {
+                "field": "identity",
+                "label": "项目名称与所属主体",
+                "a04_information": [
+                  {
+                    "value": "虚构项目",
+                    "quote": "虚构项目",
+                    "status": "stated",
+                    "evidence_refs": [],
+                    "source_type": "resume"
+                  }
+                ],
+                "public_information": [],
+                "status": "self_report_only"
+              },
+              {
+                "field": "goal",
+                "label": "项目目标与业务背景",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "complexity",
+                "label": "技术或业务复杂度",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "outcomes",
+                "label": "公开成果与落地",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "contribution",
+                "label": "个人角色与贡献",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "differences",
+                "label": "关键差异与未核实",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              }
+            ],
+            "gaps": [
+              "主体身份待核实",
+              "尚未完成公开检索与核实"
+            ],
+            "verification_questions": [
+              "请核实本人职责、关键行动及量化成果归因"
+            ],
+            "stop_reason": "research_provider_unavailable"
+          },
+          {
+            "object_id": "award_a",
+            "kind": "award",
+            "original_name": "虚构赛事奖项",
+            "original_period": null,
+            "original_information": {
+              "object_id": "award_a",
+              "kind": "award",
+              "name": {
+                "value": "虚构赛事奖项",
+                "quote": "虚构赛事奖项",
+                "status": "stated",
+                "evidence_refs": [],
+                "source_type": "resume"
+              },
+              "period": null,
+              "parent_object_id": null,
+              "facts": {}
+            },
+            "identity": {
+              "status": "uncertain",
+              "rationale": "本对象尚未完成公开核实",
+              "citations": [],
+              "a04_anchor_fields": []
+            },
+            "state": "not_executed",
+            "fields": [
+              {
+                "field": "identity",
+                "label": "官方赛事与届次",
+                "a04_information": [
+                  {
+                    "value": "虚构赛事奖项",
+                    "quote": "虚构赛事奖项",
+                    "status": "stated",
+                    "evidence_refs": [],
+                    "source_type": "resume"
+                  }
+                ],
+                "public_information": [],
+                "status": "self_report_only"
+              },
+              {
+                "field": "organizer",
+                "label": "主办方与赛道",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "scope",
+                "label": "参赛范围与奖项设置",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "outcomes",
+                "label": "官方获奖记录",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "ownership",
+                "label": "团队与个人获奖属性",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              }
+            ],
+            "gaps": [
+              "主体身份待核实",
+              "尚未完成公开检索与核实"
+            ],
+            "verification_questions": [],
+            "stop_reason": "research_provider_unavailable"
+          },
+          {
+            "object_id": "paper_a",
+            "kind": "paper",
+            "original_name": "虚构论文",
+            "original_period": null,
+            "original_information": {
+              "object_id": "paper_a",
+              "kind": "paper",
+              "name": {
+                "value": "虚构论文",
+                "quote": "虚构论文",
+                "status": "stated",
+                "evidence_refs": [],
+                "source_type": "resume"
+              },
+              "period": null,
+              "parent_object_id": null,
+              "facts": {}
+            },
+            "identity": {
+              "status": "uncertain",
+              "rationale": "本对象尚未完成公开核实",
+              "citations": [],
+              "a04_anchor_fields": []
+            },
+            "state": "not_executed",
+            "fields": [
+              {
+                "field": "identity",
+                "label": "论文题目与 DOI",
+                "a04_information": [
+                  {
+                    "value": "虚构论文",
+                    "quote": "虚构论文",
+                    "status": "stated",
+                    "evidence_refs": [],
+                    "source_type": "resume"
+                  }
+                ],
+                "public_information": [],
+                "status": "self_report_only"
+              },
+              {
+                "field": "platform",
+                "label": "发表平台与时间",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "status",
+                "label": "发表与预印本状态",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "authors",
+                "label": "作者身份消歧",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "impact",
+                "label": "公开影响信息",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "ownership",
+                "label": "候选人贡献与归属",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              }
+            ],
+            "gaps": [
+              "主体身份待核实",
+              "尚未完成公开检索与核实"
+            ],
+            "verification_questions": [],
+            "stop_reason": "research_provider_unavailable"
+          },
+          {
+            "object_id": "patent_a",
+            "kind": "patent",
+            "original_name": "虚构专利",
+            "original_period": null,
+            "original_information": {
+              "object_id": "patent_a",
+              "kind": "patent",
+              "name": {
+                "value": "虚构专利",
+                "quote": "虚构专利",
+                "status": "stated",
+                "evidence_refs": [],
+                "source_type": "resume"
+              },
+              "period": null,
+              "parent_object_id": null,
+              "facts": {}
+            },
+            "identity": {
+              "status": "uncertain",
+              "rationale": "本对象尚未完成公开核实",
+              "citations": [],
+              "a04_anchor_fields": []
+            },
+            "state": "not_executed",
+            "fields": [
+              {
+                "field": "identity",
+                "label": "专利名称与编号",
+                "a04_information": [
+                  {
+                    "value": "虚构专利",
+                    "quote": "虚构专利",
+                    "status": "stated",
+                    "evidence_refs": [],
+                    "source_type": "resume"
+                  }
+                ],
+                "public_information": [],
+                "status": "self_report_only"
+              },
+              {
+                "field": "status",
+                "label": "申请与授权状态",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "authors",
+                "label": "申请人和发明人",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "ownership",
+                "label": "时间与成果归属",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              }
+            ],
+            "gaps": [
+              "主体身份待核实",
+              "尚未完成公开检索与核实"
+            ],
+            "verification_questions": [],
+            "stop_reason": "research_provider_unavailable"
+          },
+          {
+            "object_id": "copyright_a",
+            "kind": "software_copyright",
+            "original_name": "虚构软著",
+            "original_period": null,
+            "original_information": {
+              "object_id": "copyright_a",
+              "kind": "software_copyright",
+              "name": {
+                "value": "虚构软著",
+                "quote": "虚构软著",
+                "status": "stated",
+                "evidence_refs": [],
+                "source_type": "resume"
+              },
+              "period": null,
+              "parent_object_id": null,
+              "facts": {}
+            },
+            "identity": {
+              "status": "uncertain",
+              "rationale": "本对象尚未完成公开核实",
+              "citations": [],
+              "a04_anchor_fields": []
+            },
+            "state": "not_executed",
+            "fields": [
+              {
+                "field": "identity",
+                "label": "软著名称与登记编号",
+                "a04_information": [
+                  {
+                    "value": "虚构软著",
+                    "quote": "虚构软著",
+                    "status": "stated",
+                    "evidence_refs": [],
+                    "source_type": "resume"
+                  }
+                ],
+                "public_information": [],
+                "status": "self_report_only"
+              },
+              {
+                "field": "status",
+                "label": "登记状态与时间",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "ownership",
+                "label": "登记主体与候选人归属",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              }
+            ],
+            "gaps": [
+              "主体身份待核实",
+              "尚未完成公开检索与核实"
+            ],
+            "verification_questions": [],
+            "stop_reason": "research_provider_unavailable"
+          },
+          {
+            "object_id": "opensource_a",
+            "kind": "open_source",
+            "original_name": "虚构开源成果",
+            "original_period": null,
+            "original_information": {
+              "object_id": "opensource_a",
+              "kind": "open_source",
+              "name": {
+                "value": "虚构开源成果",
+                "quote": "虚构开源成果",
+                "status": "stated",
+                "evidence_refs": [],
+                "source_type": "resume"
+              },
+              "period": null,
+              "parent_object_id": null,
+              "facts": {}
+            },
+            "identity": {
+              "status": "uncertain",
+              "rationale": "本对象尚未完成公开核实",
+              "citations": [],
+              "a04_anchor_fields": []
+            },
+            "state": "not_executed",
+            "fields": [
+              {
+                "field": "identity",
+                "label": "官方仓库与项目",
+                "a04_information": [
+                  {
+                    "value": "虚构开源成果",
+                    "quote": "虚构开源成果",
+                    "status": "stated",
+                    "evidence_refs": [],
+                    "source_type": "resume"
+                  }
+                ],
+                "public_information": [],
+                "status": "self_report_only"
+              },
+              {
+                "field": "status",
+                "label": "公开项目状态",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "ownership",
+                "label": "可验证的个人贡献",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              }
+            ],
+            "gaps": [
+              "主体身份待核实",
+              "尚未完成公开检索与核实"
+            ],
+            "verification_questions": [],
+            "stop_reason": "research_provider_unavailable"
+          },
+          {
+            "object_id": "certificate_a",
+            "kind": "certification",
+            "original_name": "虚构认证",
+            "original_period": null,
+            "original_information": {
+              "object_id": "certificate_a",
+              "kind": "certification",
+              "name": {
+                "value": "虚构认证",
+                "quote": "虚构认证",
+                "status": "stated",
+                "evidence_refs": [],
+                "source_type": "resume"
+              },
+              "period": null,
+              "parent_object_id": null,
+              "facts": {}
+            },
+            "identity": {
+              "status": "uncertain",
+              "rationale": "本对象尚未完成公开核实",
+              "citations": [],
+              "a04_anchor_fields": []
+            },
+            "state": "not_executed",
+            "fields": [
+              {
+                "field": "identity",
+                "label": "认证名称与核验记录",
+                "a04_information": [
+                  {
+                    "value": "虚构认证",
+                    "quote": "虚构认证",
+                    "status": "stated",
+                    "evidence_refs": [],
+                    "source_type": "resume"
+                  }
+                ],
+                "public_information": [],
+                "status": "self_report_only"
+              },
+              {
+                "field": "organizer",
+                "label": "认证机构",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "status",
+                "label": "认证时间与状态",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              },
+              {
+                "field": "ownership",
+                "label": "持有人身份",
+                "a04_information": [],
+                "public_information": [],
+                "status": "unknown"
+              }
+            ],
+            "gaps": [
+              "主体身份待核实",
+              "尚未完成公开检索与核实"
+            ],
+            "verification_questions": [],
+            "stop_reason": "research_provider_unavailable"
+          }
+        ],
+        "summary": "全部为虚构联调对象。未配置检索提供者，未联网核实，不代表不存在。",
+        "gaps": [
+          "award_a: 主体身份待核实",
+          "award_a: 尚未完成公开检索与核实",
+          "certificate_a: 主体身份待核实",
+          "certificate_a: 尚未完成公开检索与核实",
+          "company_a: 主体身份待核实",
+          "company_a: 尚未完成公开检索与核实",
+          "company_b: 主体身份待核实",
+          "company_b: 尚未完成公开检索与核实",
+          "copyright_a: 主体身份待核实",
+          "copyright_a: 尚未完成公开检索与核实",
+          "opensource_a: 主体身份待核实",
+          "opensource_a: 尚未完成公开检索与核实",
+          "paper_a: 主体身份待核实",
+          "paper_a: 尚未完成公开检索与核实",
+          "patent_a: 主体身份待核实",
+          "patent_a: 尚未完成公开检索与核实",
+          "project_a: 主体身份待核实",
+          "project_a: 尚未完成公开检索与核实"
+        ],
+        "verification_questions": [
+          "company_a: 请核实本人职责、关键行动及量化成果归因",
+          "company_b: 请核实本人职责、关键行动及量化成果归因",
+          "project_a: 请核实本人职责、关键行动及量化成果归因"
+        ],
+        "sources": [],
+        "goals": [],
+        "execution": {
+          "runtime": null,
+          "searches": 0,
+          "pages": 0,
+          "model_turns": 0,
+          "tokens": null,
+          "cost": null,
+          "fixture_only": true
+        },
+        "stop_reason": "research_provider_unavailable"
+      }
+    },
+    "intake_v2_job_form": {
+      "schema": "JobForm",
+      "value": {
+        "template_version": "A01-1.5",
+        "fields": {
+          "客户企业名称": {
+            "value": "虚构研究公司",
+            "status": "stated",
+            "quote": "虚构研究公司",
+            "note": null,
+            "evidence_refs": []
+          },
+          "客户企业简称": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "客户所属行业": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "对接 HR": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "用人部门": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "岗位名称": {
+            "value": "后端工程师",
+            "status": "stated",
+            "quote": "后端工程师",
+            "note": null,
+            "evidence_refs": []
+          },
+          "所属部门": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "直属上级岗位": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "下属人数": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "工作时间": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "试用期薪资": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "转正薪资": {
+            "value": "税前固定年薪30万元/年",
+            "status": "stated",
+            "quote": "税前固定年薪30万元/年",
+            "note": null,
+            "evidence_refs": []
+          },
+          "固定薪资与浮动薪资": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "奖金与绩效": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "薪资发放周期": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "浮动薪资与绩效指标挂钩": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "学历要求": {
+            "value": "本科",
+            "status": "stated",
+            "quote": "本科",
+            "note": null,
+            "evidence_refs": []
+          },
+          "经验要求": {
+            "value": "相关工作经验至少三年",
+            "status": "stated",
+            "quote": "相关工作经验至少三年",
+            "note": null,
+            "evidence_refs": []
+          },
+          "技能要求—硬技能": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "技能要求—软技能": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "行业经验": {
+            "value": "企业软件",
+            "status": "stated",
+            "quote": "企业软件",
+            "note": null,
+            "evidence_refs": []
+          },
+          "项目经验": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "行为特质": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "短期工作目标": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "长期工作目标": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "核心成果": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "团队结构": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "跨部门协作需求": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "工作挑战": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "成长机会": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "目标竞品公司": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "团队文化": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "工作地点": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "工作地点与流动性": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "文化契合度": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "加分项": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "隐性门槛": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          },
+          "其他要求": {
+            "value": null,
+            "status": "unknown",
+            "quote": null,
+            "note": null,
+            "evidence_refs": []
+          }
+        },
+        "jd": {
+          "岗位职责": [
+            {
+              "value": "负责后端服务设计、Python开发及项目交付",
+              "status": "stated",
+              "quote": "负责后端服务设计、Python开发及项目交付",
+              "note": null,
+              "evidence_refs": []
+            }
+          ],
+          "任职要求": [],
+          "加分条件": []
+        }
+      }
+    },
+    "intake_v2_resume_form": {
+      "schema": "ResumeForm",
+      "value": {
+        "template_version": "A04-1.1",
+        "parse_status": "completed",
+        "sections": {
+          "基本信息": [
+            {
+              "record_id": "singleton_0",
+              "fields": {
+                "候选人姓名": {
+                  "value": "虚构候选人",
+                  "status": "stated",
+                  "quote": "虚构候选人",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "联系电话": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "电子邮箱": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "所在城市": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "当前任职公司": {
+                  "value": "虚构甲公司",
+                  "status": "stated",
+                  "quote": "虚构甲公司",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "当前岗位": {
+                  "value": "后端工程师",
+                  "status": "stated",
+                  "quote": "后端工程师",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "求职意向": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                }
+              }
+            }
+          ],
+          "教育经历": [
+            {
+              "record_id": "education_1",
+              "fields": {
+                "学校名称": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "学历": {
+                  "value": "本科",
+                  "status": "stated",
+                  "quote": "本科",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "学位": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "所学专业": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "入学时间": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "毕业时间": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "学习形式": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "其他教育信息": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                }
+              }
+            }
+          ],
+          "工作经历": [
+            {
+              "record_id": "company_1",
+              "fields": {
+                "任职公司名称": {
+                  "value": "虚构甲公司",
+                  "status": "stated",
+                  "quote": "虚构甲公司",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "所属部门": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "岗位名称": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "任职开始时间": {
+                  "value": "2024",
+                  "status": "stated",
+                  "quote": "2024",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "任职结束时间": {
+                  "value": "至今",
+                  "status": "stated",
+                  "quote": "至今",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "主要工作职责": {
+                  "value": "负责企业软件后端服务设计及项目交付",
+                  "status": "stated",
+                  "quote": "负责企业软件后端服务设计及项目交付",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "管理职责": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "核心工作成果": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "量化业绩数据": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "公司相关描述": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                }
+              }
+            },
+            {
+              "record_id": "company_2",
+              "fields": {
+                "任职公司名称": {
+                  "value": "虚构乙公司",
+                  "status": "stated",
+                  "quote": "虚构乙公司",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "所属部门": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "岗位名称": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "任职开始时间": {
+                  "value": "2021",
+                  "status": "stated",
+                  "quote": "2021",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "任职结束时间": {
+                  "value": "2024",
+                  "status": "stated",
+                  "quote": "2024",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "主要工作职责": {
+                  "value": "参与后端开发",
+                  "status": "stated",
+                  "quote": "参与后端开发",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "管理职责": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "核心工作成果": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "量化业绩数据": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "公司相关描述": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                }
+              }
+            }
+          ],
+          "项目经历": [
+            {
+              "record_id": "project_1",
+              "fields": {
+                "项目名称": {
+                  "value": "项目甲",
+                  "status": "stated",
+                  "quote": "项目甲",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "所属公司": {
+                  "value": "虚构甲公司",
+                  "status": "stated",
+                  "quote": "虚构甲公司",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "起止时间": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "项目背景": {
+                  "value": "服务迁移",
+                  "status": "stated",
+                  "quote": "服务迁移",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "项目目标": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "候选人角色": {
+                  "value": "负责人",
+                  "status": "stated",
+                  "quote": "负责人",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "个人职责": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "关键行动": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "技术或方法": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "项目成果": {
+                  "value": "团队完成迁移",
+                  "status": "stated",
+                  "quote": "团队完成迁移",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "量化结果": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "项目链接": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                }
+              }
+            },
+            {
+              "record_id": "project_2",
+              "fields": {
+                "项目名称": {
+                  "value": "项目乙",
+                  "status": "stated",
+                  "quote": "项目乙",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "所属公司": {
+                  "value": "虚构乙公司",
+                  "status": "stated",
+                  "quote": "虚构乙公司",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "起止时间": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "项目背景": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "项目目标": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "候选人角色": {
+                  "value": "成员",
+                  "status": "stated",
+                  "quote": "成员",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "个人职责": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "关键行动": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "技术或方法": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "项目成果": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "量化结果": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "项目链接": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                }
+              }
+            }
+          ],
+          "专业技能": [
+            {
+              "record_id": "singleton_1",
+              "fields": {
+                "专业技能": {
+                  "value": "Python开发",
+                  "status": "stated",
+                  "quote": "Python开发",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "技术工具": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "管理能力描述": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "语言能力": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "相关证书": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "其他专业能力": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                }
+              }
+            }
+          ],
+          "比赛与获奖经历": [
+            {
+              "record_id": "award_1",
+              "fields": {
+                "比赛名称": {
+                  "value": "虚构比赛",
+                  "status": "stated",
+                  "quote": "虚构比赛",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "举办时间": {
+                  "value": "2024",
+                  "status": "stated",
+                  "quote": "2024",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "获得奖项": {
+                  "value": "团队二等奖",
+                  "status": "stated",
+                  "quote": "团队二等奖",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "所属赛道": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "主办机构": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "参赛形式": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "候选人角色": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "相关成果": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "证明链接": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                }
+              }
+            }
+          ],
+          "论文与科研成果": [
+            {
+              "record_id": "paper_1",
+              "fields": {
+                "论文名称": {
+                  "value": "虚构研究论文",
+                  "status": "stated",
+                  "quote": "虚构研究论文",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "发表年份": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "发表平台": {
+                  "value": "预印本",
+                  "status": "stated",
+                  "quote": "预印本",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "作者信息": {
+                  "value": "共同作者",
+                  "status": "stated",
+                  "quote": "共同作者",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "研究主题": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "论文链接": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "其他科研成果": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                }
+              }
+            }
+          ],
+          "专利及其他专业成果": [
+            {
+              "record_id": "patent_1",
+              "fields": {
+                "成果类别": {
+                  "value": "专利",
+                  "status": "stated",
+                  "quote": "专利",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "成果名称": {
+                  "value": "虚构专利",
+                  "status": "stated",
+                  "quote": "虚构专利",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "登记号或编号": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "申请/发布/授权时间": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "候选人角色": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "成果描述": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "证明链接": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                }
+              }
+            },
+            {
+              "record_id": "copyright_1",
+              "fields": {
+                "成果类别": {
+                  "value": "软著",
+                  "status": "stated",
+                  "quote": "软著",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "成果名称": {
+                  "value": "虚构软著",
+                  "status": "stated",
+                  "quote": "虚构软著",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "登记号或编号": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "申请/发布/授权时间": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "候选人角色": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "成果描述": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "证明链接": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                }
+              }
+            },
+            {
+              "record_id": "open_1",
+              "fields": {
+                "成果类别": {
+                  "value": "开源",
+                  "status": "stated",
+                  "quote": "开源",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "成果名称": {
+                  "value": "虚构开源项目",
+                  "status": "stated",
+                  "quote": "虚构开源项目",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "登记号或编号": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "申请/发布/授权时间": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "候选人角色": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "成果描述": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "证明链接": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                }
+              }
+            },
+            {
+              "record_id": "certificate_1",
+              "fields": {
+                "成果类别": {
+                  "value": "认证",
+                  "status": "stated",
+                  "quote": "认证",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "成果名称": {
+                  "value": "虚构认证",
+                  "status": "stated",
+                  "quote": "虚构认证",
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "登记号或编号": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "申请/发布/授权时间": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "候选人角色": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "成果描述": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "证明链接": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                }
+              }
+            }
+          ],
+          "信息缺失与异常": [
+            {
+              "record_id": "singleton_2",
+              "fields": {
+                "缺失信息": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "歧义或识别错误": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "时间冲突": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "个人贡献不清晰": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "量化口径不完整": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                },
+                "其他待核实问题": {
+                  "value": null,
+                  "status": "unknown",
+                  "quote": null,
+                  "note": null,
+                  "evidence_refs": []
+                }
+              }
+            }
+          ]
+        },
+        "limitations": []
+      }
+    },
+    "intake_v2_screening_rubric": {
+      "schema": "ScreeningRubric",
+      "value": {
+        "dimensions": [
+          {
+            "id": "responsibilities",
+            "weight": 25,
+            "requirement": "核心职责适配度，按已确认后端岗位要求比对",
+            "source_quotes": [
+              "负责后端服务设计、Python开发及项目交付。"
+            ],
+            "anchors": {
+              "low": "核心职责适配度：已证实缺乏岗位所需的实际经验",
+              "limited": "核心职责适配度：少量参与相关任务但关键环节不足",
+              "partial": "核心职责适配度：承担部分常规任务仍需支持",
+              "strong": "核心职责适配度：独立承担主要任务且能说明行动与结果",
+              "excellent": "核心职责适配度：在复杂情境主导关键决策并有充分成果证据"
+            }
+          },
+          {
+            "id": "skills",
+            "weight": 20,
+            "requirement": "任职要求与技能匹配度，按已确认后端岗位要求比对",
+            "source_quotes": [
+              "负责后端服务设计、Python开发及项目交付。"
+            ],
+            "anchors": {
+              "low": "任职要求与技能匹配度：已证实缺乏岗位所需的实际经验",
+              "limited": "任职要求与技能匹配度：少量参与相关任务但关键环节不足",
+              "partial": "任职要求与技能匹配度：承担部分常规任务仍需支持",
+              "strong": "任职要求与技能匹配度：独立承担主要任务且能说明行动与结果",
+              "excellent": "任职要求与技能匹配度：在复杂情境主导关键决策并有充分成果证据"
+            }
+          },
+          {
+            "id": "education_experience",
+            "weight": 15,
+            "requirement": "学历与相关工作年限，按已确认后端岗位要求比对",
+            "source_quotes": [
+              "负责后端服务设计、Python开发及项目交付。"
+            ],
+            "anchors": {
+              "low": "学历与相关工作年限：已证实缺乏岗位所需的实际经验",
+              "limited": "学历与相关工作年限：少量参与相关任务但关键环节不足",
+              "partial": "学历与相关工作年限：承担部分常规任务仍需支持",
+              "strong": "学历与相关工作年限：独立承担主要任务且能说明行动与结果",
+              "excellent": "学历与相关工作年限：在复杂情境主导关键决策并有充分成果证据"
+            }
+          },
+          {
+            "id": "recent_relevance",
+            "weight": 15,
+            "requirement": "最近两年岗位相关性，按已确认后端岗位要求比对",
+            "source_quotes": [
+              "负责后端服务设计、Python开发及项目交付。"
+            ],
+            "anchors": {
+              "low": "最近两年岗位相关性：已证实缺乏岗位所需的实际经验",
+              "limited": "最近两年岗位相关性：少量参与相关任务但关键环节不足",
+              "partial": "最近两年岗位相关性：承担部分常规任务仍需支持",
+              "strong": "最近两年岗位相关性：独立承担主要任务且能说明行动与结果",
+              "excellent": "最近两年岗位相关性：在复杂情境主导关键决策并有充分成果证据"
+            }
+          },
+          {
+            "id": "industry_context",
+            "weight": 10,
+            "requirement": "行业与业务场景相关性，按已确认后端岗位要求比对",
+            "source_quotes": [
+              "负责后端服务设计、Python开发及项目交付。"
+            ],
+            "anchors": {
+              "low": "行业与业务场景相关性：已证实缺乏岗位所需的实际经验",
+              "limited": "行业与业务场景相关性：少量参与相关任务但关键环节不足",
+              "partial": "行业与业务场景相关性：承担部分常规任务仍需支持",
+              "strong": "行业与业务场景相关性：独立承担主要任务且能说明行动与结果",
+              "excellent": "行业与业务场景相关性：在复杂情境主导关键决策并有充分成果证据"
+            }
+          },
+          {
+            "id": "projects_preferences",
+            "weight": 10,
+            "requirement": "项目经验与优先条件，按已确认后端岗位要求比对",
+            "source_quotes": [
+              "负责后端服务设计、Python开发及项目交付。"
+            ],
+            "anchors": {
+              "low": "项目经验与优先条件：已证实缺乏岗位所需的实际经验",
+              "limited": "项目经验与优先条件：少量参与相关任务但关键环节不足",
+              "partial": "项目经验与优先条件：承担部分常规任务仍需支持",
+              "strong": "项目经验与优先条件：独立承担主要任务且能说明行动与结果",
+              "excellent": "项目经验与优先条件：在复杂情境主导关键决策并有充分成果证据"
+            }
+          },
+          {
+            "id": "salary",
+            "weight": 5,
+            "requirement": "薪资匹配度，按已确认后端岗位要求比对",
+            "source_quotes": [
+              "预算：税前固定年薪30万元/年。"
+            ],
+            "anchors": {
+              "low": "薪资匹配度：已证实缺乏岗位所需的实际经验",
+              "limited": "薪资匹配度：少量参与相关任务但关键环节不足",
+              "partial": "薪资匹配度：承担部分常规任务仍需支持",
+              "strong": "薪资匹配度：独立承担主要任务且能说明行动与结果",
+              "excellent": "薪资匹配度：在复杂情境主导关键决策并有充分成果证据"
+            }
+          }
+        ],
+        "routing_policy": "核心职责与技能等有充分正向证据、无核心冲突可以进入电话；核心信息不足交人工；多项核心要求有明确显著差距才暂不推荐。",
+        "score_tiebreaker": "同档内证据覆盖全部岗位重点且角色明确取上分，否则取下分"
+      }
+    },
+    "create_job_from_transcript": {
+      "schema": "CreateJobInput",
+      "value": {
+        "material_text": "虚构招聘沟通记录：客户企业名称为虚构研究公司，需要后端工程师，具体薪资尚未提及。"
+      }
+    },
+    "register_input_fixture": {
+      "schema": "RegisterInput",
+      "value": {
+        "username": "fixture-recruiter",
+        "display_name": "虚构猎头",
+        "password": "fixture-only-password"
       }
     }
   }

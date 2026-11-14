@@ -1,12 +1,13 @@
 services:
   db:
     image: postgres:17-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env}
       POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -17,17 +18,54 @@ services:
 
   backend:
     build: ./backend
-    environment:
-      CHEETA_ENVIRONMENT: development
+    restart: unless-stopped
+    environment: &backend_environment
+      CHEETA_ENVIRONMENT: ${CHEETA_ENVIRONMENT:-development}
+      CHEETA_ALLOWED_ORIGINS: '${CHEETA_ALLOWED_ORIGINS:-["http://localhost:5173","http://127.0.0.1:5173","http://localhost:8080","http://127.0.0.1:8080"]}'
       CHEETA_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:?}:${POSTGRES_PASSWORD:?}@db:5432/${POSTGRES_DB:?}
+      CHEETA_ALLOW_MOCK: ${CHEETA_ALLOW_MOCK:-false}
+      CHEETA_JOB_MODEL_CALL_LIMIT: ${CHEETA_JOB_MODEL_CALL_LIMIT:-30}
+      CHEETA_JOB_MODEL_TOKEN_LIMIT: ${CHEETA_JOB_MODEL_TOKEN_LIMIT:-300000}
+      CHEETA_MODEL_ENDPOINT: ${CHEETA_MODEL_ENDPOINT:-}
+      CHEETA_MODEL_NAME: ${CHEETA_MODEL_NAME:-}
+      CHEETA_MODEL_API_KEY: ${CHEETA_MODEL_API_KEY:-}
+      CHEETA_MODEL_MAX_OUTPUT_TOKENS: ${CHEETA_MODEL_MAX_OUTPUT_TOKENS:-16000}
+      CHEETA_MODEL_TIMEOUT_SECONDS: ${CHEETA_MODEL_TIMEOUT_SECONDS:-30}
+      CHEETA_SEARCH_PROVIDER: ${CHEETA_SEARCH_PROVIDER:-disabled}
+      CHEETA_SEARCH_ENDPOINT: ${CHEETA_SEARCH_ENDPOINT:-}
+      CHEETA_SEARCH_API_KEY: ${CHEETA_SEARCH_API_KEY:-}
+      CHEETA_SEARCH_ALLOWED_DOMAINS: "${CHEETA_SEARCH_ALLOWED_DOMAINS:-[]}"
+      CHEETA_JOB_SEARCH_CALL_LIMIT: ${CHEETA_JOB_SEARCH_CALL_LIMIT:-20}
+      CHEETA_RESEARCH_QUERY_LIMIT: ${CHEETA_RESEARCH_QUERY_LIMIT:-2}
+      CHEETA_SEARCH_RESULT_LIMIT: ${CHEETA_SEARCH_RESULT_LIMIT:-5}
+      CHEETA_A03_WEB_BACKEND: ${CHEETA_A03_WEB_BACKEND:-disabled}
+      CHEETA_A03_PLUGIN_PROVIDER: ${CHEETA_A03_PLUGIN_PROVIDER:-brave}
+      CHEETA_A03_PLUGIN_API_KEY: ${CHEETA_A03_PLUGIN_API_KEY:-}
+      CHEETA_A03_PLUGIN_BASE_URL: ${CHEETA_A03_PLUGIN_BASE_URL:-}
+      CHEETA_A03_FETCH_ENDPOINT: ${CHEETA_A03_FETCH_ENDPOINT:-}
+      CHEETA_A03_MAX_TURNS: ${CHEETA_A03_MAX_TURNS:-16}
+      CHEETA_A03_MAX_SEARCHES: ${CHEETA_A03_MAX_SEARCHES:-12}
+      CHEETA_A03_MAX_PAGES: ${CHEETA_A03_MAX_PAGES:-12}
+      CHEETA_A03_PER_OBJECT_SEARCHES: ${CHEETA_A03_PER_OBJECT_SEARCHES:-3}
+      CHEETA_A03_MAX_SECONDS: ${CHEETA_A03_MAX_SECONDS:-300}
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
       db:
         condition: service_healthy
 
+  worker:
+    build: ./backend
+    restart: unless-stopped
+    environment: *backend_environment
+    command: ["/app/.venv/bin/python", "-m", "app.worker"]
+    depends_on:
+      db:
+        condition: service_healthy
+
   frontend:
     build: ./frontend
+    restart: unless-stopped
     ports:
       - "127.0.0.1:8080:80"
     depends_on:

@@ -1,0 +1,64 @@
+{
+  "protocol_version": "1.1",
+  "fixture_only": true,
+  "event_id": "fixture-screening-passed-001",
+  "event_type": "screening.passed",
+  "occurred_at": "2026-11-13T01:00:00Z",
+  "organization_id": "fixture-org-001",
+  "job_id": "fixture-job-001",
+  "candidate_id": "fixture-candidate-001",
+  "application_id": "fixture-application-001",
+  "workflow_id": "fixture-workflow-001",
+  "screening_result": "passed",
+  "rule_pack_ref": {
+    "rule_pack_id": "fixture-rule-pack-001",
+    "version": 1,
+    "publication_status": "published",
+    "is_test_rule": true
+  },
+  "artifact_refs": {
+    "D01": {
+      "artifact_id": "fixture-D01-001",
+      "version": 1
+    },
+    "D02": {
+      "artifact_id": "fixture-D02-001",
+      "version": 1
+    },
+    "D03": {
+      "artifact_id": "fixture-D03-001",
+      "version": 1
+    },
+    "D04": {
+      "artifact_id": "fixture-D04-001",
+      "version": 1
+    },
+    "D05": {
+      "artifact_id": "fixture-D05-001",
+      "version": 1
+    },
+    "D06": {
+      "artifact_id": "fixture-D06-001",
+      "version": 1
+    }
+  },
+  "evidence_refs": [
+    {
+      "evidence_id": "fixture-evidence-001",
+      "version": 1
+    }
+  ],
+  "contact_authorization_ref": null,
+  "source_modes": {
+    "candidate_material": "mock",
+    "model": "mock",
+    "research": null,
+    "phone": null
+  },
+  "business_dedup_key": "fixture-org-001:fixture-application-001:initial-contact",
+  "expected_receiver_action": "Create or reuse one call business task; wait for valid contact prerequisites; never dial from this fixture.",
+  "notes": [
+    "虚构联调样例；电话未发生，研究未执行；不构成联系授权。"
+  ],
+  "phone_execution_mode": "mock"
+}

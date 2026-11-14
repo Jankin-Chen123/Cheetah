@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "object_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Object Id",
+      "type": "string"
+    },
+    "source_id": {
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Source Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "object_id",
+    "source_id"
+  ],
+  "title": "ReadSource",
+  "type": "object"
+}

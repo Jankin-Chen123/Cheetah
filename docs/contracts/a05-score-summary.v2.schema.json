@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "EvidenceUse": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_id": {
+          "title": "Evidence Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        },
+        "category": {
+          "enum": [
+            "E1",
+            "E2",
+            "E3",
+            "U"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "purpose": {
+          "maxLength": 1000,
+          "minLength": 5,
+          "title": "Purpose",
+          "type": "string"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "version",
+        "category",
+        "purpose"
+      ],
+      "title": "EvidenceUse",
+      "type": "object"
+    },
+    "ScoredDimension": {
+      "additionalProperties": false,
+      "properties": {
+        "dimension_id": {
+          "title": "Dimension Id",
+          "type": "string"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "maximum": 10,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Score"
+        },
+        "reason": {
+          "maxLength": 3000,
+          "minLength": 10,
+          "title": "Reason",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/EvidenceUse"
+          },
+          "maxItems": 40,
+          "title": "Evidence",
+          "type": "array"
+        },
+        "questions": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Questions",
+          "type": "array"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "weight": {
+          "title": "Weight",
+          "type": "number"
+        },
+        "requirement": {
+          "title": "Requirement",
+          "type": "string"
+        },
+        "interview_dimension_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Interview Dimension Ids",
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "not_applicable",
+            "not_evaluated",
+            "evaluated"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "weighted_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Weighted Score"
+        }
+      },
+      "required": [
+        "dimension_id",
+        "reason",
+        "label",
+        "weight",
+        "requirement",
+        "interview_dimension_ids",
+        "status",
+        "weighted_score"
+      ],
+      "title": "ScoredDimension",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "weight_total": {
+      "const": 100,
+      "title": "Weight Total",
+      "type": "integer"
+    },
+    "coverage": {
+      "maximum": 100,
+      "minimum": 0,
+      "title": "Coverage",
+      "type": "number"
+    },
+    "contribution": {
+      "maximum": 100,
+      "minimum": 0,
+      "title": "Contribution",
+      "type": "number"
+    },
+    "total": {
+      "anyOf": [
+        {
+          "maximum": 100,
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Total"
+    },
+    "rows": {
+      "items": {
+        "$ref": "#/$defs/ScoredDimension"
+      },
+      "title": "Rows",
+      "type": "array"
+    }
+  },
+  "required": [
+    "weight_total",
+    "coverage",
+    "contribution",
+    "rows"
+  ],
+  "title": "ScoreSummary",
+  "type": "object"
+}

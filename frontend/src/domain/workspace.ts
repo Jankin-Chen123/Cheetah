@@ -1,3 +1,5 @@
+import type { JobDocument, JobGeneration, JobMaterial } from './jobDocuments'
+
 export type SourceMode = 'mock' | 'manual' | 'real'
 export type Screening = 'pending' | 'passed' | 'unknown' | 'rejected'
 export type CallState = 'waiting' | 'active' | 'stopping' | 'unknown' | 'completed' | 'cancelled'
@@ -22,6 +24,10 @@ export interface Job {
   rules: RuleDraft
   ruleHistory?: { version: number; rules: RuleDraft }[]
   source: SourceMode
+  materialInput?: JobMaterial
+  generation?: JobGeneration
+  documents?: JobDocument[]
+  updatedAt?: string
 }
 export interface Evidence {
   id: string

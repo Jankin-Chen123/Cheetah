@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Fact": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        },
+        "quote": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Quote"
+        },
+        "status": {
+          "enum": [
+            "stated",
+            "unknown",
+            "conflict"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "status"
+      ],
+      "title": "Fact",
+      "type": "object"
+    },
+    "FormRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "record_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Record Id",
+          "type": "string"
+        },
+        "fields": {
+          "additionalProperties": {
+            "$ref": "#/$defs/SourceFact"
+          },
+          "maxProperties": 20,
+          "title": "Fields",
+          "type": "object"
+        }
+      },
+      "required": [
+        "record_id",
+        "fields"
+      ],
+      "title": "FormRecord",
+      "type": "object"
+    },
+    "ResumeForm": {
+      "additionalProperties": false,
+      "properties": {
+        "template_version": {
+          "const": "A04-1.1",
+          "default": "A04-1.1",
+          "title": "Template Version",
+          "type": "string"
+        },
+        "parse_status": {
+          "enum": [
+            "completed",
+            "partial",
+            "needs_confirmation"
+          ],
+          "title": "Parse Status",
+          "type": "string"
+        },
+        "sections": {
+          "additionalProperties": {
+            "items": {
+              "$ref": "#/$defs/FormRecord"
+            },
+            "type": "array"
+          },
+          "description": "All nine sections with exact per-record fields: {'基本信息': ['候选人姓名', '联系电话', '电子邮箱', '所在城市', '当前任职公司', '当前岗位', '求职意向'], '教育经历': ['学校名称', '学历', '学位', '所学专业', '入学时间', '毕业时间', '学习形式', '其他教育信息'], '工作经历': ['任职公司名称', '所属部门', '岗位名称', '任职开始时间', '任职结束时间', '主要工作职责', '管理职责', '核心工作成果', '量化业绩数据', '公司相关描述'], '项目经历': ['项目名称', '所属公司', '起止时间', '项目背景', '项目目标', '候选人角色', '个人职责', '关键行动', '技术或方法', '项目成果', '量化结果', '项目链接'], '专业技能': ['专业技能', '技术工具', '管理能力描述', '语言能力', '相关证书', '其他专业能力'], '比赛与获奖经历': ['比赛名称', '举办时间', '获得奖项', '所属赛道', '主办机构', '参赛形式', '候选人角色', '相关成果', '证明链接'], '论文与科研成果': ['论文名称', '发表年份', '发表平台', '作者信息', '研究主题', '论文链接', '其他科研成果'], '专利及其他专业成果': ['成果类别', '成果名称', '登记号或编号', '申请/发布/授权时间', '候选人角色', '成果描述', '证明链接'], '信息缺失与异常': ['缺失信息', '歧义或识别错误', '时间冲突', '个人贡献不清晰', '量化口径不完整', '其他待核实问题']}",
+          "title": "Sections",
+          "type": "object"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "title": "Limitations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "parse_status",
+        "sections"
+      ],
+      "title": "ResumeForm",
+      "type": "object"
+    },
+    "ResumeResearchObject": {
+      "additionalProperties": false,
+      "properties": {
+        "object_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Object Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "company",
+            "project",
+            "award",
+            "paper",
+            "patent",
+            "software_copyright",
+            "open_source",
+            "certification",
+            "professional_work",
+            "other_achievement"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "$ref": "#/$defs/Fact"
+        },
+        "period": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Fact"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "parent_object_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Object Id"
+        },
+        "facts": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Fact"
+          },
+          "maxProperties": 30,
+          "title": "Facts",
+          "type": "object"
+        }
+      },
+      "required": [
+        "object_id",
+        "kind",
+        "name"
+      ],
+      "title": "ResumeResearchObject",
+      "type": "object"
+    },
+    "SourceFact": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "maxLength": 6000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "status": {
+          "default": "unknown",
+          "enum": [
+            "stated",
+            "unknown",
+            "conflict"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "quote": {
+          "anyOf": [
+            {
+              "maxLength": 6000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Quote"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        },
+        "evidence_refs": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "maxItems": 20,
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "title": "SourceFact",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "facts": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Fact"
+      },
+      "description": "Use canonical keys name, current_role, years_experience, education, skills, employer, employment_period, project and project_period when present. Preserve unknown/conflict rather than guessing. Include other predicate fields only with exact quotes.",
+      "maxProperties": 100,
+      "title": "Facts",
+      "type": "object"
+    },
+    "unknown_fields": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 100,
+      "title": "Unknown Fields",
+      "type": "array"
+    },
+    "resume_form": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ResumeForm"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "research_objects": {
+      "description": "Extract EVERY stated company, project, award, paper, patent, copyright, open-source work and certification. One object per record, stable unique object_id, original name/period and exact quotes. Company: description, industry, products, location, role, contribution, metrics, website. Project: company, goal, complexity, outcomes, role, contribution, metrics, link. Professional: official_name, organizer, year, platform, identifier, authors, ownership, status, link, contribution. Preserve explicit author_identifier, orcid, contributor_handle, certificate_number or author_url when supplied; never infer them from a name. Do not infer personal contribution from team results or invent absent types.",
+      "items": {
+        "$ref": "#/$defs/ResumeResearchObject"
+      },
+      "maxItems": 100,
+      "title": "Research Objects",
+      "type": "array"
+    }
+  },
+  "required": [
+    "facts"
+  ],
+  "title": "ResumeProfile",
+  "type": "object"
+}

@@ -9,6 +9,9 @@
 
 # Local work and data
 /work/
+# Local brand assets and frontend serving copies (not published to GitHub)
+/media/
+/frontend/public/brand/
 /outputs/
 /data/
 /uploads/
@@ -38,3 +41,4 @@ coverage/
 .vscode/
 .DS_Store
 Thumbs.db
+~$*

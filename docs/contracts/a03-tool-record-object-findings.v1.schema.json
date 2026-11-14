@@ -1,0 +1,221 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Citation": {
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        },
+        "quote": {
+          "maxLength": 3000,
+          "minLength": 1,
+          "title": "Quote",
+          "type": "string"
+        },
+        "source_date": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Date"
+        }
+      },
+      "required": [
+        "source_id",
+        "quote"
+      ],
+      "title": "Citation",
+      "type": "object"
+    },
+    "Finding": {
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Field",
+          "type": "string"
+        },
+        "category": {
+          "enum": [
+            "E1",
+            "E3",
+            "U"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "citations": {
+          "items": {
+            "$ref": "#/$defs/Citation"
+          },
+          "maxItems": 8,
+          "title": "Citations",
+          "type": "array"
+        },
+        "a04_fields": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10,
+          "title": "A04 Fields",
+          "type": "array"
+        },
+        "applicable_period": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Applicable Period"
+        },
+        "historical_applicability": {
+          "default": "unknown",
+          "enum": [
+            "confirmed",
+            "current_only",
+            "unknown"
+          ],
+          "title": "Historical Applicability",
+          "type": "string"
+        },
+        "conflict_with_a04": {
+          "default": false,
+          "title": "Conflict With A04",
+          "type": "boolean"
+        },
+        "personal_identity_fields": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 5,
+          "title": "Personal Identity Fields",
+          "type": "array"
+        }
+      },
+      "required": [
+        "field",
+        "category",
+        "text"
+      ],
+      "title": "Finding",
+      "type": "object"
+    },
+    "Identity": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "confirmed",
+            "uncertain",
+            "unmatched"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "rationale": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "citations": {
+          "items": {
+            "$ref": "#/$defs/Citation"
+          },
+          "maxItems": 8,
+          "title": "Citations",
+          "type": "array"
+        },
+        "a04_anchor_fields": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10,
+          "title": "A04 Anchor Fields",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status",
+        "rationale"
+      ],
+      "title": "Identity",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "object_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Object Id",
+      "type": "string"
+    },
+    "identity": {
+      "$ref": "#/$defs/Identity"
+    },
+    "findings": {
+      "items": {
+        "$ref": "#/$defs/Finding"
+      },
+      "maxItems": 50,
+      "title": "Findings",
+      "type": "array"
+    },
+    "gaps": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 30,
+      "title": "Gaps",
+      "type": "array"
+    },
+    "verification_questions": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 20,
+      "title": "Verification Questions",
+      "type": "array"
+    },
+    "stop_reason": {
+      "enum": [
+        "sufficient",
+        "identity_uncertain",
+        "no_sources",
+        "no_new_information"
+      ],
+      "title": "Stop Reason",
+      "type": "string"
+    }
+  },
+  "required": [
+    "object_id",
+    "identity",
+    "stop_reason"
+  ],
+  "title": "ObjectFindings",
+  "type": "object"
+}
