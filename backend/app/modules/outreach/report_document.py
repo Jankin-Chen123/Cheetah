@@ -5,9 +5,50 @@ from xml.sax.saxutils import escape
 from zipfile import ZIP_DEFLATED, ZipFile
 
 
+def _table(rows):
+    """Render the saved Markdown table as editable Word cells."""
+    width = 10080 // len(rows[0])
+    result = ['<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/>', "<w:tblBorders>"]
+    result.extend(
+        f'<w:{edge} w:val="single" w:sz="4" w:color="B8B8B8"/>'
+        for edge in ("top", "left", "bottom", "right", "insideH", "insideV")
+    )
+    result.append("</w:tblBorders></w:tblPr><w:tblGrid>")
+    result.extend(f'<w:gridCol w:w="{width}"/>' for _ in rows[0])
+    result.append("</w:tblGrid>")
+    for index, row in enumerate(rows):
+        result.append(
+            "<w:tr><w:trPr><w:cantSplit/>" + ("<w:tblHeader/>" if index == 0 else "") + "</w:trPr>"
+        )
+        for cell in row:
+            cell = "".join(c for c in cell if ord(c) >= 32 or c == "\t")
+            result.append(
+                f'<w:tc><w:tcPr><w:tcW w:w="{width}" w:type="dxa"/></w:tcPr>'
+                "<w:p><w:r>"
+                + ("<w:rPr><w:b/></w:rPr>" if index == 0 else "")
+                + f'<w:t xml:space="preserve">{escape(cell)}</w:t></w:r></w:p></w:tc>'
+            )
+        result.append("</w:tr>")
+    result.append("</w:tbl>")
+    return "".join(result)
+
+
 def report_docx(markdown: str) -> bytes:
     paragraphs = []
+    table_rows = []
     for line in markdown.splitlines():
+        if line.startswith("|") and line.endswith("|"):
+            cells = [cell.strip().replace("&#124;", "|") for cell in line[1:-1].split("|")]
+            if all(cell and set(cell) <= {"-", ":"} for cell in cells):
+                continue
+            if table_rows and len(cells) != len(table_rows[0]):
+                paragraphs.append(_table(table_rows))
+                table_rows = []
+            table_rows.append(cells)
+            continue
+        if table_rows:
+            paragraphs.append(_table(table_rows))
+            table_rows = []
         if not line.strip():
             continue
         style = "Normal"
@@ -24,6 +65,8 @@ def report_docx(markdown: str) -> bytes:
             f'<w:p><w:pPr><w:pStyle w:val="{style}"/></w:pPr>'
             f'<w:r><w:t xml:space="preserve">{escape(line)}</w:t></w:r></w:p>'
         )
+    if table_rows:
+        paragraphs.append(_table(table_rows))
     namespace = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
     document = (
         f'<?xml version="1.0" encoding="UTF-8"?><w:document {namespace}><w:body>'

@@ -81,6 +81,18 @@ def professional_profile(upstream):
             lines.append(f"离职原因：{selected['reason_for_leaving']}")
     if not history:
         lines.append("未提供结构化任职记录，完整履历待补充。")
+    else:
+        overview = ["### 工作经历总览", "| 任职时间 | 公司 | 职位 |", "| --- | --- | --- |"]
+        overview.extend(
+            "| "
+            + " | ".join(
+                record[key].replace("|", "&#124;").replace("\n", " ")
+                for key in ("period", "company", "position")
+            )
+            + " |"
+            for record in history
+        )
+        lines[lines.index("### 工作经历") : lines.index("### 工作经历")] = overview
     additional = {}
     for key, label in [
         ("qualifications", "专业资格"),
