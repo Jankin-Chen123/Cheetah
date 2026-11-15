@@ -54,6 +54,10 @@ def execute(
         from app.core.models import ResumeBatch
 
         saved = record.response
+        if saved.get("resource_type") == "audio_transcription":
+            from app.modules.intake.audio import get_audio
+
+            get_audio(db, user, saved["resource_id"])
         if saved.get("resource_type") == "talent" or request.url.path.startswith(
             "/api/v1/talents/"
         ):

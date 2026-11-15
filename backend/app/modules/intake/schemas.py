@@ -11,12 +11,18 @@ class Input(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, allow_inf_nan=False)
 
 
+class AudioTranscriptionRef(Input):
+    id: str = Field(min_length=1, max_length=64)
+    revision: int = Field(ge=1)
+
+
 class CreateJobInput(Input):
     title: str | None = Field(default=None, min_length=1, max_length=100)
     company: str | None = Field(default=None, min_length=1, max_length=100)
     location: str | None = Field(default=None, max_length=100)
     salary: str | None = Field(default=None, max_length=100)
     material_text: str = Field(min_length=1, max_length=30000)
+    audio_transcription_ref: AudioTranscriptionRef | None = None
     routing_directions: list[DirectionId] | None = Field(default=None, max_length=18)
 
 

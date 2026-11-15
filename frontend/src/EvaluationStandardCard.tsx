@@ -15,6 +15,7 @@ export default function EvaluationStandardCard({ current, refresh }: { current: 
   const [confirmed, setConfirmed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [editing, setEditing] = useState(!current.session.job_interview_standard)
   const weight = dimensions.reduce((sum, row) => sum + (row.weight_percent ?? 0), 0)
   const ready = confirmed && version !== null && threshold !== null && reportVersion !== null && dimensions.length > 0 && Math.abs(weight - 100) < 0.000001 && dimensions.every(row => row.label.trim() && row.indicators.trim() && row.sources.trim() && row.weight_percent && bands.every(band => row.anchors[band]?.trim()))
   function update(index: number, patch: Partial<DimensionDraft>) {
@@ -24,7 +25,8 @@ export default function EvaluationStandardCard({ current, refresh }: { current: 
   return <Card title="岗位面试标准确认与绑定">
     <Alert type="info" message="按岗位材料填写并确认；新版本会使旧评估、推荐及审批失效，需显式重算，不会重新拨号。" />
     <details><summary>查看当前绑定及历史</summary><pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify({ current: current.session.job_interview_standard ?? '尚未绑定 A02 标准', history: current.session.evaluation_binding_history ?? [] }, null, 2)}</pre></details>
-    <Form layout="vertical">
+    {!editing && <><Alert type="success" title="已绑定发布时确认的岗位面试标准，可直接生成面试提纲。" /><Button onClick={() => setEditing(true)}>填写并绑定新版本</Button></>}
+    {editing && <Form layout="vertical">
       <Space wrap>
         <Form.Item label="标准版本（须递增）"><InputNumber aria-label="标准版本" min={1} precision={0} value={version} onChange={value => { setVersion(value); setConfirmed(false) }} /></Form.Item>
         <Form.Item label="推荐门槛（十分制）"><InputNumber aria-label="推荐门槛" min={1} max={10} value={threshold} onChange={value => { setThreshold(value); setConfirmed(false) }} /></Form.Item>
@@ -51,6 +53,6 @@ export default function EvaluationStandardCard({ current, refresh }: { current: 
           await refresh()
         } catch (failure) { setError(String(failure)) } finally { setBusy(false) }
       })()}>确认并绑定此版本</Button>
-    </Form>
+    </Form>}
   </Card>
 }

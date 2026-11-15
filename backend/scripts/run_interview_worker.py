@@ -46,7 +46,17 @@ def main():
     engine = get_engine(settings.database_url.get_secret_value())
     while True:
         with Session(engine) as session, session.begin():
-            recover_stale_steps(session, case_id=args.case_id)
+            from app.modules.outreach.intake_handoff import consume_pending
+
+            if args.case_id is None:
+                consume_pending(session)
+            recover_stale_steps(
+                session,
+                case_id=args.case_id,
+                outline_timeout_seconds=4 * settings.model_timeout_seconds + 60
+                if settings.text_provider == "configured"
+                else 300,
+            )
             schedule_postprocessing(session, case_id=args.case_id)
         with Session(engine) as session:
             task = session.scalar(

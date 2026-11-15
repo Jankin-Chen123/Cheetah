@@ -105,6 +105,81 @@ def validate_question_cards(outline: Outline, dimension_ids: set[str], refs: dic
     return outline
 
 
+def allocate_question_minutes(outline: Outline, total_minutes: int = 26):
+    """Program-owned time slots never change questions, evidence or competency scores."""
+    count = len(outline.questions)
+    if total_minutes < count:
+        raise ValueError("QUESTION_TIME_BUDGET_INSUFFICIENT")
+    minutes, remainder = divmod(total_minutes, count)
+    return outline.model_copy(
+        update={
+            "questions": [
+                question.model_copy(update={"planned_minutes": minutes + (index < remainder)})
+                for index, question in enumerate(outline.questions)
+            ]
+        }
+    )
+
+
+def continue_after_acknowledgement(payload, answers, planned):
+    """An acknowledgement alone cannot occupy a turn that requires an answer."""
+    text = payload.get("question")
+    if re.search(r"[?？]|请问|能否|是否|什么意思", answers[-1].get("text", "")):
+        return None
+    if (
+        payload.get("action") == "end"
+        or not isinstance(text, str)
+        or re.search(r"[?？]|请|能否|是否|什么|哪|怎么|如何|多少|吗|谈谈|说说|介绍|举例|说明", text)
+    ):
+        return None
+    asked = {a["question"]["question"] for a in answers}
+    remaining = next((q for q in planned if q["question"] not in asked), None)
+    return {
+        **payload,
+        "action": "next_topic",
+        "method_entry_ids": [],
+        "question": remaining["question"] if remaining else "您还有什么需要补充的经历或岗位问题？",
+        "dimension_id": remaining["dimension_id"]
+        if remaining
+        else answers[-1]["question"]["dimension_id"],
+        "answer_evidence_ids": [answers[-1]["id"]],
+        "reason": "模型仅作确认，程序转向未问的准备问题或开放补充，原有证据缺口继续保留。",
+    }
+
+
+def answered_outline_ids(answers, planned):
+    return {
+        q["id"]
+        for q in planned
+        for answer in answers
+        if q.get("id")
+        and q.get("dimension_id")
+        and (
+            answer["question"].get("id") == q["id"]
+            or (
+                answer["question"].get("dimension_id") == q["dimension_id"]
+                and answer["question"]["question"].endswith(q["question"])
+            )
+        )
+    }
+
+
+def prefer_unasked_dimension(payload, answers, planned):
+    covered = {a["question"].get("dimension_id") for a in answers}
+    if payload.get("action") != "next_topic" or payload.get("dimension_id") not in covered:
+        return None
+    remaining = next((q for q in planned if q["dimension_id"] not in covered), None)
+    if remaining is None:
+        return None
+    return {
+        **payload,
+        "question": remaining["question"],
+        "dimension_id": remaining["dimension_id"],
+        "method_entry_ids": [],
+        "reason": "转向提纲尚未问到的能力维度，已问维度的证据缺口仍保留。",
+    }
+
+
 def termination_reason(
     answer: str,
     round_count: int,

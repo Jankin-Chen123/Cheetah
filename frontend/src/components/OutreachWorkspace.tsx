@@ -126,7 +126,7 @@ export default function OutreachWorkspace({ view = 'calls' }: { view?: 'calls' |
               await refresh(current.id)
             })}>生成 {step}</Button>)}
           </Space>
-          {!currentReport && currentEvaluation?.content.conclusion === 'recommended' && <Space wrap>
+          {(!currentReport || currentReport.review_status === 'rejected') && currentEvaluation?.content.conclusion === 'recommended' && <Space wrap>
             <Button type="primary" disabled={busy || Boolean(current.active_tasks?.length)} onClick={() => void run(async () => {
               await regenerateRecommendation(current.id, current.revision)
               await refresh(current.id)
@@ -136,7 +136,10 @@ export default function OutreachWorkspace({ view = 'calls' }: { view?: 'calls' |
           {current.session.correction_requires_recompute === true && !currentEvaluation && <p>回答已更正。请先重新生成 D08，再更新 D09；只有当前评估达标才能生成新版推荐。</p>}
           {currentEvaluation && currentEvaluation.content.conclusion !== 'recommended' && <p>当前评估未达到推荐条件；请查看 D09 的结论与证据缺口。</p>}
           {current.active_tasks?.map(task => <Typography.Paragraph key={task.id}>{task.step}：{task.status}</Typography.Paragraph>)}
-          {current.failed_tasks?.map(task => <Alert key={task.id} type="error" title={`${task.step}：${task.error_code ?? '失败待核对'}`} />)}
+          {current.failed_tasks?.map(task => <Alert key={task.id} type="error" title={`${task.step}：${task.error_code ?? '失败待核对'}`}
+            action={task.error_code !== 'WORKER_INTERRUPTED_REVIEW_REQUIRED' && task.input_revision === current.revision && task.retry_count < 3 && <Button disabled={busy || Boolean(current.active_tasks?.length)} onClick={() => void run(async () => {
+              await api(`/interview-tasks/${task.id}/retry`, { expected_revision: current.revision }); await refresh(current.id)
+            })}>重试失败步骤</Button>} />)}
         </Card>
         <PreflightCard key={current.id} current={current} refresh={() => refresh(current.id)} />
         <InvitationCard key={`invite-${current.id}`} current={current} refresh={() => refresh(current.id)} />

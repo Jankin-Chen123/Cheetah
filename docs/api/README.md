@@ -1,6 +1,8 @@
-> 2026-11-15 整合说明：A 与 personal/dev 的面试/报告路由已注册到同一应用，账号统一采用官网账户。历史段落中的“B 尚未接入”不再代表路由缺失，但真实初筛 1.1 outbox → 面试案例消费仍未实现。实际协议、独立任务路径及迁移见 [整合说明](../branch-integration.md)，机器快照包含当前 A/B 全部路由。
+> 2026-11-15 本轮增量：已实现经过有效性核验的初筛 1.1 outbox → 面试案例消费、已发布面试标准自动绑定、失败输出的有限重新生成、岗位发布／人工初筛复核及受限文字面试页面。实际验证进度与线上限制见 [全流程核验](../full-flow-validation-2026-11-15.md)，历史未接入描述以该记录为准。机器协议见 implemented 快照。
 
 # Cheetah 猎报 · 前后端接口对接文档 V0.1
+
+录音材料接口 `/audio-transcriptions`、`/audio-transcriptions/from-url`、读取及有限重试，岗位可携带 `audio_transcription_ref`。标准版真实验证和极速版权限边界见 [录音识别](../audio-file-recognition.md)。需显式迁移0007并运行intake worker，密钥只在服务端。
 
 2026-11-15 内测增量：旧版 DOC 导入与模型已知坏响应的状态／结算已修复，HTTP 字段与路径不变。新增 MODEL_OUTPUT_TRUNCATED / MODEL_OUTPUT_INVALID 语义见 [模型说明](models.md)；缓存格式恢复不重发模型请求，外部结果未知仍禁止自动重发。真实材料局部验证和完整流程的阻断项见 [内测记录](../beta-validation-2026-11-15.md)。
 

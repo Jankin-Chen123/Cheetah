@@ -13,7 +13,8 @@ def inherited_provenance(case, *upstream):
 
     fixture = bool(case.snapshot.get("fixture_only"))
     for mode in case.snapshot.get("source_modes", {}).values():
-        include(mode)
+        if mode is not None:
+            include(mode)
     if fixture:
         modes.add("mock")
     for answer in case.session_data.get("answers", []):

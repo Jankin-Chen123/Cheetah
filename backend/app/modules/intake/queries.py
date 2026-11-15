@@ -18,14 +18,120 @@ from app.core.artifacts import (
 from app.core.auth import Db, User
 from app.core.errors import DomainError, not_found
 from app.core.idempotency import execute
-from app.core.models import Application, Artifact, AuditEntry, IntakeJob, StoredFile, Task, aware
-from app.core.tasks import accepted, retryable, task_view
+from app.core.models import (
+    Application,
+    Artifact,
+    AuditEntry,
+    Budget,
+    IntakeJob,
+    StoredFile,
+    Task,
+    aware,
+)
+from app.core.tasks import accepted, budget_key, enqueue, regeneratable, retryable, task_view
 from app.modules.intake.router import PageNumber, PageSize, Version
 from app.modules.intake.schemas import RetryInput
 from app.modules.intake.service import audit, require_revision
 from app.modules.intake.views import application_view, paginate
 
 router = APIRouter(tags=["intake-resources"])
+
+
+@router.post("/tasks/{task_id}/regenerate", status_code=202, response_model=dto.TaskAccepted)
+def regenerate_task(task_id: str, body: RetryInput, request: Request, db: Db, user: User):
+    """One explicit new call after a known bad output; unknown calls are never resubmitted."""
+
+    def action():
+        task = db.get(Task, task_id)
+        if task is None:
+            raise not_found()
+        job = None
+        if task.kind == "talent_parse":
+            from app.modules.intake.talents import get_talent, lock_owner
+
+            lock_owner(db, user.id)
+            talent = get_talent(db, user, task.payload["talent_id"], lock=True)
+            if talent.task_id != task.id or talent.profile_version is not None:
+                raise DomainError("PRECONDITION_NOT_MET", "当前人才提取任务已变化")
+        else:
+            job = get_job(db, user, task.job_id, lock=True)
+            if (
+                job.status != "active"
+                or job.published_version is not None
+                or job.draft_revision != task.payload.get("draft_revision")
+            ):
+                raise DomainError("PRECONDITION_NOT_MET", "岗位或标准已变化，请核对当前版本")
+        db.refresh(task)
+        require_revision(task.revision, body.expected_revision)
+        if not regeneratable(db, task, request.app.state.settings):
+            raise DomainError(
+                "TASK_NOT_REGENERATABLE", "任务不可重新生成、次数已用尽或外部结果尚未核对"
+            )
+        from app.modules.intake.agent_prompts import resource_fingerprint
+
+        payload = {
+            **task.payload,
+            "regeneration_of": task.id,
+            "output_contract_retry": "json-v1",
+            "regeneration_actor_id": user.id,
+            "regeneration_previous_resource_hash": task.payload.get("agent_resource_hash"),
+            "agent_resource_hash": resource_fingerprint(),
+        }
+        regenerated = enqueue(
+            db,
+            organization_id=task.organization_id,
+            job_id=task.job_id,
+            kind=task.kind,
+            dedup_key=f"regenerate:{task.id}",
+            payload=payload,
+        )
+        task.payload = {
+            **task.payload,
+            "regenerated_task_id": regenerated.id,
+            "regeneration_reason": body.reason,
+        }
+        task.revision += 1
+        if task.kind == "talent_parse":
+            db.get(
+                Budget, budget_key(task)
+            ).call_limit = request.app.state.settings.talent_model_call_limit
+            talent.task_id = regenerated.id
+            talent.revision += 1
+        if payload.get("parent_task_id"):
+            parent = db.get(Task, payload["parent_task_id"])
+            if not parent or parent.payload.get("continuation_task_id") != task.id:
+                raise DomainError("PRECONDITION_NOT_MET", "任务链关联已失效")
+            parent.payload = {**parent.payload, "continuation_task_id": regenerated.id}
+            while parent:
+                if parent.status == "failed":
+                    parent.status, parent.error_code, parent.finished_at = (
+                        "waiting_conditions",
+                        None,
+                        None,
+                    )
+                    parent.revision += 1
+                parent = (
+                    db.get(Task, parent.payload["parent_task_id"])
+                    if parent.payload.get("parent_task_id")
+                    else None
+                )
+        if job is not None:
+            audit(
+                db,
+                job,
+                user.id,
+                "task.regenerated",
+                refs={
+                    "previous_task_id": task.id,
+                    "task_id": regenerated.id,
+                    "reason": body.reason,
+                },
+            )
+        return accepted(regenerated)
+
+    return execute(db, user, request, body.model_dump(), 202, action)
+
+
 ScreeningResult = Literal["pending", "passed", "unknown", "rejected", "manual_review"]
 
 

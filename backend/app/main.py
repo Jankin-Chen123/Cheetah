@@ -12,6 +12,7 @@ from app.core.config import Settings, get_settings
 from app.core.errors import DomainError
 from app.core.health import router as health_router
 from app.core.openapi import install_openapi
+from app.modules.intake.audio import router as audio_router
 from app.modules.intake.batches import router as batches_router
 from app.modules.intake.corrections import router as corrections_router
 from app.modules.intake.queries import router as queries_router
@@ -125,6 +126,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(health_router, prefix="/api/v1")
     application.include_router(auth_router, prefix="/api/v1")
     application.include_router(intake_router, prefix="/api/v1")
+    application.include_router(audio_router, prefix="/api/v1")
     application.include_router(talents_router, prefix="/api/v1")
     application.include_router(batches_router, prefix="/api/v1")
     application.include_router(queries_router, prefix="/api/v1")

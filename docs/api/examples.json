@@ -3583,6 +3583,31 @@
         "started_at": "2026-11-13T02:20:00Z",
         "finished_at": "2026-11-13T02:20:00Z"
       }
+    },
+    "known_failed_output_regeneration": {
+      "schema": "RetryTaskInput",
+      "value": {
+        "expected_revision": 4,
+        "reason": "虚构样例：重新生成已确认失败的输出，保留原材料和失败任务"
+      }
+    },
+    "audio_transcription_queued": {
+      "schema": "AudioTranscriptionView",
+      "value": {
+        "id": "fixture-audio-001",
+        "resource_id": "fixture-audio-001",
+        "resource_type": "audio_transcription",
+        "filename": "虚构录音.wav",
+        "status": "queued",
+        "revision": 1,
+        "transcript": null,
+        "segments": [],
+        "duration_ms": null,
+        "error_code": null,
+        "error_message": null,
+        "retryable": false,
+        "source_mode": "live"
+      }
     }
   }
 }

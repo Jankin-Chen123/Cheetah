@@ -3,7 +3,8 @@ import { RemoteAccessContext } from '../domain/access'
 import type { Job } from '../domain/workspace'
 import { attachGeneratedDocument, currentDocument, documentFromArtifact, profileValues } from '../domain/jobDocuments'
 import { retainCommunicationMinutes } from '../domain/jobMaterials'
-import { analyzeIntakeJob, createIntakeRemoteJob, getIntakeArtifact, getIntakeJob, getIntakeSession, getIntakeTask, IntakeApiError, loginIntake } from '../api/jobIntake'
+import { generationIssue } from '../domain/jobGeneration'
+import { analyzeIntakeJob, createIntakeRemoteJob, getIntakeArtifact, getIntakeJob, getIntakeSession, getIntakeTask, IntakeApiError, loginIntake, retryIntakeTask, regenerateIntakeTask, type IntakeTask } from '../api/jobIntake'
 
 const delay = (signal: AbortSignal) => new Promise<void>((resolve, reject) => {
   const abort = () => { clearTimeout(timer); reject(signal.reason) }
@@ -20,6 +21,9 @@ export function useJobGeneration(job: Job, onUpdate: (job: Job) => void) {
   const [loginError, setLoginError] = useState('')
   const [loginBusy, setLoginBusy] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [retryable, setRetryable] = useState<IntakeTask>()
+  const [regeneratable, setRegeneratable] = useState<IntakeTask>()
+  const retryIntent = useRef<{ key: string; taskId: string; revision: number } | null>(null)
   useEffect(() => {
     const controller = new AbortController()
     const signal = controller.signal
@@ -39,7 +43,7 @@ export function useJobGeneration(job: Job, onUpdate: (job: Job) => void) {
         if (!remote) {
           if (!session.capabilities.model_configured) throw new Error('后端尚未配置模型，材料已保存在本机。')
           commit(value => ({ ...value, generation: { ...value.generation!, submitted: true } }))
-          remote = await createIntakeRemoteJob(original.materialInput.transcript, session, original.generation.createKey!, signal)
+          remote = await createIntakeRemoteJob(original.materialInput.transcript, session, original.generation.createKey!, signal, original.providedFields, original.materialInput.audioTranscriptionRef)
           const remoteJobId = remote.id
           commit(value => ({ ...value, generation: { ...value.generation!, remoteJobId } }))
         }
@@ -53,6 +57,7 @@ export function useJobGeneration(job: Job, onUpdate: (job: Job) => void) {
         }
         commit(value => ({ ...value, generation: { ...value.generation!, state: 'running', error: undefined } }))
         let idlePolls = 0
+        const started = Date.now()
         while (!signal.aborted) {
           remote = await getIntakeJob(remote.id, signal)
           for (const artifactRef of [remote.d01_ref, remote.d02_ref]) {
@@ -71,11 +76,17 @@ export function useJobGeneration(job: Job, onUpdate: (job: Job) => void) {
             commit(value => ({ ...value, generation: { ...value.generation!, state: 'completed', error: undefined } })); return
           }
           const tasks = await Promise.all([...new Set([...remote.active_task_ids, ...(latest.current.job.generation?.taskId ? [latest.current.job.generation.taskId] : [])])].map(id => getIntakeTask(id, signal)))
-          for (const task of tasks.slice()) {
+          for (const task of tasks) {
+            if (tasks.length > 20) throw new Error('后台任务关联异常，请核对任务后重新检查。')
             if (task.continuation_task_id && !tasks.some(item => item.id === task.continuation_task_id)) tasks.push(await getIntakeTask(task.continuation_task_id, signal))
           }
-          const failed = tasks.find(task => ['failed', 'cancelled'].includes(task.status))
-          if (failed) throw new Error(`生成任务未完成：${failed.error?.message ?? failed.status}。请在后端检查或重试该任务，再点击“重新检查”。`)
+          const issue = generationIssue(tasks, Date.now() - started)
+          if (issue) {
+            setRetryable(tasks.find(task => task.status === 'failed' && task.retryable))
+            setRegeneratable(tasks.find(task => task.allowed_actions?.includes('regenerate')))
+            commit(value => ({ ...value, generation: { ...value.generation!, state: issue.state, error: issue.message } }))
+            return
+          }
           idlePolls = !remote.active_task_ids.length ? idlePolls + 1 : 0
           if (idlePolls >= 5) throw new Error('尚未找到完整的两份产物，请检查后台任务，再重新检查。')
           await delay(signal)
@@ -97,5 +108,19 @@ export function useJobGeneration(job: Job, onUpdate: (job: Job) => void) {
     catch (error) { setLoginError((error as Error).message) }
     finally { setLoginBusy(false) }
   }
-  return { busy, start: () => setAttempt(value => value + 1), loginOpen, closeLogin: () => setLoginOpen(false), login, loginBusy, loginError }
+  async function retry(fresh = false) {
+    const target = fresh ? regeneratable : retryable
+    if (!target || busy) return
+    setBusy(true)
+    try {
+      const intent = retryIntent.current?.taskId === target.id ? retryIntent.current : { key: crypto.randomUUID(), taskId: target.id, revision: target.revision }
+      retryIntent.current = intent
+      await (fresh ? regenerateIntakeTask : retryIntakeTask)({ ...target, revision: intent.revision }, await getIntakeSession(), intent.key)
+      retryIntent.current = null; setRetryable(undefined); setRegeneratable(undefined); setAttempt(value => value + 1)
+    } catch (error) {
+      const current = latest.current
+      current.onUpdate({ ...current.job, generation: { ...current.job.generation!, error: (error as Error).message } })
+    } finally { setBusy(false) }
+  }
+  return { busy, start: () => setAttempt(value => value + 1), retryable: !!retryable, regeneratable: !!regeneratable, retry, loginOpen, closeLogin: () => setLoginOpen(false), login, loginBusy, loginError }
 }

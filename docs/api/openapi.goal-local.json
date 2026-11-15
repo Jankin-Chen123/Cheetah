@@ -2271,6 +2271,669 @@
         ]
       }
     },
+    "/api/v1/audio-transcriptions/from-url": {
+      "post": {
+        "tags": [
+          "file-asr"
+        ],
+        "summary": "Recognize Url",
+        "operationId": "recognize_url_api_v1_audio_transcriptions_from_url_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AudioUrlInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioTranscriptionView"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "新岗位详情或持久化任务查询地址；幂等重放保持相同地址",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented-local",
+        "security": [
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.:-]{8,128}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/audio-transcriptions": {
+      "post": {
+        "tags": [
+          "file-asr"
+        ],
+        "summary": "Upload Audio",
+        "operationId": "upload_audio_api_v1_audio_transcriptions_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_audio_api_v1_audio_transcriptions_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioTranscriptionView"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "新岗位详情或持久化任务查询地址；幂等重放保持相同地址",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented-local",
+        "security": [
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.:-]{8,128}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/audio-transcriptions/{audio_id}": {
+      "get": {
+        "tags": [
+          "file-asr"
+        ],
+        "summary": "Read Audio",
+        "operationId": "read_audio_api_v1_audio_transcriptions__audio_id__get",
+        "parameters": [
+          {
+            "name": "audio_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Audio Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioTranscriptionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented-local",
+        "security": [
+          {
+            "CookieAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/audio-transcriptions/{audio_id}/retry": {
+      "post": {
+        "tags": [
+          "file-asr"
+        ],
+        "summary": "Retry Audio",
+        "operationId": "retry_audio_api_v1_audio_transcriptions__audio_id__retry_post",
+        "parameters": [
+          {
+            "name": "audio_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Audio Id"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.:-]{8,128}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AudioRetryInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioTranscriptionView"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "新岗位详情或持久化任务查询地址；幂等重放保持相同地址",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented-local",
+        "security": [
+          {
+            "CookieAuth": []
+          }
+        ]
+      }
+    },
     "/api/v1/talent-directions": {
       "get": {
         "tags": [
@@ -4229,6 +4892,188 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BatchItem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented-local",
+        "security": [
+          {
+            "CookieAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/tasks/{task_id}/regenerate": {
+      "post": {
+        "tags": [
+          "intake-resources"
+        ],
+        "summary": "Regenerate Task",
+        "description": "One explicit new call after a known bad output; unknown calls are never resubmitted.",
+        "operationId": "regenerate_task_api_v1_tasks__task_id__regenerate_post",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.:-]{8,128}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetryInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskAccepted"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "新岗位详情或持久化任务查询地址；幂等重放保持相同地址",
+                "schema": {
+                  "type": "string"
                 }
               }
             }
@@ -10499,6 +11344,26 @@
         ],
         "summary": "Calls",
         "operationId": "calls_api_v1_calls_get",
+        "parameters": [
+          {
+            "name": "application_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Application Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -10506,6 +11371,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CallListView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "稳定错误码；不回显敏感输入或第三方异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
@@ -10570,16 +11445,6 @@
               }
             }
           },
-          "422": {
-            "description": "稳定错误码；不回显敏感输入或第三方异常",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "429": {
             "description": "稳定错误码；不回显敏感输入或第三方异常",
             "content": {
@@ -10616,8 +11481,7 @@
           {
             "CookieAuth": []
           }
-        ],
-        "parameters": []
+        ]
       }
     },
     "/api/v1/calls/{case_id}": {
@@ -14937,6 +15801,210 @@
         ],
         "title": "ArtifactView"
       },
+      "AudioRetryInput": {
+        "properties": {
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Revision"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_revision"
+        ],
+        "title": "AudioRetryInput"
+      },
+      "AudioSegment": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "start_ms": {
+            "type": "integer",
+            "title": "Start Ms"
+          },
+          "end_ms": {
+            "type": "integer",
+            "title": "End Ms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text",
+          "start_ms",
+          "end_ms"
+        ],
+        "title": "AudioSegment"
+      },
+      "AudioTranscriptionRef": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Revision"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "revision"
+        ],
+        "title": "AudioTranscriptionRef"
+      },
+      "AudioTranscriptionView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "resource_type": {
+            "type": "string",
+            "const": "audio_transcription",
+            "title": "Resource Type",
+            "default": "audio_transcription"
+          },
+          "resource_id": {
+            "type": "string",
+            "title": "Resource Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "waiting_provider",
+              "completed",
+              "failed",
+              "reconciling"
+            ],
+            "title": "Status"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "transcript": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcript"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/AudioSegment"
+            },
+            "type": "array",
+            "title": "Segments"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "retryable": {
+            "type": "boolean",
+            "title": "Retryable"
+          },
+          "source_mode": {
+            "type": "string",
+            "const": "live",
+            "title": "Source Mode",
+            "default": "live"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "resource_id",
+          "status",
+          "revision",
+          "filename",
+          "transcript",
+          "segments",
+          "duration_ms",
+          "error_code",
+          "error_message",
+          "retryable"
+        ],
+        "title": "AudioTranscriptionView"
+      },
+      "AudioUrlInput": {
+        "properties": {
+          "audio_url": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Audio Url"
+          },
+          "audio_format": {
+            "type": "string",
+            "enum": [
+              "wav",
+              "mp3",
+              "ogg",
+              "aac",
+              "m4a",
+              "amr",
+              "spx"
+            ],
+            "title": "Audio Format"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "audio_url",
+          "audio_format"
+        ],
+        "title": "AudioUrlInput"
+      },
       "Batch": {
         "properties": {
           "id": {
@@ -15295,6 +16363,20 @@
           "file"
         ],
         "title": "Body_replace_item_api_v1_batches__batch_id__items__item_id__replace_post"
+      },
+      "Body_upload_audio_api_v1_audio_transcriptions_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_audio_api_v1_audio_transcriptions_post"
       },
       "BriefingEmailInput": {
         "properties": {
@@ -15959,6 +17041,16 @@
             "type": "boolean",
             "title": "Voice Configured",
             "default": false
+          },
+          "file_asr_configured": {
+            "type": "boolean",
+            "title": "File Asr Configured",
+            "default": false
+          },
+          "audio_max_file_bytes": {
+            "type": "integer",
+            "title": "Audio Max File Bytes",
+            "default": 20971520
           }
         },
         "additionalProperties": true,
@@ -16553,6 +17645,16 @@
             "maxLength": 30000,
             "minLength": 1,
             "title": "Material Text"
+          },
+          "audio_transcription_ref": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AudioTranscriptionRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "routing_directions": {
             "anyOf": [
@@ -20038,6 +21140,18 @@
             "maxLength": 100,
             "minLength": 1,
             "title": "Company"
+          },
+          "audio_transcription_ref": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Transcription Ref"
           },
           "location": {
             "anyOf": [

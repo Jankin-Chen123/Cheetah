@@ -6,6 +6,7 @@ export const processingPurposes = [
 ] as const
 
 export interface CandidateSession {
+  turn_history?: { question: string; answer: string }[]
   processing_permissions?: Record<string, string>
   client_sharing?: { client_label: string; status: string } | null
   voice_id: string

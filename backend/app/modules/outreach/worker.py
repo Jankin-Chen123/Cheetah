@@ -8,7 +8,12 @@ from app.integrations.bailian import ModelUnavailable, generate_json
 from app.modules.outreach.artifacts import save_artifact
 from app.modules.outreach.budget import reserve_model_request
 from app.modules.outreach.handoff import question_execution_ref
-from app.modules.outreach.interview import Outline, validate_outline, validate_question_cards
+from app.modules.outreach.interview import (
+    Outline,
+    allocate_question_minutes,
+    validate_outline,
+    validate_question_cards,
+)
 from app.modules.outreach.knowledge import retrieve
 from app.modules.outreach.models import ModelStep, OutreachArtifact, OutreachCase
 from app.modules.outreach.outline_inputs import (
@@ -93,7 +98,9 @@ def execute_outline(engine, settings: Settings, task_id: str):
         outline = validate_outline(
             Outline.model_validate(result["content"]), methods, dimension_ids
         )
+        model_time_plan = {question.id: question.planned_minutes for question in outline.questions}
         if require_full_coverage:
+            outline = allocate_question_minutes(outline)
             validate_question_cards(outline, dimension_ids, context["upstream"]["artifact_refs"])
 
         def reserve_revision():
@@ -168,6 +175,9 @@ def execute_outline(engine, settings: Settings, task_id: str):
                 "dimension_ids": sorted(dimension_ids),
                 "dimension_details": dimensions,
                 "planned_total_minutes": 35,
+                "question_time_allocation": "program-equal-slots-26-minutes"
+                if require_full_coverage
+                else "model-proposed",
                 "time_plan": {
                     "opening_consent": 2,
                     "competency": 26,
@@ -184,6 +194,7 @@ def execute_outline(engine, settings: Settings, task_id: str):
                 "quality_review": quality_review,
                 "model": result["model"],
                 "usage": result["usage"],
+                "model_proposed_question_minutes": model_time_plan,
             },
             [
                 {"kind": "artifact", "id": ref["artifact_id"], "version": ref["version"]}

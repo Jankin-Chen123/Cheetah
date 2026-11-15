@@ -150,6 +150,8 @@ def approve_outline_limitations(
 
 
 def outline_inputs(case):
+    if case.session_data.get("upstream_invalidated"):
+        raise ModelUnavailable("UPSTREAM_REVIEW_REQUIRED")
     content = case.session_data.get("upstream_content")
     refs = case.snapshot.get("artifact_refs", {})
     required = [f"D{i:02}" for i in range(1, 7)]

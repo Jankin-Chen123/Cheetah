@@ -234,6 +234,7 @@ class IntakeJob(Base):
     salary: Mapped[str | None] = mapped_column(String(100))
     material_text: Mapped[str] = mapped_column(Text)
     material_fields: Mapped[dict] = mapped_column(JSON, default=dict)
+    audio_transcription_ref: Mapped[dict | None] = mapped_column(JSON)
     routing_directions: Mapped[list] = mapped_column(
         JSON, default=list, server_default=text("'[]'")
     )
@@ -343,3 +344,26 @@ class TalentProfile(Base):
     classification_source: Mapped[str] = mapped_column(String(16))
     classification_note: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class AudioTranscription(Base):
+    __tablename__ = "audio_transcriptions"
+    __table_args__ = (UniqueConstraint("owner_id", "audio_hash", name="uq_owner_audio_hash"),)
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(String(64), index=True)
+    owner_id: Mapped[str] = mapped_column(String(64), index=True)
+    filename: Mapped[str] = mapped_column(String(200))
+    audio_hash: Mapped[str] = mapped_column(String(64))
+    audio_format: Mapped[str] = mapped_column(String(8))
+    data: Mapped[bytes] = mapped_column(LargeBinary)
+    status: Mapped[str] = mapped_column(String(24), default="queued", index=True)
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    provider_request_id: Mapped[str | None] = mapped_column(String(64))
+    error_code: Mapped[str | None] = mapped_column(String(64))
+    transcript: Mapped[str | None] = mapped_column(Text)
+    segments: Mapped[list] = mapped_column(JSON, default=list)
+    duration_ms: Mapped[int | None] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

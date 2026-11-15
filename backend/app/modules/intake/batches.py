@@ -214,7 +214,7 @@ async def import_batch(job_id: str, request: Request, db: Db, user: User):
             raise DomainError("RULES_NOT_PUBLISHED", "请先确认发布规则")
         rule = db.get(RulePack, (job.id, job.published_version))
         if mode == "live" and rule.is_test_rule:
-            raise DomainError("PRECONDITION_NOT_MET", "测试规则只能用于模拟执行")
+            check_mode(request.app.state.settings, "mock")
         if len(items) > settings.batch_limit or len({i["client_item_id"] for i in items}) != len(
             items
         ):

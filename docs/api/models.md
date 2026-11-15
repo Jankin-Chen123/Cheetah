@@ -1,3 +1,13 @@
+# 2026-11-15 全流程增量
+
+任务 allowed_actions 可包含 regenerate：仅四类提取／岗位标准任务的已知坏输出可显式新建一次模型任务，不能重发外部结果未知的请求。原失败任务保留 regenerated_task_id，岗位 continuation 指向接替任务；人才仍使用同一材料及 talent_id。retry 复用已保存结果，regenerate 才产生新模型调用，两者不可混用。
+
+GET /calls 支持 application_id 筛选，仍按机构及 owner 校验。测试 RulePack 可在显式 allow_mock 环境使用 live 模型；fixture_only 继续为 true，下游不能视为真实候选人或拨号结果。文字页仍使用已有受限 candidate 协议，不新增麦克风或邮件调用。验证边界见 [全流程核验](../full-flow-validation-2026-11-15.md)。
+
+受限 candidate会话增加turn_history，每项仅question/answer，只包含本次受限邀请提交的回答，用于刷新恢复；不包含D09、D10或内部模型上下文。任务重新生成记录前后agent_resource_hash，新任务使用当前版本提示，原失败任务输入快照保留。
+
+录音识别新增AudioTranscriptionView与独立持久化表；来源为实际ASR调用live，completed才有可用文本。标准版waiting_provider表示已提交并安全轮询同一request ID，不重复消耗提交次数；reconciling不能新提交。Job.audio_transcription_ref包含识别id/revision、音频或网址哈希及人工编辑标记。见 [录音识别合同](../audio-file-recognition.md)。
+
 # HTTP 数据模型、状态与前端映射
 
 2026-11-15：人才导入支持 DOC/DOCX、文本 PDF、UTF-8 TXT；旧版 DOC 仅提取主文档，拒绝加密、损坏或越界内容。任务新增稳定失败码 MODEL_OUTPUT_TRUNCATED（已确认截断，结算用量，不自动重试）与 MODEL_OUTPUT_INVALID（已确认格式不兼容；允许的显式恢复仅重放缓存，最多至既有尝试上限）。EXTERNAL_RESULT_UNKNOWN 继续表示未核对的外部结果，不自动重发。响应字段和来源枚举不变。[实际验证](../beta-validation-2026-11-15.md)。

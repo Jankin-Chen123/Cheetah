@@ -4,6 +4,7 @@ import { ConfigProvider } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import App from './SiteApp'
 import CandidateInterview from './CandidateInterview'
+import CandidateTextInterview from './CandidateTextInterview'
 import GoalWorkspace from './GoalWorkspace'
 import './styles.css'
 import './refinement.css'
@@ -44,7 +45,7 @@ createRoot(document.getElementById('root')!).render(
         },
       }}
     >
-      {window.location.pathname === '/candidate' ? <CandidateInterview /> : window.location.pathname === '/goal' ? <GoalWorkspace /> : <App />}
+      {window.location.pathname === '/candidate/text' ? <CandidateTextInterview /> : window.location.pathname === '/candidate' ? <CandidateInterview /> : window.location.pathname === '/goal' ? <GoalWorkspace /> : <App />}
     </ConfigProvider>
   </StrictMode>,
 )

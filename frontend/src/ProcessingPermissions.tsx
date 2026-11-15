@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Alert, Button, Space } from 'antd'
 import { setProcessingPermission, setClientSharing, processingPurposes, type CandidateSession } from './api/candidate'
 
-export default function ProcessingPermissions({ caseId, token, session, onChange }: {
-  caseId: string; token: string; session: CandidateSession; onChange: (value: CandidateSession) => void
+export default function ProcessingPermissions({ caseId, token, session, onChange, textMode = false }: {
+  caseId: string; token: string; session: CandidateSession; onChange: (value: CandidateSession) => void; textMode?: boolean
 }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -25,7 +25,7 @@ export default function ProcessingPermissions({ caseId, token, session, onChange
     <p>请逐项选择。许可仅用于本岗位的面试与内部处理，不包含向客户分享或自动发送报告；可随时撤回。</p>
     {processingPurposes.map(([purpose, label]) => {
       const granted = session.processing_permissions?.[purpose] === 'AUTHORIZED'
-      return <p key={purpose}><Space wrap><span>{label}：{granted ? '已同意' : '未同意'}</span>
+      return <p key={purpose}><Space wrap><span>{textMode && purpose === 'transcription' ? '保存本次文字问答记录' : label}：{granted ? '已同意' : '未同意'}</span>
         <Button size="small" disabled={busy || stopped || granted} onClick={() => void update(purpose, true)}>同意此项</Button>
         <Button size="small" disabled={busy || !granted} onClick={() => void update(purpose, false)}>撤回此项</Button>
       </Space></p>

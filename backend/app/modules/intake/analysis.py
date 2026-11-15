@@ -65,6 +65,9 @@ def extract_mock(text: str) -> ResumeProfile:
 
 def validate_quotes(profile: ResumeProfile | JobAnalysis, text: str):
     def validate_fact(fact):
+        from app.modules.intake.form_sources import source_quote
+
+        fact.quote = source_quote(text, fact.quote)
         if (
             fact.status != "stated"
             or fact.value is None
@@ -227,7 +230,7 @@ def model_ready(settings: Settings):
         raise DomainError("DEPENDENCY_NOT_READY", "模型接口需要 HTTPS", 503)
 
 
-def model_messages(kind: str, text: str) -> list[dict]:
+def model_messages(kind: str, text: str, *, strict_json: bool = False) -> list[dict]:
     kind = "resume_parse" if kind == "talent_parse" else kind
     schema = {
         "job_analysis": JobAnalysis,
@@ -239,7 +242,14 @@ def model_messages(kind: str, text: str) -> list[dict]:
     return [
         {
             "role": "system",
-            "content": system_prompt(kind, schema),
+            "content": system_prompt(kind, schema)
+            + (
+                "\n上一轮返回结构无效。本轮只返回一个符合给定Schema的JSON对象，检查全部闭合括号、引号和分隔符。"
+                "提取类任务的facts可为{}、research_objects可为[]，完整表单不得缺模块或字段；未知SourceFact用{}。"
+                "引用必须是原始材料的连续原话；不编造数值或出处，不输出解释或Markdown。"
+                if strict_json
+                else ""
+            ),
         },
         {"role": "user", "content": json.dumps({"untrusted_material": text}, ensure_ascii=False)},
     ]
@@ -365,11 +375,13 @@ def parse_model_payload(payload: dict) -> tuple[dict, int]:
     return data, tokens
 
 
-def invoke_model(settings: Settings, kind: str, text: str, request_id: str) -> tuple[dict, int]:
+def invoke_model(
+    settings: Settings, kind: str, text: str, request_id: str, *, strict_json: bool = False
+) -> tuple[dict, int]:
     model_ready(settings)
     body = {
         "model": settings.model_name,
-        "messages": model_messages(kind, text),
+        "messages": model_messages(kind, text, strict_json=strict_json),
         "response_format": {"type": "json_object"},
         "max_tokens": settings.model_max_output_tokens,
         "temperature": 0,

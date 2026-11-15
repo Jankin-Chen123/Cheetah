@@ -157,6 +157,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/audio-transcriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Audio */
+        post: operations["upload_audio_api_v1_audio_transcriptions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audio-transcriptions/from-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recognize Url */
+        post: operations["recognize_url_api_v1_audio_transcriptions_from_url_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audio-transcriptions/{audio_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Audio */
+        get: operations["read_audio_api_v1_audio_transcriptions__audio_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audio-transcriptions/{audio_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry Audio */
+        post: operations["retry_audio_api_v1_audio_transcriptions__audio_id__retry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -1385,6 +1453,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tasks/{task_id}/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Regenerate Task
+         * @description One explicit new call after a known bad output; unknown calls are never resubmitted.
+         */
+        post: operations["regenerate_task_api_v1_tasks__task_id__regenerate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tasks/{task_id}/retry": {
         parameters: {
             query?: never;
@@ -1748,6 +1836,77 @@ export interface components {
             /** Version */
             version: number;
         };
+        /** AudioRetryInput */
+        AudioRetryInput: {
+            /** Expected Revision */
+            expected_revision: number;
+        };
+        /** AudioSegment */
+        AudioSegment: {
+            /** End Ms */
+            end_ms: number;
+            /** Start Ms */
+            start_ms: number;
+            /** Text */
+            text: string;
+        };
+        /** AudioTranscriptionRef */
+        AudioTranscriptionRef: {
+            /** Id */
+            id: string;
+            /** Revision */
+            revision: number;
+        };
+        /** AudioTranscriptionView */
+        AudioTranscriptionView: {
+            /** Duration Ms */
+            duration_ms: number | null;
+            /** Error Code */
+            error_code: string | null;
+            /** Error Message */
+            error_message: string | null;
+            /** Filename */
+            filename: string;
+            /** Id */
+            id: string;
+            /** Resource Id */
+            resource_id: string;
+            /**
+             * Resource Type
+             * @default audio_transcription
+             * @constant
+             */
+            resource_type: "audio_transcription";
+            /** Retryable */
+            retryable: boolean;
+            /** Revision */
+            revision: number;
+            /** Segments */
+            segments: components["schemas"]["AudioSegment"][];
+            /**
+             * Source Mode
+             * @default live
+             * @constant
+             */
+            source_mode: "live";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "waiting_provider" | "completed" | "failed" | "reconciling";
+            /** Transcript */
+            transcript: string | null;
+        };
+        /** AudioUrlInput */
+        AudioUrlInput: {
+            /**
+             * Audio Format
+             * @enum {string}
+             */
+            audio_format: "wav" | "mp3" | "ogg" | "aac" | "m4a" | "amr" | "spx";
+            /** Audio Url */
+            audio_url: string;
+        };
         /** Batch */
         Batch: {
             counts: components["schemas"]["Counts1"];
@@ -1857,6 +2016,11 @@ export interface components {
         Body_replace_item_api_v1_batches__batch_id__items__item_id__replace_post: {
             /** Expected Revision */
             expected_revision: number;
+            /** File */
+            file: string;
+        };
+        /** Body_upload_audio_api_v1_audio_transcriptions_post */
+        Body_upload_audio_api_v1_audio_transcriptions_post: {
             /** File */
             file: string;
         };
@@ -2062,6 +2226,16 @@ export interface components {
         };
         /** Capabilities */
         Capabilities: {
+            /**
+             * Audio Max File Bytes
+             * @default 20971520
+             */
+            audio_max_file_bytes: number;
+            /**
+             * File Asr Configured
+             * @default false
+             */
+            file_asr_configured: boolean;
             import_limits: components["schemas"]["ImportLimits"];
             /** Mock Execution Allowed */
             mock_execution_allowed: boolean;
@@ -2264,6 +2438,7 @@ export interface components {
         };
         /** CreateJobInput */
         CreateJobInput: {
+            audio_transcription_ref?: components["schemas"]["AudioTranscriptionRef"] | null;
             /** Company */
             company?: string | null;
             /** Location */
@@ -3332,6 +3507,10 @@ export interface components {
         Job: {
             /** Active Task Ids */
             active_task_ids: components["schemas"]["ActiveTaskId"][];
+            /** Audio Transcription Ref */
+            audio_transcription_ref?: {
+                [key: string]: unknown;
+            } | null;
             /** Company */
             company: string;
             counts: components["schemas"]["Counts"];
@@ -5941,6 +6120,480 @@ export interface operations {
             };
         };
     };
+    upload_audio_api_v1_audio_transcriptions_post: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: string;
+                "X-CSRF-Token": string;
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_audio_api_v1_audio_transcriptions_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    /** @description 新岗位详情或持久化任务查询地址；幂等重放保持相同地址 */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudioTranscriptionView"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    recognize_url_api_v1_audio_transcriptions_from_url_post: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: string;
+                "X-CSRF-Token": string;
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AudioUrlInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    /** @description 新岗位详情或持久化任务查询地址；幂等重放保持相同地址 */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudioTranscriptionView"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    read_audio_api_v1_audio_transcriptions__audio_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                audio_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudioTranscriptionView"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    retry_audio_api_v1_audio_transcriptions__audio_id__retry_post: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: string;
+                "X-CSRF-Token": string;
+                "Idempotency-Key": string;
+            };
+            path: {
+                audio_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AudioRetryInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    /** @description 新岗位详情或持久化任务查询地址；幂等重放保持相同地址 */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudioTranscriptionView"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     login_api_v1_auth_login_post: {
         parameters: {
             query?: never;
@@ -6744,7 +7397,9 @@ export interface operations {
     };
     calls_api_v1_calls_get: {
         parameters: {
-            query?: never;
+            query?: {
+                application_id?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -14586,6 +15241,128 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Task"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 稳定错误码；不回显敏感输入或第三方异常 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    regenerate_task_api_v1_tasks__task_id__regenerate_post: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: string;
+                "X-CSRF-Token": string;
+                "Idempotency-Key": string;
+            };
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetryInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    /** @description 新岗位详情或持久化任务查询地址；幂等重放保持相同地址 */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskAccepted"];
                 };
             };
             /** @description 稳定错误码；不回显敏感输入或第三方异常 */

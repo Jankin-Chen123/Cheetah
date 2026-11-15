@@ -88,7 +88,11 @@ def result_still_current(task: ModelStep, case: OutreachCase) -> bool:
 
 
 def recover_stale_steps(
-    session: Session, *, older_than_seconds: int = 180, case_id: str | None = None
+    session: Session,
+    *,
+    older_than_seconds: int = 180,
+    case_id: str | None = None,
+    outline_timeout_seconds: int = 300,
 ):
     if older_than_seconds < 120:
         raise ValueError("Recovery interval must exceed the bounded model timeout")
@@ -107,8 +111,8 @@ def recover_stale_steps(
             max(older_than_seconds, 700) if task.step == "transcription" else older_than_seconds
         )
         if task.step == "D07":
-            # Generation, review, one revision and final review each have a 45s timeout.
-            timeout = max(timeout, 300)
+            # Generation, review, one revision and final review are four bounded calls.
+            timeout = max(timeout, 300, outline_timeout_seconds)
         if elapsed < timeout:
             continue
         finish_step(task, error_code="WORKER_INTERRUPTED_REVIEW_REQUIRED")

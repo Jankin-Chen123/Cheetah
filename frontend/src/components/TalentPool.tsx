@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Alert, App, Button, Descriptions, Drawer, Empty, Input, Select, Space, Table, Tag } from 'antd'
-import { IntakeApiError, type IntakeSession } from '../api/jobIntake'
+import { IntakeApiError, getIntakeTask, regenerateIntakeTask, type IntakeSession } from '../api/jobIntake'
+import { api as outreachRequest, type CallCase } from '../api/outreach'
 import {
   getDirections, getTalents, getTalent, getTalentApplication, getTalentArtifact,
   getAllRoutedApplications, getRoutingJob, saveJobDirections, saveTalentDirections,
@@ -9,6 +10,7 @@ import {
 } from '../api/talentPool'
 import { Icon, PageHeading } from './ui'
 import IntakeResult from './IntakeResult'
+import ScreeningReview from './ScreeningReview'
 import MatchedJobs from './MatchedJobs'
 import { talentMatchedJobs } from '../domain/talentMatches'
 import CandidateJobFilter from './CandidateJobFilter'
@@ -61,7 +63,9 @@ function ApplicationDetails({ id, session, section, jobId }: { id: string; sessi
     const slots = app.artifact_slots.filter(item => item.state === 'available' && types.includes(item.type) && item.artifact_ref)
     const artifacts = await Promise.all(slots.map(item => getTalentArtifact(item.artifact_ref!.artifact_id, item.artifact_ref!.version, signal)))
     if (section && artifacts.some((artifact, index) => artifact.application_id !== id || artifact.job_id !== app.job_id || artifact.artifact_id !== slots[index].artifact_ref?.artifact_id || artifact.version !== slots[index].artifact_ref?.version || artifact.type !== slots[index].type)) throw new Error('返回内容不属于当前岗位或指定版本，请刷新重试。')
-    return { app, artifacts }
+    const cases = app.screening_result === 'passed' ? await outreachRequest<{ items: CallCase[] }>(`/calls?application_id=${encodeURIComponent(id)}`, undefined, signal) : { items: [] }
+    const call = cases.items.find(item => item.application_id === id && item.job_id === app.job_id)
+    return { app, artifacts, call }
   }, [id, jobId, section])
   const { data, error } = useRemote(load, refresh)
   async function start() {
@@ -88,9 +92,10 @@ function ApplicationDetails({ id, session, section, jobId }: { id: string; sessi
       <Descriptions column={1} items={[
         { key: 'state', label: '当前状态', children: screeningText(data.app) },
       ]} />
-      {!data.artifacts.some(artifact => section === 'call' ? artifact.type === 'D08' : ['D09', 'D10'].includes(artifact.type)) && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={section === 'call' ? '此岗位暂无电话沟通记录' : '此岗位暂无评估与推荐'} />}
+      {data.call && <Button type="primary" href={`/?call=${encodeURIComponent(data.call.id)}#app/${section === 'call' ? 'calls' : 'reports'}`}>{section === 'call' ? '进入本岗位 AI 对话' : '查看本岗位评估与推荐'}</Button>}
+      {!data.call && !data.artifacts.some(artifact => section === 'call' ? artifact.type === 'D08' : ['D09', 'D10'].includes(artifact.type)) && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={section === 'call' ? '此岗位暂无电话沟通记录' : '此岗位暂无评估与推荐'} />}
       {data.artifacts.map(artifact => <section className="panel" key={`${artifact.artifact_id}:${artifact.version}`}><h3>{artifactNames[artifact.type]}</h3><IntakeResult artifact={artifact} /></section>)}
-      <Alert type="info" title={section === 'call' ? '实时电话状态与控制接口待接入' : '报告审核与下载接口待接入'} />
+      {!data.call && <Alert type="info" title="初筛达标后创建本岗位的 AI 对话任务；尚未生成的内容保留为空。" />}
     </>}
   </div>
   return <div className="stack">
@@ -101,8 +106,9 @@ function ApplicationDetails({ id, session, section, jobId }: { id: string; sessi
         { key: 'stage', label: '当前状态', children: (() => { const progress = applicationProgress(data.app, data.artifacts.find(artifact => artifact.type === 'D10')); return progress ? candidateProgressLabels[progress] : '本轮已处理' })() },
       ]} />
       {data.app.stage === 'matched' && <div><p>已按职能方向进入此岗位。尚未判断是否满足具体岗位要求。</p><Button type="primary" loading={busy} onClick={() => { void start() }}>开始深度初筛</Button></div>}
-      {data.app.waiting_reason && <Alert type="info" title={data.app.waiting_reason.message} />}
-      {applicationProgress(data.app, data.artifacts.find(artifact => artifact.type === 'D10')) === 'report_review' && <Alert type="info" title="报告审核接口待接入" />}
+      {data.app.waiting_reason && !data.call && <Alert type="info" title={data.app.waiting_reason.message} />}
+      {data.app.allowed_actions.includes('screening_review') && ['manual_review', 'unknown'].includes(data.app.screening_result) && data.artifacts.filter(artifact => artifact.type === 'D06').map(artifact => <ScreeningReview key={`${artifact.artifact_id}:${artifact.version}`} applicationId={id} artifact={artifact} session={session} onSaved={() => setRefresh(value => value + 1)} />)}
+      {data.call && <Button type="primary" href={`/?call=${encodeURIComponent(data.call.id)}#app/calls`}>进入本岗位 AI 对话</Button>}
       {data.artifacts.map(artifact => <section className="panel" key={`${artifact.artifact_id}:${artifact.version}`}><h3>{artifactNames[artifact.type]}</h3><IntakeResult artifact={artifact} /></section>)}
     </>}
   </div>
@@ -118,7 +124,11 @@ function TalentDetails({ id, session }: { id: string; session: IntakeSession }) 
   const [busy, setBusy] = useState(false)
   const [base, setBase] = useState<TalentDetail>()
   const [application, setApplication] = useState<string>()
-  const load = useCallback(async (signal: AbortSignal) => ({ person: await getTalent(id, signal), taxonomy: await getDirections(signal) }), [id])
+  const load = useCallback(async (signal: AbortSignal) => {
+    const [person, taxonomy] = await Promise.all([getTalent(id, signal), getDirections(signal)])
+    return { person, taxonomy, task: await getIntakeTask(person.task_id, signal) }
+  }, [id])
+  const regeneration = useRef<{ key: string; taskId: string; revision: number } | null>(null)
   const { data, error } = useRemote(load, refresh)
   async function save() {
     if (!base || busy) return
@@ -136,12 +146,20 @@ function TalentDetails({ id, session }: { id: string; session: IntakeSession }) 
     {error && <Alert showIcon type="error" title={error} />}
     {person && <>
       <h2>{person.name}</h2><p>{statusText(person)} · {person.filename}</p>
+      {data.task.allowed_actions?.includes('regenerate') && <div><Button disabled={busy} loading={busy} onClick={() => void (async () => {
+        setBusy(true)
+        const intent = regeneration.current?.taskId === data.task.id ? regeneration.current : { key: crypto.randomUUID(), taskId: data.task.id, revision: data.task.revision }
+        regeneration.current = intent
+        try { await regenerateIntakeTask({ ...data.task, revision: intent.revision }, session, intent.key); regeneration.current = null; setRefresh(value => value + 1) }
+        catch (failure) { void message.error((failure as Error).message) }
+        finally { setBusy(false) }
+      })()}>重新提取简历</Button><p className="muted">保留同一份材料和人才档案，再调用一次模型；结果未知时不可使用。</p></div>}
       {person.error_code && <Alert showIcon type={person.classification_state === 'reconciling' ? 'warning' : 'error'} title={({ MODEL_OUTPUT_TRUNCATED: '模型未返回完整内容，请核对推理模式与输出限额。', MODEL_OUTPUT_INVALID: '模型响应格式无法可靠读取，材料已保留，请核对服务端任务。', INVALID_MODEL_OUTPUT: '模型返回的字段或引用不符合要求，材料已保留。', EXTERNAL_RESULT_UNKNOWN: '模型调用结果尚未核对，系统不会自动重复提交。' } as Record<string, string>)[person.error_code] ?? '提取未完成，请核对服务端任务与依赖。'} />}
       {person.profile?.resume_form?.parse_status !== undefined && person.profile.resume_form.parse_status !== 'completed' && <Alert type="warning" showIcon title="简历仅部分识别，缺失内容需补充文字材料" description={(person.profile.resume_form.limitations ?? []).join('；')} />}
       {person.directions.map(item => <section key={item.direction_id}><Tag>{data?.taxonomy.items.find(direction => direction.id === item.direction_id)?.label}</Tag><p>{item.reason}</p><blockquote>{item.quote}</blockquote></section>)}
       {person.profile_version && <Button onClick={() => { setBase(person); setSelected(person.directions.map(item => item.direction_id)); setQuote(person.directions[0]?.quote ?? ''); setReason(''); setEditing(true) }}>调整职能分类</Button>}
       {editing && <section className="panel stack">
-        <label htmlFor="talent-directions">职能方向，可多选</label><Select id="talent-directions" mode="multiple" value={selected} onChange={setSelected} options={data?.taxonomy.items.map(item => ({ value: item.id, label: item.label }))} />
+        <label htmlFor="talent-directions">职能方向，可多选</label><Select id="talent-directions" mode="multiple" optionFilterProp="label" value={selected} onChange={setSelected} options={data?.taxonomy.items.map(item => ({ value: item.id, label: item.label }))} />
         <label htmlFor="classification-quote">支持分类的简历原文</label><Input.TextArea id="classification-quote" value={quote} onChange={event => setQuote(event.target.value)} rows={3} maxLength={2000} />
         <label htmlFor="classification-reason">调整理由</label><Input id="classification-reason" value={reason} onChange={event => setReason(event.target.value)} maxLength={1000} />
         <Space><Button type="primary" loading={busy} disabled={!reason.trim() || (!!selected.length && !quote.trim())} onClick={() => { void save() }}>保存分类</Button><Button onClick={() => setEditing(false)}>取消</Button></Space>
@@ -228,7 +246,7 @@ export function RoutedJobCandidates({ jobId, session }: { jobId: string; session
   return <section className="panel stack">
     {error && <Alert showIcon type="error" title={error} />}
     {data?.reportReadFailed && <Alert showIcon type="error" title="部分推荐报告暂不可读取，请稍后重试。" />}
-    {data && <><label htmlFor="job-routing-directions">此岗位接收的人才方向</label><Select id="job-routing-directions" mode="multiple" value={draft ?? data.job.routing_directions as DirectionId[]} onChange={value => { if (draft === null) setBaseRevision(data.job.revision); setDraft(value) }} options={data.taxonomy.items.map(item => ({ value: item.id, label: item.label }))} /><div><Button disabled={draft === null} loading={busy} onClick={() => { void save() }}>保存岗位方向</Button></div>
+    {data && <><label htmlFor="job-routing-directions">此岗位接收的人才方向</label><Select id="job-routing-directions" mode="multiple" optionFilterProp="label" value={draft ?? data.job.routing_directions as DirectionId[]} onChange={value => { if (draft === null) setBaseRevision(data.job.revision); setDraft(value) }} options={data.taxonomy.items.map(item => ({ value: item.id, label: item.label }))} /><div><Button disabled={draft === null} loading={busy} onClick={() => { void save() }}>保存岗位方向</Button></div>
       {data.job.rule_status !== 'published' && <Alert type="info" title="确认并发布岗位标准后，相关人才会进入此列表。" />}
       <Table rowKey={row => row.app.id} dataSource={data.rows} pagination={{ current: currentPage, pageSize: 20, total: data.rows.length, onChange: setPage, showSizeChanger: false }} scroll={{ x: 600 }} columns={[
         { title: '候选人', render: (_, { app }) => app.candidate.display_name || '姓名待确认' },

@@ -61,3 +61,24 @@ def test_stale_running_becomes_explicit_failure_without_reexecution():
         assert session.get(ModelStep, "stale").status == "failed"
         assert session.get(ModelStep, "recent").status == "running"
         assert recover_stale_steps(session) == 0
+
+
+def test_configured_outline_four_calls_are_not_recovered_while_still_bounded():
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session, session.begin():
+        task = ModelStep(
+            id="long-outline",
+            case_id="case",
+            step="D07",
+            input_revision=1,
+            status="running",
+            detail={"started_at": (datetime.now(UTC) - timedelta(seconds=350)).isoformat()},
+        )
+        session.add(task)
+        session.flush()
+        assert recover_stale_steps(session, outline_timeout_seconds=420) == 0
+        assert task.status == "running"
+        task.detail = {"started_at": (datetime.now(UTC) - timedelta(seconds=421)).isoformat()}
+        assert recover_stale_steps(session, outline_timeout_seconds=420) == 1
+        assert task.detail["error_code"] == "WORKER_INTERRUPTED_REVIEW_REQUIRED"

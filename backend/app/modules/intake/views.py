@@ -71,6 +71,7 @@ def job_view(db: Session, job: IntakeJob):
     rule = db.get(RulePack, (job.id, job.published_version)) if job.published_version else None
     d01, d02 = latest(db, job.id, "D01"), latest(db, job.id, "D02")
     return {
+        "audio_transcription_ref": job.audio_transcription_ref,
         "id": job.id,
         "organization_id": job.organization_id,
         "owner_id": job.owner_id,
@@ -150,9 +151,9 @@ def application_view(db: Session, application: Application):
         "summary": None,
         "gaps": application.gaps,
         "waiting_reason": {
-            "code": "OUTREACH_NOT_CONNECTED",
-            "message": "等待后端 B 接入交接事件",
-            "missing_fields": ["outreach_consumer"],
+            "code": "OUTREACH_HANDOFF_PENDING",
+            "message": "初筛已通过，等待面试执行器接收当前版本",
+            "missing_fields": [],
         }
         if application.screening_result == "passed"
         else {
@@ -173,9 +174,12 @@ def application_view(db: Session, application: Application):
         else ["correct", "screening_review"]
         if application.status == "active"
         else [],
-        "provenance": provenance(
-            source, modes, merge_source_modes(*(a.source_modes for a in artifacts if a))
-        ),
+        "provenance": {
+            **provenance(
+                source, modes, merge_source_modes(*(a.source_modes for a in artifacts if a))
+            ),
+            "fixture_only": rule.is_test_rule or "mock" in modes,
+        },
         "status": application.status,
         "created_at": aware(application.created_at),
         "updated_at": aware(application.updated_at),

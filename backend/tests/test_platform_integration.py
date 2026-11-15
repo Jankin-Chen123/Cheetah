@@ -100,7 +100,7 @@ def test_upgrade_from_either_branch_preserves_business_data_and_unifies_sessions
             )
         command.upgrade(config, "head")
         assert connection.execute(text("SELECT version_num FROM alembic_version")).scalar() == (
-            "0006_merge_intake_outreach"
+            "0007_audio_transcriptions"
         )
         assert {c["name"] for c in inspect(connection).get_columns("login_sessions")} == {
             "token_hash",

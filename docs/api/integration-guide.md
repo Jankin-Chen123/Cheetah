@@ -1,3 +1,11 @@
+# 2026-11-15 全流程接入补充
+
+录音入口先POST audio-transcriptions（本地文件）或audio-transcriptions/from-url（标准版网址），轮询到completed后回填文字供核对；创建岗位附audio_transcription_ref固定识别版本，随后沿现有analyze、确认、发布流程。异步pending/未知不重复提交。文件／网址模式与实际Key授权边界见 [录音识别](../audio-file-recognition.md)。
+
+岗位页确认两份具体版本后，通过 rules/draft 与 publish 正式发布，人才按职能方向关联；人工复核仍绑定当前 D06 和有效引用。面试 worker 消费 screening.passed 1.1 并再次检查当前版本、材料、归属和规则，同事务防重建案例，不拨号。D07 使用已发布 A02 标准；受限邀请可选择 /candidate/text，无语音配置也可文字问答。
+
+任务错误恢复先看 allowed_actions：retry 不重新调用已结算模型；regenerate 是用户显式承担一次新调用，只对已知坏输出开放。reconciling 禁止重复提交。首次超过 90 秒仅前端显示等待后台，不取消任务。实际验收及未完成项见 [全流程核验](../full-flow-validation-2026-11-15.md)，以下历史段落以本增量及运行时协议为准。
+
 # 接入步骤与联调验收
 
 初筛 V2 接入补充：岗位分析主任务等待 A02/A05 岗位建议步骤完成，可沿 `continuation_task_id` 定位失败步骤；完成后仍须人工确认发布。采用 `a05-evidence` 时展示七维证据评分、`coverage` 和 `contribution`，`total=null` 显示待核实。D05/D06 的 Markdown 为同一份合并报告。文件接口新增 DOCX 文本读取；扫描图片、旧版 Word 与不可读文件明确失败或部分完成。[执行和模板约定](../intake-agents.md)。

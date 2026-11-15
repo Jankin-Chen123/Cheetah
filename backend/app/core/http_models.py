@@ -154,6 +154,8 @@ class Capabilities(BaseModel):
         default=False, description="仅表示选择了搜索适配器，未证明供应商可用"
     )
     voice_configured: bool = False
+    file_asr_configured: bool = False
+    audio_max_file_bytes: int = 20 * 1024 * 1024
 
 
 class User(BaseModel):
@@ -430,6 +432,7 @@ class Job(BaseModel):
     title: Annotated[str, Field(max_length=100, min_length=1)]
     routing_directions: list[DirectionId] = Field(default_factory=list)
     company: Annotated[str, Field(max_length=100, min_length=1)]
+    audio_transcription_ref: dict[str, Any] | None = None
     location: Location | None
     salary: Salary | None
     status: Literal["active", "paused", "archived"]

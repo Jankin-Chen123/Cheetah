@@ -25,6 +25,7 @@ export interface Job {
   ruleHistory?: { version: number; rules: RuleDraft }[]
   source: SourceMode
   materialInput?: JobMaterial
+  providedFields?: { title?: string; company?: string }
   generation?: JobGeneration
   documents?: JobDocument[]
   updatedAt?: string

@@ -38,6 +38,13 @@ class Settings(BaseSettings):
     model_thinking: Literal["enabled", "disabled"] | None = None
     model_max_output_tokens: int = Field(default=16000, ge=100, le=64000)
     job_model_call_limit: int = Field(default=30, ge=1, le=1000)
+    talent_model_call_limit: int = Field(default=2, ge=1, le=3)
+    file_asr_provider: Literal["disabled", "volcengine"] = "disabled"
+    volc_file_asr_resource_id: str = "volc.bigasr.auc_turbo"
+    volc_file_asr_standard_resource_id: str = "volc.seedasr.auc"
+    file_asr_byte_limit: int = Field(default=20 * 1024 * 1024, ge=1024, le=100 * 1024 * 1024)
+    file_asr_timeout_seconds: int = Field(default=180, ge=10, le=300)
+    file_asr_daily_limit: int = Field(default=20, ge=1, le=100)
     job_model_token_limit: int = Field(default=300000, ge=1)
     search_provider: str = Field(default="disabled", pattern=r"^[a-z][a-z0-9_]{0,39}$")
     search_endpoint: str | None = None
@@ -75,7 +82,7 @@ class Settings(BaseSettings):
     bailian_base_url: str | None = None
     bailian_model: str | None = None
     bailian_region: str | None = None
-    text_provider: Literal["bailian", "ark"] = "bailian"
+    text_provider: Literal["bailian", "ark", "configured"] = "bailian"
     ark_api_key: SecretStr | None = None
     ark_base_url: str = "https://ark.cn-beijing.volces.com/api/v3"
     ark_model: str = "doubao-seed-2-1-lite-260915"

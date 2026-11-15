@@ -104,12 +104,13 @@ def test_workspace_counts_todos_source_filters_and_safe_draft(api, runtime):
     assert api.get("/api/v1/jobs?page_size=1").json()["total"] == 2
 
 
-def test_stale_draft_revision_and_test_to_live_are_blocked(api, runtime):
+def test_stale_draft_revision_and_test_to_live_without_opt_in_are_blocked(api, runtime):
     job_id, _ = published_job(api, runtime)
     draft = api.get(f"/api/v1/jobs/{job_id}/rules/draft").json()
     body = {"expected_draft_revision": draft["draft_revision"], "content": draft["content"]}
     assert api.patch(f"/api/v1/jobs/{job_id}/rules/draft", json=body).status_code == 200
     assert api.patch(f"/api/v1/jobs/{job_id}/rules/draft", json=body).status_code == 409
+    runtime[0].allow_mock = False
     response = api.post(
         f"/api/v1/jobs/{job_id}/resume-batches",
         headers={"Idempotency-Key": "fixture-live-blocked"},
@@ -118,7 +119,7 @@ def test_stale_draft_revision_and_test_to_live_are_blocked(api, runtime):
             "execution_mode": "live",
         },
     )
-    assert response.status_code == 409 and response.json()["code"] == "PRECONDITION_NOT_MET"
+    assert response.status_code == 403 and response.json()["code"] == "PERMISSION_DENIED"
 
 
 def test_failed_job_analysis_appears_in_todos_before_any_resume_exists(api, runtime):

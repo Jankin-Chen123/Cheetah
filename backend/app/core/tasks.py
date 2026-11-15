@@ -69,10 +69,56 @@ def retryable(task: Task, settings: Settings) -> bool:
     return (
         task.kind in INTERNAL_KINDS
         and not task.payload.get("continuation_task_id")
+        and not task.payload.get("regenerated_task_id")
         and task.status == "failed"
         and task.error_code != "MODEL_OUTPUT_TRUNCATED"
         and task.external_state in {None, "settled"}
         and task.attempt_count < settings.task_attempt_limit
+    )
+
+
+def regeneratable(db: Session, task: Task, settings: Settings) -> bool:
+    if (
+        task.kind
+        not in {"job_analysis", "interview_standard", "screening_standard", "talent_parse"}
+        or task.status != "failed"
+        or task.external_state not in {None, "settled"}
+        or task.error_code
+        not in {"INVALID_MODEL_OUTPUT", "MODEL_OUTPUT_INVALID", "MODEL_OUTPUT_TRUNCATED"}
+        or task.payload.get("execution_mode") != "live"
+        or any(
+            task.payload.get(key)
+            for key in ("continuation_task_id", "regeneration_of", "regenerated_task_id")
+        )
+    ):
+        return False
+    budget = db.get(Budget, budget_key(task))
+    from app.core.models import IntakeJob, Talent
+
+    if task.kind == "talent_parse":
+        talent = db.get(Talent, task.payload.get("talent_id"))
+        if not talent or talent.task_id != task.id or talent.profile_version is not None:
+            return False
+    else:
+        job = db.get(IntakeJob, task.job_id)
+        if (
+            not job
+            or job.status != "active"
+            or job.published_version is not None
+            or job.draft_revision != task.payload.get("draft_revision")
+        ):
+            return False
+    limit = (
+        settings.talent_model_call_limit
+        if task.kind == "talent_parse"
+        else budget.call_limit
+        if budget
+        else 0
+    )
+    return bool(
+        budget
+        and budget.used + budget.reserved < limit
+        and budget.tokens_used + budget.tokens_reserved < budget.token_limit
     )
 
 
@@ -159,7 +205,8 @@ def task_view(task: Task, settings: Settings, db: Session) -> dict:
         else None,
         "attempt_count": task.attempt_count,
         "retryable": can_retry,
-        "allowed_actions": ["retry"] if can_retry else [],
+        "allowed_actions": (["retry"] if can_retry else [])
+        + (["regenerate"] if regeneratable(db, task, settings) else []),
         "poll_after_ms": None if task.status in {"completed", "failed", "cancelled"} else 3000,
         "usage": usage(
             tokens=agent_tokens

@@ -24,6 +24,37 @@ def iter_form_facts(form):
                     yield f"{section}/{record.record_id}/{key}", fact
 
 
+def source_quote(text: str, quote: str | None) -> str | None:
+    """Locate a continuous original span, tolerating whitespace and paired Markdown emphasis."""
+    if not quote:
+        return None
+    if quote in text:
+        return quote
+
+    def normalized(value):
+        excluded = set()
+        for pattern in (
+            r"(?<!\*)\*\*(?!\*)(.+?)(?<!\*)\*\*(?!\*)",
+            r"(?<!_)__(?!_)(.+?)(?<!_)__(?!_)",
+        ):
+            for match in re.finditer(pattern, value, re.DOTALL):
+                excluded.update(range(match.start(), match.start() + 2))
+                excluded.update(range(match.end() - 2, match.end()))
+        positions = [
+            index
+            for index, character in enumerate(value)
+            if not character.isspace() and index not in excluded
+        ]
+        return "".join(value[index] for index in positions), positions
+
+    haystack, positions = normalized(text)
+    needle, _ = normalized(quote)
+    if not needle:
+        return None
+    start = haystack.find(needle)
+    return None if start < 0 else text[positions[start] : positions[start + len(needle) - 1] + 1]
+
+
 def check_form_sources(form, text):
     if isinstance(form, ResumeForm):
         form.sections = {key: form.sections[key] for key in RESUME_FIELDS}
@@ -35,6 +66,7 @@ def check_form_sources(form, text):
         fact.evidence_refs = []
         if fact.status != "stated":
             continue
+        fact.quote = source_quote(text, fact.quote)
 
         def normalize(value):
             return re.sub(r"\s+", "", value).casefold()

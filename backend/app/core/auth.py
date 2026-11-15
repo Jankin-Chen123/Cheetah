@@ -111,6 +111,9 @@ def session_view(request: Request, user: Identity, login: LoginSession, raw: str
                 and settings.a03_plugin_api_key is not None
             ),
             "voice_configured": False,
+            "file_asr_configured": settings.file_asr_provider == "volcengine"
+            and bool(settings.volc_speech_api_key),
+            "audio_max_file_bytes": settings.file_asr_byte_limit,
             "import_limits": {
                 "max_items": settings.batch_limit,
                 "max_file_bytes": settings.file_byte_limit,

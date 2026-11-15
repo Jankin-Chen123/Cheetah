@@ -29,6 +29,7 @@ export interface JobDocument {
 export interface JobMaterial {
   kind: 'transcript' | 'audio'; transcript: string;
   audio?: MaterialFile;
+  audioTranscriptionRef?: { id: string; revision: number };
   textFile?: MaterialFile;
   originalText?: string;
   minutes?: CommunicationMinutes[];
@@ -39,7 +40,7 @@ export interface CommunicationMinutes {
   artifactRef: { artifact_id: string; version: number }; inputText: string;
 }
 export interface JobGeneration {
-  state: 'not_started' | 'waiting_transcript' | 'queued' | 'running' | 'completed' | 'failed';
+  state: 'not_started' | 'waiting_transcript' | 'queued' | 'running' | 'completed' | 'failed' | 'waiting_backend' | 'reconciling';
   error?: string; taskId?: string; remoteJobId?: string; createKey?: string; analyzeKey?: string; analyzeRevision?: number; submitted?: boolean
 }
 export interface RemoteArtifactInput {
@@ -178,6 +179,7 @@ export function areJobDocumentsConfirmed(job: Job): boolean {
 }
 
 export const jobCardLabels = {
+  waiting_backend: '等待后台处理', reconciling: '结果待核对',
   generating: '生成中', waiting_transcript: '待补充文字', unavailable: '待生成',
   failed: '生成失败', review: '待复核', draft: '待确认', published: '已确认',
 } as const
@@ -186,6 +188,7 @@ export function jobCardState(job: Job, canGenerate: boolean): keyof typeof jobCa
   const state = job.generation?.state
   if (state === 'waiting_transcript') return 'waiting_transcript'
   if (state === 'failed') return 'failed'
+  if (state === 'waiting_backend' || state === 'reconciling') return state
   if (state === 'not_started' || state === 'queued' || state === 'running') return canGenerate ? 'generating' : 'unavailable'
   if (areJobDocumentsConfirmed(job)) return 'published'
   if ((['D01', 'D02'] as const).some(type => currentDocument(job, type)?.status === 'needs_review')) return 'review'

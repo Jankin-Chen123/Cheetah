@@ -145,7 +145,7 @@ function Workspace({ session, onLogout, logoutBusy }: WorkspaceProps) {
         <div className="job-card-top"><span className={`company-mark tone-${i % 4}`}>{generating && j.company === '待识别企业' ? <Icon name="briefcase" size={22} /> : j.company.slice(0, 1)}</span>{state !== 'published' && <Tag color={generating || state === 'unavailable' ? 'default' : state === 'failed' ? 'red' : 'orange'}>{jobCardLabels[state]}</Tag>}</div>
         <h2 className="job-card-title">{generating && j.title === '待识别岗位' ? '岗位生成中' : j.title}</h2>
         <p className="muted">{generating && j.company === '待识别企业' ? '正在识别企业信息' : j.source === 'mock' ? previewText(j.company) : j.company}</p>
-        {generating ? <div className="job-generation-note" role="status"><Spin size="small" /><span>正在生成岗位画像与面试评估表…</span></div> : <div className="job-facts"><span>{j.location || '地点待确认'}</span><span>{j.salary || '薪资待确认'}</span></div>}
+        {generating ? <div className="job-generation-note" role="status"><Spin size="small" /><span>正在生成岗位画像与面试评估表…</span></div> : ['waiting_backend', 'reconciling', 'failed'].includes(state) ? <p role="status">{j.generation?.error}</p> : <div className="job-facts"><span>{j.location || '地点待确认'}</span><span>{j.salary || '薪资待确认'}</span></div>}
         <div className="job-card-footer">{generating ? <span>生成完成后可查看并确认</span> : <span><strong>{applications.filter(c => c.jobId === j.id && candidateProgress(c) !== null).length}</strong> 位候选人</span>}</div>
       </article>
     })}</div>

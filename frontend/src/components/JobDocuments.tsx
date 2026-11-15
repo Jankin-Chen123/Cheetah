@@ -61,8 +61,11 @@ export default function JobDocuments({ job, onUpdate, generation }: { job: Job; 
   const [form] = Form.useForm<{ username: string; password: string }>()
   const state = canGenerate || job.source === 'mock' ? job.generation?.state : undefined
   const d01 = currentDocument(job, 'D01')
+  const needsCheck = !!state && ['failed', 'waiting_backend', 'reconciling'].includes(state)
   return <div className="stack">
-    {state && state !== 'completed' && <Alert showIcon type={state === 'failed' || state === 'waiting_transcript' ? 'warning' : 'info'} title={state === 'failed' ? job.generation?.error : state === 'waiting_transcript' ? '自动转写待接入，请先补充文字记录。' : d01 ? '岗位画像已生成，正在生成面试评估表…' : '正在识别文字记录…'} action={state === 'failed' && <Button size="small" loading={generation.busy} onClick={generation.start}>重新检查</Button>} />}
+    {state && state !== 'completed' && <Alert showIcon type={needsCheck || state === 'waiting_transcript' ? 'warning' : 'info'} title={needsCheck ? job.generation?.error : state === 'waiting_transcript' ? '自动转写待接入，请先补充文字记录。' : d01 ? '岗位画像已生成，正在生成面试评估表…' : '正在识别文字记录…'} action={needsCheck && <Button size="small" loading={generation.busy} onClick={generation.start}>重新检查</Button>} />}
+    {generation.retryable && <div><Button loading={generation.busy} onClick={() => void generation.retry()}>重试失败步骤</Button></div>}
+    {generation.regeneratable && <div><Button loading={generation.busy} onClick={() => void generation.retry(true)}>重新生成失败步骤</Button><p className="muted">重新调用一次模型，保留失败记录；不会重复创建岗位或重新执行结果未知的请求。</p></div>}
     <Tabs defaultActiveKey="D01" items={[
       { key: 'D01', label: '岗位画像', children: <DocumentView job={job} type="D01" onUpdate={onUpdate} /> },
       { key: 'D02', label: '岗位面试评估表', children: <DocumentView job={job} type="D02" onUpdate={onUpdate} /> },

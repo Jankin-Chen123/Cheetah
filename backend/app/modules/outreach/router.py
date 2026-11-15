@@ -845,19 +845,16 @@ def fixture_screening(event: ScreeningPassedEvent, request: Request):
 
 
 @router.get("/calls", response_model=CallListView)
-def calls(request: Request):
+def calls(request: Request, application_id: str | None = Query(None, min_length=1, max_length=128)):
     identity = require_identity(request)
     with database_session(request) as session:
-        items = list(
-            session.scalars(
-                select(OutreachCase)
-                .where(
-                    OutreachCase.organization_id == identity["organization_id"],
-                    OutreachCase.owner_id == identity["user_id"],
-                )
-                .order_by(OutreachCase.id)
-            )
+        query = select(OutreachCase).where(
+            OutreachCase.organization_id == identity["organization_id"],
+            OutreachCase.owner_id == identity["user_id"],
         )
+        if application_id is not None:
+            query = query.where(OutreachCase.application_id == application_id)
+        items = list(session.scalars(query.order_by(OutreachCase.id)))
         return {
             "items": [case_view(case) for case in items],
             "total": len(items),
@@ -1110,6 +1107,11 @@ def candidate_view(case):
         if state.get("confirmed")
         else None,
         "decision_status": case.session_data.get("decision_status"),
+        "turn_history": [
+            {"question": answer.get("question", {}).get("question", ""), "answer": answer["text"]}
+            for answer in case.session_data.get("answers", [])
+            if answer.get("actor_type") == "candidate_invitation"
+        ],
     }
 
 

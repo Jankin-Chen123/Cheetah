@@ -232,7 +232,7 @@ def route_to_job(db, talent, profile, job):
     ):
         return
     rule = db.get(RulePack, (job.id, job.published_version))
-    if rule is None or rule.is_test_rule != (talent.execution_mode == "mock"):
+    if rule is None or (talent.execution_mode == "mock" and not rule.is_test_rule):
         return
     existing = db.scalar(
         select(Application).where(
@@ -495,7 +495,7 @@ async def import_talents(request: Request, db: Db, user: User):
                 db.add(
                     Budget(
                         job_id="talent:" + talent.id,
-                        call_limit=1,
+                        call_limit=settings.talent_model_call_limit,
                         token_limit=settings.job_model_token_limit,
                         search_limit=0,
                     )
@@ -629,8 +629,10 @@ def start_screening(application_id: str, body: RetryInput, request: Request, db:
         if d03 is None or d03.status != "valid":
             raise DomainError("PRECONDITION_NOT_MET", "简历结构化产物已失效")
         rule = db.get(RulePack, (job.id, app.rule_version))
-        if rule is None or rule.is_test_rule != (app.execution_mode == "mock"):
+        if rule is None or (app.execution_mode == "mock" and not rule.is_test_rule):
             raise DomainError("PRECONDITION_NOT_MET", "绑定规则与执行模式不符")
+        if rule.is_test_rule:
+            check_mode(request.app.state.settings, "mock")
         task = queue_step(db, job, app, "research", input_refs=[artifact_ref(d03)])
         app.stage, app.updated_at = "research", utcnow()
         app.revision += 1

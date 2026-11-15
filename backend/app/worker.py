@@ -236,6 +236,21 @@ def _queue_standard(db, parent, job, kind, inputs):
 
 
 def _finish_standard(db, task, job, data):
+    from copy import deepcopy
+
+    from app.modules.intake.form_sources import source_quote
+
+    data = deepcopy(data)
+    dimensions = (
+        data.get("dimensions", [])
+        if task.kind == "interview_standard"
+        else (data.get("rubric") or {}).get("dimensions", [])
+    )
+    for dimension in dimensions:
+        dimension["source_quotes"] = [
+            source_quote(analysis.job_material(job), quote) or quote
+            for quote in dimension.get("source_quotes", [])
+        ]
     if isinstance(data.get("rubric"), dict) and data["rubric"].get("dimensions_note") is None:
         data = {
             **data,
@@ -456,6 +471,10 @@ def run_once(settings: Settings, engine: Engine | None = None) -> bool:
         if settings.database_url is None:
             raise DomainError("DEPENDENCY_NOT_READY", "尚未配置数据库", 503)
         engine = get_engine(settings.database_url.get_secret_value())
+    from app.modules.intake.audio import run_audio_once
+
+    if run_audio_once(settings, engine):
+        return True
     kinds = {
         "job_analysis",
         "interview_standard",
@@ -510,6 +529,7 @@ def run_once(settings: Settings, engine: Engine | None = None) -> bool:
                 return True
             material = _model_material(db, task, job, application)
             kind = task.kind
+            strict_json = bool(task.payload.get("output_contract_retry"))
             if mode == "mock":
                 data = analysis.mock_analysis(kind, material)
                 task.result_refs = _finish_model(db, task, job, application, data)
@@ -534,7 +554,12 @@ def run_once(settings: Settings, engine: Engine | None = None) -> bool:
             reserve_model(db, task, request_bytes + settings.model_max_output_tokens + 1024)
             task.external_state = "submitted"
         submitted = True
-        data, tokens = analysis.invoke_model(settings, kind, material, f"{task_id}:{token}")
+        if strict_json:
+            data, tokens = analysis.invoke_model(
+                settings, kind, material, f"{task_id}:{token}", strict_json=True
+            )
+        else:
+            data, tokens = analysis.invoke_model(settings, kind, material, f"{task_id}:{token}")
         # Record known usage even if an intervening correction made the result stale.
         with Session(engine) as db, db.begin():
             task = db.get(Task, task_id)

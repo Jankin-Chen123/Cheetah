@@ -5,6 +5,11 @@ def professional_profile(upstream, minutes=None):
     resume = upstream.get("D03", {})
     if not isinstance(resume, dict):
         resume = {}
+    if resume.get("resume_form"):
+        from app.modules.outreach.intake_views import outreach_content
+
+        # Existing case snapshots retain the complete form. Fill only the legacy project labels.
+        resume = {**resume, "projects": outreach_content("D03", resume)["projects"]}
     profile = resume.get("profile", {})
     if not isinstance(profile, dict):
         profile = {}

@@ -9,10 +9,11 @@ export interface IntakeRemoteJob {
   d02_ref?: { artifact_id: string; version: number } | null
 }
 export interface IntakeTask {
-  id: string; kind: string; status: string; retryable: boolean;
+  id: string; kind: string; status: string; retryable: boolean; revision: number;
   error?: { message: string; code: string } | null;
   result_refs: { artifact_id: string; version: number }[];
   continuation_task_id?: string | null;
+  allowed_actions?: string[];
   poll_after_ms?: number | null
 }
 export class IntakeApiError extends Error {
@@ -49,10 +50,12 @@ export const getIntakeSession = (signal?: AbortSignal) => request<IntakeSession>
 export const loginIntake = (username: string, password: string, signal?: AbortSignal) => request<IntakeSession>('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) }, signal)
 export const registerAccount = (body: components['schemas']['RegisterInput'], signal?: AbortSignal) => request<IntakeSession>('/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, signal)
 export const logoutAccount = (session: IntakeSession) => request<void>('/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': session.csrf_token } })
-export const createIntakeRemoteJob = (transcript: string, session: IntakeSession, key: string, signal?: AbortSignal) => request<IntakeRemoteJob>('/jobs', json({ material_text: transcript }, session, key), signal)
+export const createIntakeRemoteJob = (transcript: string, session: IntakeSession, key: string, signal?: AbortSignal, providedFields?: { title?: string; company?: string }, audioRef?: { id: string; revision: number }) => request<IntakeRemoteJob>('/jobs', json({ material_text: transcript, ...providedFields, audio_transcription_ref: audioRef }, session, key), signal)
 export const analyzeIntakeJob = (job: IntakeRemoteJob, session: IntakeSession, key: string, signal?: AbortSignal) => request<{ task_id: string }>(`/jobs/${encodeURIComponent(job.id)}/analyze`, json({ expected_revision: job.revision, execution_mode: 'live' }, session, key), signal)
 export const getIntakeJob = (id: string, signal?: AbortSignal) => request<IntakeRemoteJob>(`/jobs/${encodeURIComponent(id)}`, {}, signal)
 export const getIntakeTask = (id: string, signal?: AbortSignal) => request<IntakeTask>(`/tasks/${encodeURIComponent(id)}`, {}, signal)
+export const retryIntakeTask = (task: IntakeTask, session: IntakeSession, key: string) => request(`/tasks/${encodeURIComponent(task.id)}/retry`, json({ expected_revision: task.revision, reason: '页面显式重试失败步骤，仅恢复已保存结果，不重复创建岗位' }, session, key))
+export const regenerateIntakeTask = (task: IntakeTask, session: IntakeSession, key: string) => request(`/tasks/${encodeURIComponent(task.id)}/regenerate`, json({ expected_revision: task.revision, reason: '页面显式重新生成已确认失败的步骤，保留原材料与失败记录' }, session, key))
 export async function getIntakeArtifact(artifactRef: { artifact_id: string; version: number }, signal?: AbortSignal): Promise<RemoteArtifactInput> {
   const result = await request<RemoteArtifactInput>(`/artifacts/${encodeURIComponent(artifactRef.artifact_id)}?version=${artifactRef.version}`, {}, signal)
   if (!['D01', 'D02'].includes(result.type) || result.status !== 'valid' || result.artifact_id !== artifactRef.artifact_id || result.version !== artifactRef.version || !result.structured_content || !result.provenance || !Array.isArray(result.provenance.inherited_source_modes) || !['live', 'mock', 'manual'].includes(result.provenance.source_mode)) {

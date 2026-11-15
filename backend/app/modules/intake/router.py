@@ -38,9 +38,24 @@ def create_job(body: CreateJobInput, request: Request, db: Db, user: User):
     def action():
         from app.modules.intake.directions import title_directions
 
+        audio_ref = None
+        if body.audio_transcription_ref:
+            from app.modules.intake.audio import get_audio
+
+            item = get_audio(db, user, body.audio_transcription_ref.id)
+            if item.status != "completed" or item.revision != body.audio_transcription_ref.revision:
+                raise DomainError("VERSION_CONFLICT", "请先完成语音识别并核对当前转写版本。")
+            audio_ref = {
+                **body.audio_transcription_ref.model_dump(),
+                "source_mode": "live",
+                "sha256": item.audio_hash,
+                "text_edited": body.material_text != item.transcript,
+            }
+
         job = IntakeJob(
             **{
                 **body.model_dump(),
+                "audio_transcription_ref": audio_ref,
                 "title": body.title or "待识别岗位",
                 "company": body.company or "待识别企业",
                 "routing_directions": body.routing_directions
@@ -157,7 +172,18 @@ def analyze_job(job_id: str, body: AnalyzeJobInput, request: Request, db: Db, us
                 "agent_spec_version": 2,
                 "agent_resource_hash": resource_fingerprint(),
                 "execution_mode": body.execution_mode,
-                "input_refs": [{"kind": "material", "id": job.id, "version": 1}],
+                "input_refs": [{"kind": "material", "id": job.id, "version": 1}]
+                + (
+                    [
+                        {
+                            "kind": "material",
+                            "id": "audio:" + job.audio_transcription_ref["id"],
+                            "version": 1,
+                        }
+                    ]
+                    if job.audio_transcription_ref
+                    else []
+                ),
             },
         )
         return accepted(task)
